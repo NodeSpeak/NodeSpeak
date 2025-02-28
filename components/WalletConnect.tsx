@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { Check, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import router from "next/router";
 
 export const WalletConnect = () => {
     const { isConnected, address, connect, disconnect, ensName } = useWalletContext();
@@ -13,6 +15,7 @@ export const WalletConnect = () => {
         setIsLoading(true);
         try {
             await connect();
+            router.push('/foro'); // Redirección después de conectar
         } catch (error) {
             console.error("Error de conexión:", error);
         } finally {
