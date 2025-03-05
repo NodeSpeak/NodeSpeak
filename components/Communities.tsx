@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Contract } from "ethers";
-import axios from 'axios';
+import { useWalletContext } from "@/contexts/WalletContext";
 
 interface Community {
     id: string;
@@ -49,6 +48,21 @@ export const Communities = ({
     leavingCommunityId,
     setShowCommunityList
 }: CommunitiesProps) => {
+    // Accedemos al contexto de la wallet para verificar la red
+    const { isGnosisChain, switchToGnosis, chainId, provider, address } = useWalletContext();
+    const [localLoading, setLocalLoading] = useState(false);
+
+    // Verificar la red cuando se monta el componente
+    useEffect(() => {
+        console.log("=== ESTADO EN COMMUNITIES ===");
+        console.log("Chain ID:", chainId);
+        console.log("Es Gnosis Chain:", isGnosisChain);
+        console.log("Address:", address);
+
+        if (!isGnosisChain) {
+            console.warn("⚠️ Communities: No estás en Gnosis Chain");
+        }
+    }, [isGnosisChain, chainId, address]);
 
     // Function to handle clicking on a community
     const handleCommunityClick = (community: Community) => {
@@ -63,8 +77,115 @@ export const Communities = ({
         }
     };
 
+    // Función mejorada para crear comunidad con debug
+    const debugCreateCommunity = async () => {
+        try {
+            setLocalLoading(true);
+
+            // Obtener los valores de los campos
+            const nameElement = document.getElementById('community-name') as HTMLInputElement;
+            const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
+            const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
+
+            const name = nameElement?.value || "";
+            const description = descriptionElement?.value || "";
+            const topicString = topicsElement?.value || "General";
+            const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
+
+            if (!name || !description || topicsArray.length === 0) {
+                alert("Please fill in all fields");
+                setLocalLoading(false);
+                return;
+            }
+
+            console.log("=== INICIANDO CREACIÓN DE COMUNIDAD ===");
+            console.log("Datos de la comunidad:", { name, description, topics: topicsArray });
+            console.log("Estado de la red:", { chainId, isGnosisChain });
+
+            // Verificar si estamos en la red correcta
+            if (!isGnosisChain) {
+                console.log("⚠️ No estamos en Gnosis Chain. Cambiando red...");
+                await switchToGnosis();
+
+                // Dar tiempo para que el cambio de red se aplique
+                console.log("Esperando a que el cambio de red se aplique...");
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Verificar si el cambio fue exitoso
+                if (!isGnosisChain) {
+                    console.log("❌ No se pudo cambiar a Gnosis Chain automáticamente");
+                    alert("Error: No se pudo cambiar a Gnosis Chain. Por favor, cambia manualmente desde MetaMask y vuelve a intentar.");
+                    setLocalLoading(false);
+                    return;
+                }
+            }
+
+            // Verificar que el provider sea válido
+            if (!provider) {
+                console.error("❌ Error: Provider no disponible");
+                alert("Error: No hay conexión disponible con la blockchain");
+                setLocalLoading(false);
+                return;
+            }
+
+            // Obtener la red del provider para verificar
+            try {
+                const network = await provider.getNetwork();
+                console.log("Red del provider:", network);
+
+                // Confirmar que podemos obtener un signer
+                const signer = await provider.getSigner();
+                const signerAddress = await signer.getAddress();
+                console.log("Signer address:", signerAddress);
+            } catch (error) {
+                console.error("Error al verificar provider:", error);
+            }
+
+            console.log("✅ Todo listo para crear la comunidad. Ejecutando handleCreateCommunity...");
+            await handleCreateCommunity(name, description, topicsArray);
+            console.log("Creación de comunidad completada");
+        } catch (error) {
+            console.error("❌ Error en debugCreateCommunity:", error);
+            alert(`Error al crear la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        } finally {
+            setLocalLoading(false);
+        }
+    };
+
     return (
         <div className="terminal-window p-6 rounded-lg">
+            {/* Mostrar información de red para debug */}
+            <div className="mb-4 p-2 bg-black border border-gray-500 rounded text-xs">
+                <p className="text-gray-400">Network Debug:</p>
+                <p className="text-gray-300">ChainID: {chainId || 'No conectado'}</p>
+                <p className={isGnosisChain ? 'text-green-500' : 'text-red-500'}>
+                    {isGnosisChain ? '✓ Gnosis Chain' : '✗ Red incorrecta'}
+                </p>
+                {!isGnosisChain && (
+                    <button
+                        onClick={switchToGnosis}
+                        className="mt-1 bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                    >
+                        Cambiar a Gnosis
+                    </button>
+                )}
+            </div>
+
+            {!isGnosisChain && (
+                <div className="mb-4 bg-red-900 bg-opacity-30 border-2 border-red-500 p-3 rounded text-white">
+                    <p className="text-center mb-2">Esta aplicación requiere Gnosis Chain para funcionar correctamente.</p>
+                    <p className="text-center mb-2">Red actual: {chainId || 'Desconocida'}</p>
+                    <div className="flex justify-center">
+                        <button
+                            onClick={switchToGnosis}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                        >
+                            Cambiar a Gnosis Chain
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {isCreatingCommunity ? (
                 <div className="border-2 border-[var(--matrix-green)] rounded-lg p-6 bg-black">
                     <h2 className="text-xl font-mono mb-4 text-center text-[var(--matrix-green)]">
@@ -103,30 +224,19 @@ export const Communities = ({
 
                         <Button
                             type="button"
-                            onClick={() => {
-                                const nameElement = document.getElementById('community-name') as HTMLInputElement;
-                                const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
-                                const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
-
-                                const name = nameElement?.value || "";
-                                const description = descriptionElement?.value || "";
-                                const topicString = topicsElement?.value || "General";
-                                const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
-
-                                if (name && description && topicsArray.length > 0) {
-                                    handleCreateCommunity(name, description, topicsArray);
-                                } else {
-                                    alert("Please fill in all fields");
-                                }
-                            }}
+                            onClick={debugCreateCommunity}
                             className="w-full bg-[var(--matrix-green)] text-black py-2 rounded font-bold mt-4"
-                            disabled={creatingCommunity}
+                            disabled={creatingCommunity || localLoading || !isGnosisChain}
                         >
-                            {creatingCommunity ? (
+                            {creatingCommunity || localLoading ? (
                                 <div className="flex items-center justify-center">
                                     <span className="mr-2 animate-pulse">Creating...</span>
                                 </div>
-                            ) : "Create Community"}
+                            ) : !isGnosisChain ? (
+                                "Switch to Gnosis Chain First"
+                            ) : (
+                                "Create Community"
+                            )}
                         </Button>
                     </form>
                 </div>
@@ -188,23 +298,35 @@ export const Communities = ({
                                         {/* Join/Leave button - Only show for non-creators */}
                                         {!community.isCreator && (
                                             <button
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
                                                     e.stopPropagation();
+
+                                                    // Verificar red antes de ejecutar
+                                                    if (!isGnosisChain) {
+                                                        console.log("Cambiando a Gnosis antes de unirse/salir de la comunidad");
+                                                        await switchToGnosis();
+                                                        await new Promise(resolve => setTimeout(resolve, 1000));
+                                                    }
+
                                                     if (community.isMember) {
-                                                        handleLeaveCommunity(community.id);
+                                                        await handleLeaveCommunity(community.id);
                                                     } else {
-                                                        handleJoinCommunity(community.id);
+                                                        await handleJoinCommunity(community.id);
                                                     }
                                                 }}
-                                                className={`px-3 py-1 rounded text-sm font-medium ${joiningCommunityId === community.id || leavingCommunityId === community.id
-                                                    ? "bg-gray-600 text-white"
-                                                    : community.isMember
-                                                        ? "bg-red-800 hover:bg-red-700 text-white"
-                                                        : "bg-[var(--matrix-green)] hover:bg-opacity-80 text-black"
+                                                className={`px-3 py-1 rounded text-sm font-medium ${!isGnosisChain
+                                                        ? "bg-yellow-600 text-white"
+                                                        : joiningCommunityId === community.id || leavingCommunityId === community.id
+                                                            ? "bg-gray-600 text-white"
+                                                            : community.isMember
+                                                                ? "bg-red-800 hover:bg-red-700 text-white"
+                                                                : "bg-[var(--matrix-green)] hover:bg-opacity-80 text-black"
                                                     }`}
-                                                disabled={joiningCommunityId === community.id || leavingCommunityId === community.id}
+                                                disabled={!isGnosisChain || joiningCommunityId === community.id || leavingCommunityId === community.id}
                                             >
-                                                {joiningCommunityId === community.id ? (
+                                                {!isGnosisChain ? (
+                                                    "Wrong Network"
+                                                ) : joiningCommunityId === community.id ? (
                                                     <span className="animate-pulse">Joining...</span>
                                                 ) : leavingCommunityId === community.id ? (
                                                     <span className="animate-pulse">Leaving...</span>
