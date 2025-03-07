@@ -1,70 +1,69 @@
-# 📌 Node Speak: El Foro Descentralizado e Inmutable
+# 📌 Node Speak: The Decentralized and Immutable Forum
 
-## Sobre Node Speak
+## About Node Speak
 
-**Node Speak** es una plataforma que redefine los foros en línea mediante el uso de **tecnología blockchain** y almacenamiento descentralizado. Diseñado para garantizar la **permanencia, transparencia y resistencia a la censura**, Node Speak permite a los usuarios:
+**Node Speak** is a platform that redefines online forums by using **blockchain technology** and decentralized storage. Designed to ensure **permanence, transparency, and resistance to censorship**, Node Speak allows users to:
 
-✅ Crear y gestionar temas de discusión.  
-✅ Seguir perfiles de interés.  
-✅ Publicar mensajes y responder a otros participantes.  
-✅ Valorar contenido mediante un sistema basado en **NFTs**.  
-✅ Asegurar la integridad de los datos con almacenamiento en **IPFS**.
+✅ Create and manage discussion topics.  
+✅ Follow profiles of interest.  
+✅ Post messages and reply to other participants.  
+✅ Rate content through an **NFT-based** system.  
+✅ Ensure data integrity with storage on **IPFS**.
 
-Gracias a su infraestructura descentralizada, **nadie puede eliminar o alterar el contenido de manera arbitraria**, brindando una experiencia **libre, comunitaria y segura**.
-
----
-
-## 🚀 Características Clave
-
-🔗 **Blockchain y Seguridad:** Todos los mensajes están respaldados por tecnología blockchain, asegurando **transparencia y confiabilidad**.  
-📜 **Almacenamiento Permanente:** Utilizamos **IPFS (InterPlanetary File System)** para garantizar que los datos sean accesibles de forma descentralizada e inmutable.  
-📢 **Sin Censura ni Moderación Arbitraria:** El contenido esta siempre disponible y es moderado por cada comunidad que corra una versión de NodeSpeak 
-📢 **Contenido Seguro:** El almacenamiento persistente hace que el contenido este protegido contra manipulaciones externas.  
+Thanks to its decentralized infrastructure, **no one can delete or alter content arbitrarily**, providing a **free, community-driven, and secure** experience.
 
 ---
 
-## 🛠️ Instalación y Uso
+## 🚀 Key Features
 
-### 1️⃣ Clonar el Repositorio
+🔗 **Blockchain and Security:** All messages are backed by blockchain technology, ensuring **transparency and reliability**.  
+📜 **Permanent Storage:** We use **IPFS (InterPlanetary File System)** to ensure data is accessible in a decentralized and immutable way.  
+📢 **No Censorship or Arbitrary Moderation:** Content is always available and moderated by each community running a version of NodeSpeak.  
+📢 **Secure Content:** Persistent storage ensures content is protected against external manipulations.  
+
+---
+
+## 🛠️ Installation and Usage
+
+### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/NodeSpeak/forum.git
-cd forum
+git clone https://github.com/NodeSpeak/NodeSpeak.git
+cd NodeSpeak
 ```
 
-### 2️⃣ Instalar Dependencias
+### 2️⃣ Install Dependencies
 ```bash
 npm install
 ```
 
-### 3️⃣ Ejecutar el Proyecto
+### 3️⃣ Run the Project
 ```bash
 npm start
 ```
 
 ---
 
-## 🤝 Contribuciones
+## 🤝 Contributions
 
-Node Speak es un proyecto de código abierto y **cualquier colaboración es bienvenida**. Puedes contribuir en diversas áreas como desarrollo, diseño, documentación y más.
+Node Speak is an open-source project and **any collaboration is welcome**. You can contribute in various areas such as development, design, documentation, and more.
 
-Para contribuir, sigue estos pasos:
-1. Realiza un fork del repositorio.
-2. Crea una nueva rama con tu mejora o corrección.
-3. Envía un **pull request** con una descripción detallada de los cambios.
-
----
-
-## 📜 Licencia
-
-Este proyecto está bajo la licencia **MIT**, lo que significa que puedes usarlo, modificarlo y distribuirlo libremente.
+To contribute, follow these steps:
+1. Fork the repository.
+2. Create a new branch with your improvement or fix.
+3. Submit a **pull request** with a detailed description of the changes.
 
 ---
 
-## 📡 Contacto y Comunidad
+## 📜 License
 
-💬 Sigue el proyecto en **Twitter/X** para estar al tanto de las novedades.
+This project is under the **MIT** license, which means you can use, modify, and distribute it freely.
 
-📧 Para consultas o soporte, envía un correo a: nodespeakapp@gmail.com
+---
 
-🌐 Visita nuestra web oficial: [nodespeak.io](https://nodespeak.xyz)
+## 📡 Contact and Community
 
+💬 Follow the project on **Twitter/X** to stay updated on news.
+
+📧 For inquiries or support, send an email to: support@nodespeak.xyz
+
+🌐 Visit our official website: [nodespeak.xyz](https://nodespeak.xyz)git a
