@@ -2,8 +2,9 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useWalletContext } from "@/contexts/WalletContext";
-import { Check, LogOut } from "lucide-react";
+import { Check, LogOut, User } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export const WalletConnect = () => {
     const { isConnected, address, connect, disconnect, ensName } = useWalletContext();
@@ -40,6 +41,13 @@ export const WalletConnect = () => {
                             </span>
                         )}
                     </div>
+                    <Link href="/profile/edit">
+                        <Button
+                            className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+                        >
+                            <User className="h-4 w-4" /> <span>Edit Profile</span>
+                        </Button>
+                    </Link>
                     <Button
                         onClick={handleDisconnect}
                         className="bg-[#441111] hover:bg-[#661111] text-white text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-red-500"
