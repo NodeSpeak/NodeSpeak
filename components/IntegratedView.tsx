@@ -27,6 +27,8 @@ interface Community {
     isCreator?: boolean;
     memberCount?: number;
     topics: string[];
+    photo?: string;
+    coverImage?: string;
 }
 
 interface Post {
@@ -65,7 +67,7 @@ interface IntegratedViewProps {
     provider: any;
     isCreatingCommunity: boolean;
     setIsCreatingCommunity: (value: boolean) => void;
-    handleCreateCommunity: (name: string, description: string, topics: string[]) => Promise<void>;
+    handleCreateCommunity: (name: string, description: string, topics: string[], photo?: File, cover?: File) => Promise<void>;
     handleJoinCommunity: (communityId: string) => Promise<void>;
     handleLeaveCommunity: (communityId: string) => Promise<void>;
     isLoading: boolean;
@@ -993,7 +995,7 @@ export const IntegratedView = ({
                 <div className="flex justify-between items-center pt-2">
                     <Button
                         onClick={() => setIsCreatingPost(false)}
-                        className="bg-transparent border-2 border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[var(--matrix-green)] hover:text-black"
+                        className="bg-transparent border-2 border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10"
                     >
                         Cancel
                     </Button>
@@ -1051,25 +1053,49 @@ export const IntegratedView = ({
                     <p className="text-xs text-gray-400 mt-1">At least one topic is required</p>
                 </div>
 
+                <div className="flex flex-col">
+                    <label className="text-[var(--matrix-green)] mb-1">Photo</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        id="community-photo"
+                    />
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-[var(--matrix-green)] mb-1">Cover Image</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        id="community-cover"
+                    />
+                </div>
+
                 <Button
                     type="button"
                     onClick={() => {
                         const nameElement = document.getElementById('community-name') as HTMLInputElement;
                         const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
                         const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
+                        const photoElement = document.getElementById('community-photo') as HTMLInputElement;
+                        const coverElement = document.getElementById('community-cover') as HTMLInputElement;
 
                         const name = nameElement?.value || "";
                         const description = descriptionElement?.value || "";
-                        const topicString = topicsElement?.value || "General";
+                        const topicString = topicsElement?.value || "";
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
+                        const photo = photoElement?.files?.[0];
+                        const cover = coverElement?.files?.[0];
 
                         if (name && description && topicsArray.length > 0) {
-                            handleCreateCommunity(name, description, topicsArray);
+                            handleCreateCommunity(name, description, topicsArray, photo, cover);
                         } else {
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-[var(--matrix-green)] text-black py-2 rounded font-bold mt-4"
+                    className="w-full bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
@@ -1109,7 +1135,28 @@ export const IntegratedView = ({
                                 onClick={() => handleCommunityClick(community)}
                             >
                                 <div className="flex justify-between items-start mb-3">
-                                    <h3 className="text-xl font-bold text-white">{community.name}</h3>
+                                    <div className="flex items-start space-x-3">
+                                        {/* Community Photo */}
+                                        <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full border border-[var(--matrix-green)]">
+                                            {community.photo ? (
+                                                <img 
+                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                    alt={community.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        // Fallback to a default image if the photo fails to load
+                                                        (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                                    }}
+                                                />
+                                            ) : (
+                                                // Placeholder for communities without a photo
+                                                <div className="w-full h-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)]">
+                                                    {community.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white">{community.name}</h3>
+                                    </div>
                                     <div className="flex flex-col items-end">
                                         <div className="flex space-x-2">
                                             <span className="text-gray-400 text-sm">
@@ -1305,6 +1352,44 @@ export const IntegratedView = ({
                     </button>
                 </div>
             </div>
+
+            {selectedCommunityId && (
+                <div className="mb-4">
+                    {(() => {
+                        const community = localCommunities.find(c => c.id === selectedCommunityId);
+                        return community?.coverImage ? (
+                            <div className="relative w-full h-40 rounded-lg overflow-hidden border border-[var(--matrix-green)]">
+                                <img 
+                                    src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                    alt={`${getCommunityName(selectedCommunityId)} cover`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        // If image fails to load, hide the container
+                                        const target = e.target as HTMLImageElement;
+                                        target.parentElement!.style.display = 'none';
+                                    }}
+                                />
+                                {/* Community info overlay */}
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 flex items-center">
+                                    {community.photo && (
+                                        <div className="w-10 h-10 rounded-full mr-3 overflow-hidden border border-[var(--matrix-green)]">
+                                            <img 
+                                                src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                alt={community.name}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 className="text-[var(--matrix-green)] font-bold">{community.name}</h3>
+                                        <p className="text-white text-xs">{community.memberCount || 0} members · {community.postCount} posts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null;
+                    })()}
+                </div>
+            )}
 
             {filteredPosts.length === 0 ? (
                 <div className="p-6 text-center border border-[var(--matrix-green)]/30 rounded-lg bg-black">
