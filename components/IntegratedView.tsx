@@ -42,6 +42,7 @@ interface Post {
     likeCount: number;
     commentCount: number;
     isActive: boolean;
+    author?: string;
 }
 
 interface Comment {
@@ -1449,14 +1450,34 @@ export const IntegratedView = ({
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div>
-                                <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
-                                    <span>{formatDate(post.timestamp)}</span>
-                                    <span>•</span>
-                                    <span className="bg-[var(--matrix-green)]/20 px-2 py-0.5 rounded-full">
-                                        Topic: {post.topic}
-                                    </span>
-                                    <span>•</span>
-                                    <span>Community: {getCommunityName(post.communityId)}</span>
+                                {/* Add user profile and name display */}
+                                <div className="flex items-center mb-2">
+                                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-3">
+                                        <img 
+                                            src={`https://effigy.im/a/${post.author || 'unknown'}.svg`} 
+                                            alt="User avatar"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback for avatar
+                                                const target = e.target as HTMLImageElement;
+                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-white">
+                                            {post.author ? formatAddress(post.author) : 'Anonymous User'}
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
+                                            <span>{formatDate(post.timestamp)}</span>
+                                            <span>•</span>
+                                            <span className="bg-[var(--matrix-green)]/20 px-2 py-0.5 rounded-full">
+                                                Topic: {post.topic}
+                                            </span>
+                                            <span>•</span>
+                                            <span>Community: {getCommunityName(post.communityId)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1539,12 +1560,28 @@ export const IntegratedView = ({
                                     ) : comments[post.id]?.length > 0 ? (
                                         comments[post.id].map((comment) => (
                                             <div key={comment.id} className="border border-gray-700 rounded p-3 bg-black/60">
-                                                <p className="text-white text-sm">{comment.content}</p>
-                                                <div className="flex justify-between mt-2 text-xs">
-                                                    <span className="text-[var(--matrix-green)]">{formatAddress(comment.author)}</span>
-                                                    <span className="text-gray-500">
-                                                        {formatDate(comment.timestamp)}
-                                                    </span>
+                                                <div className="flex items-start mb-2">
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-2 flex-shrink-0">
+                                                        <img 
+                                                            src={`https://effigy.im/a/${comment.author || 'unknown'}.svg`} 
+                                                            alt="User avatar"
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                // Fallback for avatar
+                                                                const target = e.target as HTMLImageElement;
+                                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[var(--matrix-green)] text-xs font-medium">{comment.author ? formatAddress(comment.author) : 'Anonymous User'}</span>
+                                                            <span className="text-gray-500 text-xs">
+                                                                {formatDate(comment.timestamp)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-white text-sm mt-1">{comment.content}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
