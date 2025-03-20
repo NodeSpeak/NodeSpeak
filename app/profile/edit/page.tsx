@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, ImagePlus, Save } from "lucide-react";
+import { ArrowLeft, User, Save, Upload, ImagePlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { MatrixRain } from "@/components/MatrixRain";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -207,213 +207,226 @@ export default function EditProfilePage() {
     }
   };
 
+  // Create a blinking cursor effect
+  useEffect(() => {
+    const cursorInterval = setInterval(() => {
+      const cursors = document.querySelectorAll('.cursor');
+      cursors.forEach(cursor => {
+        cursor.classList.toggle('opacity-0');
+      });
+    }, 500);
+
+    return () => clearInterval(cursorInterval);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 flex items-center justify-center min-h-screen bg-black text-[var(--matrix-green)]">
-        <p className="text-lg font-mono animate-pulse">Loading profile data...</p>
+        <div className="flex flex-col items-center">
+          <p className="text-lg font-mono">$ loading profile_data.dat</p>
+          <div className="mt-4 flex space-x-1">
+            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-0"></div>
+            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-150"></div>
+            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-300"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Helper function to shorten Ethereum addresses
+  const shortenAddress = (addr: string, chars = 4): string => {
+    if (!addr) return '';
+    return `${addr.substring(0, chars + 2)}...${addr.substring(addr.length - chars)}`;
+  };
+
+  const displayName = ensName || nickname || (address ? shortenAddress(address) : "");
+
   return (
-    <div className="container mx-auto p-4 bg-black min-h-screen">
-      {/* Matrix-style background animation would be here */}
-      <canvas className="matrix-rain absolute inset-0" />
+    <div className="container mx-auto p-4 bg-black min-h-screen font-mono">
+      {/* Matrix-style background animation with very low intensity */}
+      <MatrixRain intensity="low" className="absolute inset-0 opacity-10" />
       
       <div className="relative z-10">
-        <h1 className="text-2xl font-mono text-[var(--matrix-green)] mb-6">
-          {profileExists ? "Edit Profile" : "Create Profile"}
-        </h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column: Profile Details */}
-          <div className="space-y-6">
-            <Card className="border border-[var(--matrix-green)]/30 bg-black">
-              <CardHeader>
-                <CardTitle className="text-xl font-mono text-[var(--matrix-green)]">Profile Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nickname" className="text-[var(--matrix-green)]">Nickname or ENS</Label>
-                  <Input
-                    id="nickname"
-                    placeholder={address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : ""}
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20"
+        {/* Terminal-style header */}
+        <div className="mb-6 border border-[var(--matrix-green)] p-4">
+          <div className="flex items-center space-x-2 mb-1">
+            <span className="text-[var(--matrix-green)]">root@nodespeak:~# </span>
+            <span className="text-[var(--matrix-green)]">cat user_profile.dat</span>
+            <span className="cursor h-4 w-2 bg-[var(--matrix-green)]"></span>
+          </div>
+          
+          <div className="border-t border-[var(--matrix-green)]/30 my-2"></div>
+          
+          {/* User profile layout similar to the image */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {/* Cover Photo Section */}
+            <div className="md:col-span-4 border border-[var(--matrix-green)] p-3 mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-[var(--matrix-green)] text-sm">COVER_IMAGE:</div>
+                <Label
+                  htmlFor="coverPhoto"
+                  className="cursor-pointer text-[var(--matrix-green)] text-xs py-1 px-2 border border-[var(--matrix-green)]/50 hover:bg-[var(--matrix-green)]/10"
+                >
+                  UPLOAD_COVER
+                </Label>
+                <Input
+                  id="coverPhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverPhotoChange}
+                  className="hidden"
+                />
+              </div>
+              <div className="w-full h-32 border border-[var(--matrix-green)]/50 flex items-center justify-center overflow-hidden">
+                {coverPhotoPreview ? (
+                  <img 
+                    src={coverPhotoPreview} 
+                    alt="Cover" 
+                    className="w-full h-full object-cover"
                   />
-                  <p className="text-xs text-[var(--matrix-green)]/70">
-                    {ensName ? `You have ENS: ${ensName}` : "No ENS detected for your address"}
-                  </p>
+                ) : (
+                  <div className="flex flex-col items-center text-[var(--matrix-green)]/50">
+                    <ImagePlus className="w-8 h-8 mb-1" />
+                    <span className="text-xs">[NO_COVER_IMAGE]</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* User Avatar Section */}
+            <div className="border border-[var(--matrix-green)] p-4">
+              <div className="flex flex-col items-center">
+                <div className="w-full aspect-square border border-[var(--matrix-green)] flex items-center justify-center mb-4 overflow-hidden">
+                  {profilePicturePreview ? (
+                    <img 
+                      src={profilePicturePreview} 
+                      alt={displayName} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-16 h-16 text-[var(--matrix-green)]" />
+                  )}
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="bio" className="text-[var(--matrix-green)]">Bio</Label>
+                <div className="text-center text-[var(--matrix-green)] text-sm mb-2">
+                  {displayName}
+                </div>
+                
+                <div className="text-xs text-[var(--matrix-green)]/70 text-center break-all">
+                  {address}
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <Label
+                  htmlFor="profilePicture"
+                  className="cursor-pointer text-center text-[var(--matrix-green)] text-xs py-1 px-2 border border-[var(--matrix-green)]/50 hover:bg-[var(--matrix-green)]/10"
+                >
+                  UPLOAD_AVATAR
+                </Label>
+                <Input
+                  id="profilePicture"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
+                />
+              </div>
+            </div>
+            
+            {/* User details section */}
+            <div className="md:col-span-3 border border-[var(--matrix-green)] p-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[var(--matrix-green)] mb-1">USER_ID:</div>
+                    <Input
+                      id="nickname"
+                      placeholder={address ? shortenAddress(address) : ""}
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20 rounded-none h-8"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="text-[var(--matrix-green)] mb-1">ADDRESS:</div>
+                    <div className="text-[var(--matrix-green)] text-sm truncate">{shortenAddress(address || '', 12)}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="text-[var(--matrix-green)] mb-1">STATUS:</div>
+                  <div className="text-[var(--matrix-green)]">ACTIVE</div>
+                </div>
+                
+                <div>
+                  <div className="text-[var(--matrix-green)] mb-1">MEMBER_SINCE:</div>
+                  <div className="text-[var(--matrix-green)]">March 2023</div>
+                </div>
+                
+                <div>
+                  <div className="text-[var(--matrix-green)] mb-1">POSTS:</div>
+                  <div className="text-[var(--matrix-green)]">0</div>
+                </div>
+                
+                <div className="border-t border-[var(--matrix-green)]/30 my-2 pt-2">
+                  <div className="text-[var(--matrix-green)] mb-1">BIO:</div>
                   <Textarea
                     id="bio"
                     placeholder="Tell the community about yourself"
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20"
-                    rows={4}
+                    className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20 rounded-none resize-none"
+                    rows={3}
                   />
                 </div>
-              </CardContent>
-            </Card>
-            
-            {profileExists && (
-              <Card className="border border-[var(--matrix-green)]/30 bg-black">
-                <CardHeader>
-                  <CardTitle className="text-xl font-mono text-[var(--matrix-green)]">Stats</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-[var(--matrix-green)]/80 font-mono">
-                    <div className="space-y-1">
-                      <p className="text-xs">Likes Received</p>
-                      <p className="text-2xl">{stats.likesReceived}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs">Likes Given</p>
-                      <p className="text-2xl">{stats.likesGiven}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs">Followers</p>
-                      <p className="text-2xl">{stats.followers}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs">Following</p>
-                      <p className="text-2xl">{stats.following}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+              </div>
+            </div>
           </div>
           
-          {/* Right Column: Profile Pictures */}
-          <div className="space-y-6">
-            <Card className="border border-[var(--matrix-green)]/30 bg-black">
-              <CardHeader>
-                <CardTitle className="text-xl font-mono text-[var(--matrix-green)]">Profile Picture</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-40 h-40 rounded-full border-2 border-dashed border-[var(--matrix-green)]/50 flex items-center justify-center overflow-hidden relative">
-                    {profilePicturePreview ? (
-                      <img 
-                        src={profilePicturePreview} 
-                        alt="Profile Preview" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImagePlus className="w-10 h-10 text-[var(--matrix-green)]/50" />
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-center">
-                  <Label
-                    htmlFor="profilePicture"
-                    className="cursor-pointer flex items-center space-x-2 text-[var(--matrix-green)] py-2 px-4 border border-[var(--matrix-green)]/50 rounded-md hover:bg-[var(--matrix-green)]/10"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Profile Picture</span>
-                  </Label>
-                  <Input
-                    id="profilePicture"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfilePictureChange}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-xs text-center text-[var(--matrix-green)]/70">
-                  Recommended: Square image, max 2MB
-                </p>
-              </CardContent>
-            </Card>
+          {/* Submit button */}
+          <div className="mt-4 flex justify-between">
+            <Button 
+              onClick={() => router.push('/profile')}
+              className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Profile</span>
+            </Button>
             
-            <Card className="border border-[var(--matrix-green)]/30 bg-black">
-              <CardHeader>
-                <CardTitle className="text-xl font-mono text-[var(--matrix-green)]">Cover Photo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-full h-40 border-2 border-dashed border-[var(--matrix-green)]/50 flex items-center justify-center overflow-hidden relative">
-                    {coverPhotoPreview ? (
-                      <img 
-                        src={coverPhotoPreview} 
-                        alt="Cover Preview" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImagePlus className="w-10 h-10 text-[var(--matrix-green)]/50" />
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-center">
-                  <Label
-                    htmlFor="coverPhoto"
-                    className="cursor-pointer flex items-center space-x-2 text-[var(--matrix-green)] py-2 px-4 border border-[var(--matrix-green)]/50 rounded-md hover:bg-[var(--matrix-green)]/10"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Cover Photo</span>
-                  </Label>
-                  <Input
-                    id="coverPhoto"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverPhotoChange}
-                    className="hidden"
-                  />
-                </div>
-                <p className="text-xs text-center text-[var(--matrix-green)]/70">
-                  Recommended: 1200x400px, max 5MB
-                </p>
-              </CardContent>
-            </Card>
+            <Button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+            >
+              <Save className="h-4 w-4" />
+              <span>Edit Profile</span>
+            </Button>
           </div>
         </div>
-        
-        <div className="mt-8 flex justify-between">
-          <Button 
-            variant="outline"
-            className="border-red-500 text-red-500 hover:bg-red-900/20"
-            onClick={() => router.push('/profile')}
-          >
-            Cancel
-          </Button>
-          
-          <Button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="border-[var(--matrix-green)] bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 flex items-center space-x-2"
-          >
-            <Save className="w-4 h-4" />
-            <span>
-              {isSaving 
-                ? "Processing Transaction..." 
-                : profileExists 
-                  ? "Save Changes" 
-                  : "Create Profile"
-              }
-            </span>
-          </Button>
-        </div>
-        
-        {isSaving && (
-          <div className="mt-4 p-4 border border-[var(--matrix-green)]/30 rounded bg-black">
-            <p className="text-center text-[var(--matrix-green)] animate-pulse">
-              {profileExists 
-                ? "Updating your profile on the blockchain..." 
-                : "Creating your profile on the blockchain..."
-              }
-            </p>
-            <p className="text-center text-xs text-[var(--matrix-green)]/70 mt-2">
-              This process may take a minute or two. Please do not close this window.
-            </p>
-          </div>
-        )}
       </div>
+      
+      {/* Custom styles for matrix effects */}
+      <style jsx global>{`
+        :root {
+          --matrix-green: #00ff00;
+        }
+        
+        .cursor {
+          animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+          50% { opacity: 0; }
+        }
+        
+        /* Add a subtle text effect */
+        .text-[var(--matrix-green)] {
+          text-shadow: 0 0 5px var(--matrix-green);
+        }
+      `}</style>
     </div>
   );
 }
