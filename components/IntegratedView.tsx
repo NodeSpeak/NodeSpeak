@@ -1134,6 +1134,22 @@ export const IntegratedView = ({
                                     }`}
                                 onClick={() => handleCommunityClick(community)}
                             >
+                                {/* Cover image - displayed at the top */}
+                                {community.coverImage && (
+                                    <div className="w-full h-32 rounded-lg overflow-hidden mb-4 -mt-4 -mx-4 px-4 pt-4">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                            alt={`${community.name} cover`}
+                                            className="w-full h-full object-cover rounded-t-lg"
+                                            onError={(e) => {
+                                                // If image fails to load, hide the container
+                                                const target = e.target as HTMLImageElement;
+                                                target.parentElement!.style.display = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-start space-x-3">
                                         {/* Community Photo */}
@@ -1144,7 +1160,7 @@ export const IntegratedView = ({
                                                     alt={community.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
-                                                        // Fallback to a default image if the photo fails to load
+                                                        // Fallback to a default image
                                                         (e.target as HTMLImageElement).src = '/community-placeholder.png';
                                                     }}
                                                 />
@@ -1369,28 +1385,51 @@ export const IntegratedView = ({
                                         target.parentElement!.style.display = 'none';
                                     }}
                                 />
-                                {/* Community info overlay */}
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 flex items-center">
-                                    {community.photo && (
-                                        <div className="w-10 h-10 rounded-full mr-3 overflow-hidden border border-[var(--matrix-green)]">
-                                            <img 
-                                                src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
-                                                alt={community.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    )}
-                                    <div>
-                                        <h3 className="text-[var(--matrix-green)] font-bold">{community.name}</h3>
-                                        <p className="text-white text-xs">{community.memberCount || 0} members · {community.postCount} posts</p>
+                                {/* Community photo overlaid on cover image */}
+                                {community.photo && (
+                                    <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden bg-black shadow-lg">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to a default image
+                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                            }}
+                                        />
                                     </div>
+                                )}
+                                {/* Community name overlaid on cover image */}
+                                <div className="absolute bottom-4 left-28 bg-black/70 px-3 py-1 rounded-md border border-[var(--matrix-green)]">
+                                    <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community.name}</h2>
                                 </div>
                             </div>
-                        ) : null;
+                        ) : (
+                            // Fallback when no cover image
+                            <div className="w-full p-4 rounded-lg border border-[var(--matrix-green)] bg-black/80 mb-4 flex items-center">
+                                {community?.photo ? (
+                                    <div className="w-16 h-16 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden mr-4">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to a default image
+                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] border-2 border-[var(--matrix-green)] mr-4">
+                                        {community?.name.charAt(0).toUpperCase() || "C"}
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community?.name}</h2>
+                            </div>
+                        );
                     })()}
                 </div>
             )}
-
             {filteredPosts.length === 0 ? (
                 <div className="p-6 text-center border border-[var(--matrix-green)]/30 rounded-lg bg-black">
                     <p className="text-[var(--matrix-green)] mb-2">No posts found with the current filters.</p>
@@ -1401,14 +1440,6 @@ export const IntegratedView = ({
                                 ? "This community doesn't have any posts yet."
                                 : "None of your communities have posts yet."}
                     </p>
-                    {selectedCommunityId && (
-                        <Button
-                            className="mt-4 bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
-                            onClick={() => setSelectedTopic(null)}
-                        >
-                            {selectedTopic ? "Clear Topic Filter" : "Browse All Communities"}
-                        </Button>
-                    )}
                 </div>
             ) : (
                 filteredPosts.map((post) => (
