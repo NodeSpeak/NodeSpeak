@@ -3,15 +3,22 @@ pragma solidity ^0.8.17;
 
 import "./ForumCommunityManager.sol";
 import "./ForumPostManager.sol";
+import "./ForumProfileManager.sol";
 
 contract DecentralizedForum {
     ForumCommunityManager public communityManager;
     ForumPostManager public postManager;
+    ForumProfileManager public profileManager;
 
     // Constructor modificado para recibir las direcciones de los contratos ya desplegados
-    constructor(address _communityManagerAddress, address _postManagerAddress) {
+    constructor(
+        address _communityManagerAddress, 
+        address _postManagerAddress,
+        address _profileManagerAddress
+    ) {
         communityManager = ForumCommunityManager(_communityManagerAddress);
         postManager = ForumPostManager(_postManagerAddress);
+        profileManager = ForumProfileManager(_profileManagerAddress);
     }
 
     // Funciones proxy para comunidades
@@ -84,6 +91,17 @@ contract DecentralizedForum {
 
     function likePost(uint32 postId) external {
         postManager.likePostFor(msg.sender, postId);
+        
+        // Al dar like a un post, actualizar contadores en el perfil
+        address postAuthor = postManager.getPost(postId).author;
+        
+        if (profileManager.hasProfile(msg.sender)) {
+            profileManager.incrementLikesGiven(msg.sender);
+        }
+        
+        if (profileManager.hasProfile(postAuthor)) {
+            profileManager.incrementLikesReceived(postAuthor);
+        }
     }
 
     function addComment(uint32 postId, string memory content) external {
@@ -112,5 +130,49 @@ contract DecentralizedForum {
 
     function getCommunityPosts(uint32 communityId) external view returns (ForumPostManager.Post[] memory) {
         return postManager.getCommunityPosts(communityId);
+    }
+    
+    // Nuevas funciones proxy para perfiles
+    
+    function createProfile(
+        string memory nickname,
+        string memory profileCID,
+        string memory coverCID,
+        string memory bioCID
+    ) external {
+        profileManager.createProfileFor(msg.sender, nickname, profileCID, coverCID, bioCID);
+    }
+    
+    function updateProfile(
+        string memory nickname,
+        string memory profileCID,
+        string memory coverCID,
+        string memory bioCID
+    ) external {
+        profileManager.updateProfileFor(msg.sender, nickname, profileCID, coverCID, bioCID);
+    }
+    
+    function followUser(address userToFollow) external {
+        profileManager.followUserFor(msg.sender, userToFollow);
+    }
+    
+    function unfollowUser(address userToUnfollow) external {
+        profileManager.unfollowUserFor(msg.sender, userToUnfollow);
+    }
+    
+    function getProfile(address user) external view returns (ForumProfileManager.Profile memory) {
+        return profileManager.getProfile(user);
+    }
+    
+    function hasProfile(address user) external view returns (bool) {
+        return profileManager.hasProfile(user);
+    }
+    
+    function getFollowers(address user) external view returns (address[] memory) {
+        return profileManager.getFollowers(user);
+    }
+    
+    function getFollowing(address user) external view returns (address[] memory) {
+        return profileManager.getFollowing(user);
     }
 }

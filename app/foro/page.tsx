@@ -433,15 +433,16 @@ export default function Home() {
     };
 
     // Upload community data to Pinata
-    const uploadCommunityData = async (name: string, description: string) => {
+    const uploadToIPFS = async (file: File | string) => {
         try {
             const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-            const communityData = { name, description };
-            const blob = new Blob([JSON.stringify(communityData)], { type: 'application/json' });
-            const file = new File([blob], "community.json", { type: 'application/json' });
-
             const formData = new FormData();
-            formData.append("file", file);
+            if (typeof file === 'string') {
+                const blob = new Blob([file], { type: 'application/json' });
+                formData.append("file", blob);
+            } else {
+                formData.append("file", file);
+            }
 
             const pinataMetadata = JSON.stringify({ name: "community-data" });
             formData.append("pinataMetadata", pinataMetadata);
@@ -455,7 +456,7 @@ export default function Home() {
                 }
             });
 
-            return res.data.IpfsHash as string;
+            return res.data;
         } catch (err) {
             console.error("Error uploading community data to Pinata:", err);
             throw err;
@@ -463,7 +464,13 @@ export default function Home() {
     };
 
     // Create a new community
-    const handleCreateCommunity = async (name: string, description: string, communityTopics: string[]) => {
+    const handleCreateCommunity = async (
+        name: string, 
+        description: string, 
+        communityTopics: string[],
+        photo?: File,
+        coverImage?: File
+    ) => {
         if (!provider) {
             alert("No Ethereum provider connected.");
             return;
@@ -472,69 +479,64 @@ export default function Home() {
         try {
             setCreatingCommunity(true);
 
+            // Upload photo and cover image to IPFS if available
+            let photoCID = null;
+            let coverImageCID = null;
+
+            if (photo) {
+                try {
+                    const photoResult = await uploadToIPFS(photo);
+                    photoCID = photoResult.IpfsHash;
+                } catch (error) {
+                    console.error("Error uploading community photo:", error);
+                }
+            }
+
+            if (coverImage) {
+                try {
+                    const coverResult = await uploadToIPFS(coverImage);
+                    coverImageCID = coverResult.IpfsHash;
+                } catch (error) {
+                    console.error("Error uploading community cover image:", error);
+                }
+            }
+
+            // Upload community data to IPFS
+            const communityData = {
+                name,
+                description,
+                photo: photoCID,
+                coverImage: coverImageCID
+            };
+
             // Upload data to IPFS
-            const contentCID = await uploadCommunityData(name, description);
+            const contentCID = await uploadToIPFS(JSON.stringify(communityData));
 
             // Send transaction to contract
             const signer = await provider.getSigner();
             const contract = new Contract(forumAddress, forumABI, signer);
-
             // First, check if we can estimate the gas for this transaction
             try {
                 // Estimate gas before attempting the transaction
-                await contract.createCommunity.estimateGas(contentCID, communityTopics);
+                await contract.createCommunity.estimateGas(contentCID.IpfsHash, communityTopics);
 
                 // If estimation succeeds, proceed with the transaction
-                const tx = await contract.createCommunity(contentCID, communityTopics);
+                const tx = await contract.createCommunity(contentCID.IpfsHash, communityTopics);
                 await tx.wait();
 
                 // Update communities
-                fetchCommunities();
+                await fetchCommunities();
                 setIsCreatingCommunity(false);
-            } catch (estimateError: any) {
-                console.error("Gas estimation error:", estimateError);
-
-                // Check for cooldown error specifically
-                if (estimateError.message && estimateError.message.includes("Community creation cooldown active")) {
-                    // Información sobre el tiempo de espera (1 día según el contrato)
-                    const waitTimeMessage = "You need to wait before creating another community. The cooldown period is 24 hours from your last community creation.";
-
-                    alert(waitTimeMessage);
-
-                    // Añade mensaje en consola para desarrolladores
-                    console.log("For development: Consider modifying the contract to a 5-minute cooldown and redeploying.");
-                } else {
-                    // Generic error for other cases
-                    alert(`Transaction would fail: ${estimateError.message}`);
-                }
+                
+                // Show success message
+                alert('Community created successfully!');
+            } catch (error: any) {
+                console.error("Transaction failed:", error);
+                alert(`Failed to create community. ${error.message || ''}`);
             }
         } catch (error: any) {
             console.error("Error creating community:", error);
-
-            // Attempt to extract the revert reason if available
-            let errorMessage = "Error creating community. Check console.";
-            if (error.data) {
-                try {
-                    // Some providers format error data in a way we can extract
-                    // For ethers v6
-                    const decodedError = ethers.toUtf8String?.(error.data) ||
-                        // Fallback for ethers v5 or other versions
-                        new TextDecoder().decode(error.data);
-
-                    if (decodedError.includes("cooldown")) {
-                        errorMessage = "You need to wait 24 hours between community creations. Please try again later.";
-                    }
-                } catch (decodeError) {
-                    // If we can't decode, use the original message
-                    if (error.message && error.message.includes("cooldown")) {
-                        errorMessage = "You need to wait 24 hours between community creations. Please try again later.";
-                    }
-                }
-            } else if (error.message && error.message.includes("cooldown")) {
-                errorMessage = "You need to wait 24 hours between community creations. Please try again later.";
-            }
-
-            alert(errorMessage);
+            alert(`Error creating community: ${error.message || 'Unknown error'}`);
         } finally {
             setCreatingCommunity(false);
         }

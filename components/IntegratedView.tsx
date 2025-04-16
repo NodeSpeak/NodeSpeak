@@ -27,6 +27,8 @@ interface Community {
     isCreator?: boolean;
     memberCount?: number;
     topics: string[];
+    photo?: string;
+    coverImage?: string;
 }
 
 interface Post {
@@ -40,6 +42,7 @@ interface Post {
     likeCount: number;
     commentCount: number;
     isActive: boolean;
+    author?: string;
 }
 
 interface Comment {
@@ -49,6 +52,16 @@ interface Comment {
     content: string;
     timestamp: number;
     isActive: boolean;
+    likeCount?: number;
+    replies?: CommentReply[];
+}
+
+interface CommentReply {
+    id: string;
+    commentId: string;
+    author: string;
+    content: string;
+    timestamp: number;
 }
 
 interface Topic {
@@ -65,7 +78,7 @@ interface IntegratedViewProps {
     provider: any;
     isCreatingCommunity: boolean;
     setIsCreatingCommunity: (value: boolean) => void;
-    handleCreateCommunity: (name: string, description: string, topics: string[]) => Promise<void>;
+    handleCreateCommunity: (name: string, description: string, topics: string[], photo?: File, cover?: File) => Promise<void>;
     handleJoinCommunity: (communityId: string) => Promise<void>;
     handleLeaveCommunity: (communityId: string) => Promise<void>;
     isLoading: boolean;
@@ -916,6 +929,123 @@ export const IntegratedView = ({
         return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
     };
 
+    // Function to like a comment
+    const likeComment = async (commentId: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to like comments");
+            return;
+        }
+
+        if (likingComment[commentId]) return;
+
+        try {
+            setLikingComment(prev => ({
+                ...prev,
+                [commentId]: true
+            }));
+
+            const signer = await walletProvider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Assuming the contract has a likeComment function that takes the comment ID
+            const tx = await contract.likeComment(commentId);
+            await tx.wait();
+
+            // Update the comments with the new like count
+            await fetchCommentsForPost(comments[commentId]?.[0]?.postId);
+
+            console.log(`Comment ${commentId} liked successfully. Comments refreshed.`);
+        } catch (error) {
+            console.error("Error liking comment:", error);
+            if (error instanceof Error && error.toString().includes("already liked")) {
+                alert("You have already liked this comment.");
+            } else {
+                alert("Failed to like comment. Make sure your wallet is connected and you have enough gas.");
+            }
+        } finally {
+            setLikingComment(prev => ({
+                ...prev,
+                [commentId]: false
+            }));
+        }
+    };
+
+    // Function to reply to a comment
+    const addReplyToComment = async (commentId: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to reply to comments");
+            return;
+        }
+
+        if (!newReplyText[commentId] || newReplyText[commentId].trim() === "") {
+            alert("Reply cannot be empty");
+            return;
+        }
+
+        try {
+            setSubmittingReply(prev => ({
+                ...prev,
+                [commentId]: true
+            }));
+
+            const signer = await walletProvider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            console.log(`Adding reply to comment ${commentId}: "${newReplyText[commentId]}"`);
+
+            // Assuming the contract has a replyToComment function that takes the comment ID and reply content
+            const tx = await contract.replyToComment(commentId, newReplyText[commentId]);
+            console.log("Reply transaction submitted:", tx.hash);
+
+            const receipt = await tx.wait();
+            console.log("Reply transaction confirmed:", receipt);
+
+            // Clear the reply input
+            setNewReplyText(prev => ({
+                ...prev,
+                [commentId]: ""
+            }));
+
+            // Find the post ID for this comment
+            const postId = comments[commentId]?.[0]?.postId;
+            if (postId) {
+                // Refresh comments for this post to include the new reply
+                await fetchCommentsForPost(postId);
+            }
+
+            console.log(`Reply added to comment ${commentId} successfully.`);
+
+            // Hide the reply form
+            setReplyingToComment(prev => ({
+                ...prev,
+                [commentId]: false
+            }));
+        } catch (error) {
+            console.error("Error adding reply:", error);
+            alert("Failed to add reply. Make sure your wallet is connected and you have enough gas.");
+        } finally {
+            setSubmittingReply(prev => ({
+                ...prev,
+                [commentId]: false
+            }));
+        }
+    };
+
+    // Toggle the reply form for a comment
+    const toggleReplyForm = (commentId: string) => {
+        setReplyingToComment(prev => ({
+            ...prev,
+            [commentId]: !prev[commentId]
+        }));
+    };
+
+    const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
+    const [likingComment, setLikingComment] = useState<Record<string, boolean>>({});
+    const [replyingToComment, setReplyingToComment] = useState<Record<string, boolean>>({});
+    const [newReplyText, setNewReplyText] = useState<Record<string, string>>({});
+    const [submittingReply, setSubmittingReply] = useState<Record<string, boolean>>({});
+    const [commentReplies, setCommentReplies] = useState<Record<string, CommentReply[]>>({});
+
     // Render Create Post Form
     const renderCreatePostForm = () => (
         <div className="border-2 border-[var(--matrix-green)] rounded-lg p-6 bg-black">
@@ -993,7 +1123,7 @@ export const IntegratedView = ({
                 <div className="flex justify-between items-center pt-2">
                     <Button
                         onClick={() => setIsCreatingPost(false)}
-                        className="bg-transparent border-2 border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[var(--matrix-green)] hover:text-black"
+                        className="bg-transparent border-2 border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10"
                     >
                         Cancel
                     </Button>
@@ -1051,25 +1181,49 @@ export const IntegratedView = ({
                     <p className="text-xs text-gray-400 mt-1">At least one topic is required</p>
                 </div>
 
+                <div className="flex flex-col">
+                    <label className="text-[var(--matrix-green)] mb-1">Photo</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        id="community-photo"
+                    />
+                </div>
+
+                <div className="flex flex-col">
+                    <label className="text-[var(--matrix-green)] mb-1">Cover Image</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        id="community-cover"
+                    />
+                </div>
+
                 <Button
                     type="button"
                     onClick={() => {
                         const nameElement = document.getElementById('community-name') as HTMLInputElement;
                         const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
                         const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
+                        const photoElement = document.getElementById('community-photo') as HTMLInputElement;
+                        const coverElement = document.getElementById('community-cover') as HTMLInputElement;
 
                         const name = nameElement?.value || "";
                         const description = descriptionElement?.value || "";
-                        const topicString = topicsElement?.value || "General";
+                        const topicString = topicsElement?.value || "";
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
+                        const photo = photoElement?.files?.[0];
+                        const cover = coverElement?.files?.[0];
 
                         if (name && description && topicsArray.length > 0) {
-                            handleCreateCommunity(name, description, topicsArray);
+                            handleCreateCommunity(name, description, topicsArray, photo, cover);
                         } else {
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-[var(--matrix-green)] text-black py-2 rounded font-bold mt-4"
+                    className="w-full bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
@@ -1108,8 +1262,45 @@ export const IntegratedView = ({
                                     }`}
                                 onClick={() => handleCommunityClick(community)}
                             >
+                                {/* Cover image - displayed at the top */}
+                                {community.coverImage && (
+                                    <div className="w-full h-32 rounded-lg overflow-hidden mb-4 -mt-4 -mx-4 px-4 pt-4">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                            alt={`${community.name} cover`}
+                                            className="w-full h-full object-cover rounded-t-lg"
+                                            onError={(e) => {
+                                                // If image fails to load, hide the container
+                                                const target = e.target as HTMLImageElement;
+                                                target.parentElement!.style.display = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                
                                 <div className="flex justify-between items-start mb-3">
-                                    <h3 className="text-xl font-bold text-white">{community.name}</h3>
+                                    <div className="flex items-start space-x-3">
+                                        {/* Community Photo */}
+                                        <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full border border-[var(--matrix-green)]">
+                                            {community.photo ? (
+                                                <img 
+                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                    alt={community.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        // Fallback to a default image
+                                                        (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                                    }}
+                                                />
+                                            ) : (
+                                                // Placeholder for communities without a photo
+                                                <div className="w-full h-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)]">
+                                                    {community.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <h3 className="text-xl font-bold text-white">{community.name}</h3>
+                                    </div>
                                     <div className="flex flex-col items-end">
                                         <div className="flex space-x-2">
                                             <span className="text-gray-400 text-sm">
@@ -1174,7 +1365,7 @@ export const IntegratedView = ({
                                                     value={newTopic}
                                                     onChange={(e) => setNewTopic(e.target.value)}
                                                     placeholder="Enter new topic name"
-                                                    className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-1 text-white text-sm focus:outline-none"
+                                                    className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--matrix-green)]"
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                                 <button
@@ -1306,6 +1497,67 @@ export const IntegratedView = ({
                 </div>
             </div>
 
+            {selectedCommunityId && (
+                <div className="mb-4">
+                    {(() => {
+                        const community = localCommunities.find(c => c.id === selectedCommunityId);
+                        return community?.coverImage ? (
+                            <div className="relative w-full h-40 rounded-lg overflow-hidden border border-[var(--matrix-green)]">
+                                <img 
+                                    src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                    alt={`${getCommunityName(selectedCommunityId)} cover`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        // If image fails to load, hide the container
+                                        const target = e.target as HTMLImageElement;
+                                        target.parentElement!.style.display = 'none';
+                                    }}
+                                />
+                                {/* Community photo overlaid on cover image */}
+                                {community.photo && (
+                                    <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden bg-black shadow-lg">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to a default image
+                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                {/* Community name overlaid on cover image */}
+                                <div className="absolute bottom-4 left-28 bg-black/70 px-3 py-1 rounded-md border border-[var(--matrix-green)]">
+                                    <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community.name}</h2>
+                                </div>
+                            </div>
+                        ) : (
+                            // Fallback when no cover image
+                            <div className="w-full p-4 rounded-lg border border-[var(--matrix-green)] bg-black/80 mb-4 flex items-center">
+                                {community?.photo ? (
+                                    <div className="w-16 h-16 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden mr-4">
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to a default image
+                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] border-2 border-[var(--matrix-green)] mr-4">
+                                        {community?.name.charAt(0).toUpperCase() || "C"}
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community?.name}</h2>
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
             {filteredPosts.length === 0 ? (
                 <div className="p-6 text-center border border-[var(--matrix-green)]/30 rounded-lg bg-black">
                     <p className="text-[var(--matrix-green)] mb-2">No posts found with the current filters.</p>
@@ -1316,14 +1568,6 @@ export const IntegratedView = ({
                                 ? "This community doesn't have any posts yet."
                                 : "None of your communities have posts yet."}
                     </p>
-                    {selectedCommunityId && (
-                        <Button
-                            className="mt-4 bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
-                            onClick={() => setSelectedTopic(null)}
-                        >
-                            {selectedTopic ? "Clear Topic Filter" : "Browse All Communities"}
-                        </Button>
-                    )}
                 </div>
             ) : (
                 filteredPosts.map((post) => (
@@ -1333,14 +1577,34 @@ export const IntegratedView = ({
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div>
-                                <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
-                                    <span>{formatDate(post.timestamp)}</span>
-                                    <span>•</span>
-                                    <span className="bg-[var(--matrix-green)]/20 px-2 py-0.5 rounded-full">
-                                        Topic: {post.topic}
-                                    </span>
-                                    <span>•</span>
-                                    <span>Community: {getCommunityName(post.communityId)}</span>
+                                {/* Add user profile and name display */}
+                                <div className="flex items-center mb-2">
+                                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-3">
+                                        <img 
+                                            src={`https://effigy.im/a/${post.author || 'unknown'}.svg`} 
+                                            alt="User avatar"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback for avatar
+                                                const target = e.target as HTMLImageElement;
+                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <div className="font-medium text-white">
+                                            {post.author ? formatAddress(post.author) : 'Anonymous User'}
+                                        </div>
+                                        <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
+                                            <span>{formatDate(post.timestamp)}</span>
+                                            <span>•</span>
+                                            <span className="bg-[var(--matrix-green)]/20 px-2 py-0.5 rounded-full">
+                                                Topic: {post.topic}
+                                            </span>
+                                            <span>•</span>
+                                            <span>Community: {getCommunityName(post.communityId)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1423,12 +1687,99 @@ export const IntegratedView = ({
                                     ) : comments[post.id]?.length > 0 ? (
                                         comments[post.id].map((comment) => (
                                             <div key={comment.id} className="border border-gray-700 rounded p-3 bg-black/60">
-                                                <p className="text-white text-sm">{comment.content}</p>
-                                                <div className="flex justify-between mt-2 text-xs">
-                                                    <span className="text-[var(--matrix-green)]">{formatAddress(comment.author)}</span>
-                                                    <span className="text-gray-500">
-                                                        {formatDate(comment.timestamp)}
-                                                    </span>
+                                                <div className="flex items-start mb-2">
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-2 flex-shrink-0">
+                                                        <img 
+                                                            src={`https://effigy.im/a/${comment.author || 'unknown'}.svg`} 
+                                                            alt="User avatar"
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                // Fallback for avatar
+                                                                const target = e.target as HTMLImageElement;
+                                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-[var(--matrix-green)] text-xs font-medium">{comment.author ? formatAddress(comment.author) : 'Anonymous User'}</span>
+                                                            <span className="text-gray-500 text-xs">
+                                                                {formatDate(comment.timestamp)}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-white text-sm mt-1">{comment.content}</p>
+                                                        
+                                                        {/* Comment actions */}
+                                                        <div className="flex mt-2 space-x-4 text-xs">
+                                                            <button
+                                                                onClick={() => likeComment(comment.id)}
+                                                                className="flex items-center space-x-1 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
+                                                                disabled={likingComment[comment.id]}
+                                                            >
+                                                                <span className={`${likingComment[comment.id] ? 'animate-pulse' : ''}`}>
+                                                                    {likingComment[comment.id] ? '💗' : '❤'}
+                                                                </span>
+                                                                <span>{comment.likeCount || 0} likes</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => toggleReplyForm(comment.id)}
+                                                                className="flex items-center space-x-1 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
+                                                            >
+                                                                <MessageSquare size={12} />
+                                                                <span>Reply</span>
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        {/* Reply form */}
+                                                        {replyingToComment[comment.id] && (
+                                                            <div className="mt-3">
+                                                                <div className="flex">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={newReplyText[comment.id] || ""}
+                                                                        onChange={(e) => setNewReplyText({
+                                                                            ...newReplyText,
+                                                                            [comment.id]: e.target.value
+                                                                        })}
+                                                                        placeholder="Write a reply..."
+                                                                        className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-1 text-white text-xs focus:outline-none focus:ring-1 focus:ring-[var(--matrix-green)]"
+                                                                        onKeyPress={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                addReplyToComment(comment.id);
+                                                                            }
+                                                                        }}
+                                                                        disabled={submittingReply[comment.id]}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => addReplyToComment(comment.id)}
+                                                                        className="bg-[var(--matrix-green)] text-black px-2 py-1 rounded-r text-xs hover:bg-green-400 transition-colors disabled:opacity-50"
+                                                                        disabled={submittingReply[comment.id]}
+                                                                    >
+                                                                        {submittingReply[comment.id] ? "Sending..." : "Reply"}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Comment replies */}
+                                                        {comment.replies && comment.replies.length > 0 && (
+                                                            <div className="mt-3 pl-3 border-l-2 border-[var(--matrix-green)]/30 space-y-2">
+                                                                {comment.replies.map((reply) => (
+                                                                    <div key={reply.id} className="bg-black/40 p-2 rounded">
+                                                                        <div className="flex items-center">
+                                                                            <span className="text-[var(--matrix-green)] text-xs font-medium mr-2">
+                                                                                {formatAddress(reply.author)}
+                                                                            </span>
+                                                                            <span className="text-gray-500 text-xs">
+                                                                                {formatDate(reply.timestamp)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-white text-xs mt-1">{reply.content}</p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
