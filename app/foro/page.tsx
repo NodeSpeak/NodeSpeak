@@ -590,46 +590,6 @@ const handleCreateCommunity = async (
 
                 {isConnected && (
                     <main className="space-y-6">
-                        {/* Navigation between communities and creation */}
-                        {/* <div className="flex justify-between items-center">
-                            <div className="flex space-x-4">
-                                <Button
-                                    onClick={() => setShowCommunityList(true)}
-                                    className={`text-xs py-1 px-2 h-auto ${showCommunityList
-                                        ? 'bg-[var(--matrix-green)] text-black'
-                                        : 'bg-transparent border border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[rgba(0,255,0,0.1)]'}`}
-                                >
-                                    Communities
-                                </Button>
-                                <Button
-                                    onClick={() => setShowCommunityList(false)}
-                                    className={`text-xs py-1 px-2 h-auto ${!showCommunityList
-                                        ? 'bg-[var(--matrix-green)] text-black'
-                                        : 'bg-transparent border border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[rgba(0,255,0,0.1)]'}`}
-                                >
-                                    Posts
-                                </Button>
-                            </div>
-
-                            {showCommunityList ? (
-                                <Button
-                                    onClick={() => setIsCreatingCommunity(!isCreatingCommunity)}
-                                    className="text-xs py-1 px-2 h-auto bg-transparent border border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[rgba(0,255,0,0.1)]"
-                                    disabled={isLoading || creatingCommunity}
-                                >
-                                    {isCreatingCommunity ? "Cancel" : "Create Community"}
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={() => setIsCreating(!isCreating)}
-                                    className="text-xs py-1 px-2 h-auto bg-transparent border border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[rgba(0,255,0,0.1)]"
-                                    disabled={!selectedCommunityId || isLoading}
-                                >
-                                    {isCreating ? "Cancel" : "Create Post"}
-                                </Button>
-                            )}
-                        </div> */}
-
                         {/* Loading indicator */}
                         {isLoading && (
                             <div className="text-center p-4">
