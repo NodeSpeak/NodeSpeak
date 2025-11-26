@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
-import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
 import { IntegratedView } from '@/components/IntegratedView';
 import siteConfig from '@/config';
 
@@ -464,83 +464,94 @@ export default function Home() {
     };
 
     // Create a new community
-    const handleCreateCommunity = async (
-        name: string, 
-        description: string, 
-        communityTopics: string[],
-        photo?: File,
-        coverImage?: File
-    ) => {
-        if (!provider) {
-            alert("No Ethereum provider connected.");
-            return;
-        }
+const handleCreateCommunity = async (
+    name: string, 
+    description: string, 
+    communityTopics: string[],
+    photo?: File,
+    coverImage?: File
+) => {
+    if (!provider) {
+        alert("No Ethereum provider connected.");
+        return;
+    }
 
-        try {
-            setCreatingCommunity(true);
+    try {
+        setCreatingCommunity(true);
 
-            // Upload photo and cover image to IPFS if available
-            let photoCID = null;
-            let coverImageCID = null;
+        // Upload photo and cover image to IPFS if available
+        let photoCID = "";  // ✅ Cambiar null a "" (string vacío)
+        let coverImageCID = "";  // ✅ Cambiar null a ""
 
-            if (photo) {
-                try {
-                    const photoResult = await uploadToIPFS(photo);
-                    photoCID = photoResult.IpfsHash;
-                } catch (error) {
-                    console.error("Error uploading community photo:", error);
-                }
-            }
-
-            if (coverImage) {
-                try {
-                    const coverResult = await uploadToIPFS(coverImage);
-                    coverImageCID = coverResult.IpfsHash;
-                } catch (error) {
-                    console.error("Error uploading community cover image:", error);
-                }
-            }
-
-            // Upload community data to IPFS
-            const communityData = {
-                name,
-                description,
-                photo: photoCID,
-                coverImage: coverImageCID
-            };
-
-            // Upload data to IPFS
-            const contentCID = await uploadToIPFS(JSON.stringify(communityData));
-
-            // Send transaction to contract
-            const signer = await provider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
-            // First, check if we can estimate the gas for this transaction
+        if (photo) {
             try {
-                // Estimate gas before attempting the transaction
-                await contract.createCommunity.estimateGas(contentCID.IpfsHash, communityTopics);
-
-                // If estimation succeeds, proceed with the transaction
-                const tx = await contract.createCommunity(contentCID.IpfsHash, communityTopics);
-                await tx.wait();
-
-                // Update communities
-                await fetchCommunities();
-                setIsCreatingCommunity(false);
-                
-                // Show success message
-                alert('Community created successfully!');
-            } catch (error: any) {
-                console.error("Transaction failed:", error);
-                alert(`Failed to create community. ${error.message || ''}`);
+                const photoResult = await uploadToIPFS(photo);
+                photoCID = photoResult.IpfsHash;
+            } catch (error) {
+                console.error("Error uploading community photo:", error);
             }
-        } catch (error: any) {
-            console.error("Error creating community:", error);
-            alert(`Error creating community: ${error.message || 'Unknown error'}`);
-        } finally {
-            setCreatingCommunity(false);
         }
-    };
+
+        if (coverImage) {
+            try {
+                const coverResult = await uploadToIPFS(coverImage);
+                coverImageCID = coverResult.IpfsHash;
+            } catch (error) {
+                console.error("Error uploading community cover image:", error);
+            }
+        }
+
+        // Upload community data to IPFS
+        const communityData = {
+            name,
+            description,
+            photo: photoCID,
+            coverImage: coverImageCID
+        };
+
+        // Upload data to IPFS
+        const contentCID = await uploadToIPFS(JSON.stringify(communityData));
+
+        // Send transaction to contract
+        const signer = await provider.getSigner();
+        const contract = new Contract(forumAddress, forumABI, signer);
+        
+        try {
+            // ✅ CORRECCIÓN: Pasar los 4 parámetros
+            await contract.createCommunity.estimateGas(
+                contentCID.IpfsHash,
+                communityTopics,
+                photoCID,        // ✅ Agregar profileCID
+                coverImageCID    // ✅ Agregar coverCID
+            );
+
+            // ✅ CORRECCIÓN: Pasar los 4 parámetros
+            const tx = await contract.createCommunity(
+                contentCID.IpfsHash,
+                communityTopics,
+                photoCID,        // ✅ Agregar profileCID
+                coverImageCID    // ✅ Agregar coverCID
+            );
+            
+            await tx.wait();
+
+            // Update communities
+            await fetchCommunities();
+            setIsCreatingCommunity(false);
+            
+            // Show success message
+            alert('Community created successfully!');
+        } catch (error: any) {
+            console.error("Transaction failed:", error);
+            alert(`Failed to create community. ${error.message || ''}`);
+        }
+    } catch (error: any) {
+        console.error("Error creating community:", error);
+        alert(`Error creating community: ${error.message || 'Unknown error'}`);
+    } finally {
+        setCreatingCommunity(false);
+    }
+};
 
     useEffect(() => {
         const loadUserData = async () => {
