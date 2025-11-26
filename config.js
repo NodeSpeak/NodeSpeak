@@ -1,6 +1,6 @@
 
 const siteConfig = {
-    name: "Node Speak v2.5",
+    name: "Node Speak v3.0",
   };
   
   export default siteConfig;
