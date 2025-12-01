@@ -58,6 +58,8 @@ export default function Home() {
         isCreator?: boolean;
         memberCount?: number;
         topics: string[];
+        photo?: string;
+        coverImage?: string;
     }
 
     const [posts, setPosts] = useState<Post[]>([]);
@@ -149,6 +151,8 @@ export default function Home() {
                 const id = community.id.toString();
                 let name = `Community #${id}`;
                 let description = "No description available";
+                let photo = "";
+                let coverImage = "";
 
                 // Use cache for community data
                 const cacheKey = `community_${id}`;
@@ -156,6 +160,8 @@ export default function Home() {
                     const cachedData = communityDataCache.get(cacheKey);
                     name = cachedData.name;
                     description = cachedData.description;
+                    photo = cachedData.photo || "";
+                    coverImage = cachedData.coverImage || "";
                 } else {
                     try {
                         // Get community data from IPFS
@@ -163,9 +169,13 @@ export default function Home() {
                         if (communityData) {
                             name = communityData.name || name;
                             description = communityData.description || description;
+                            photo = communityData.photo || "";
+                            coverImage = communityData.coverImage || "";
 
-                            // Cache the community data
-                            communityDataCache.set(cacheKey, { name, description });
+                            console.log(`Community ${id} - Photo CID: ${photo}, Cover CID: ${coverImage}`);
+
+                            // Cache the community data including images
+                            communityDataCache.set(cacheKey, { name, description, photo, coverImage });
                         }
                     } catch (err) {
                         console.error(`Error getting data for community ${id}:`, err);
@@ -224,11 +234,24 @@ export default function Home() {
                     isMember,
                     isCreator,
                     memberCount,
-                    topics: topicsList
+                    topics: topicsList,
+                    photo,
+                    coverImage
                 };
             });
 
             const parsedCommunities = await Promise.all(communityPromises);
+            
+            // Log communities with images for debugging
+            console.log("Loaded communities:", parsedCommunities.map(c => ({
+                id: c.id,
+                name: c.name,
+                hasPhoto: !!c.photo,
+                hasCover: !!c.coverImage,
+                photo: c.photo,
+                coverImage: c.coverImage
+            })));
+            
             setCommunities(parsedCommunities);
 
             // If no community is selected and communities are available, select the first one
@@ -509,6 +532,8 @@ const handleCreateCommunity = async (
             coverImage: coverImageCID
         };
 
+        console.log("Community data to upload:", communityData);
+
         // Upload data to IPFS
         const contentCID = await uploadToIPFS(JSON.stringify(communityData));
 
@@ -517,20 +542,19 @@ const handleCreateCommunity = async (
         const contract = new Contract(forumAddress, forumABI, signer);
         
         try {
-            // ✅ CORRECCIÓN: Pasar los 4 parámetros
+            // El contrato createCommunity espera: contentCID, initialTopics, profileCID, coverCID
             await contract.createCommunity.estimateGas(
                 contentCID.IpfsHash,
                 communityTopics,
-                photoCID,        // ✅ Agregar profileCID
-                coverImageCID    // ✅ Agregar coverCID
+                photoCID,
+                coverImageCID
             );
 
-            // ✅ CORRECCIÓN: Pasar los 4 parámetros
             const tx = await contract.createCommunity(
                 contentCID.IpfsHash,
                 communityTopics,
-                photoCID,        // ✅ Agregar profileCID
-                coverImageCID    // ✅ Agregar coverCID
+                photoCID,
+                coverImageCID
             );
             
             await tx.wait();

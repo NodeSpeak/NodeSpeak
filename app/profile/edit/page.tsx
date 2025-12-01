@@ -40,19 +40,26 @@ export default function EditProfilePage() {
       return;
     }
 
-    // Load profile data from blockchain
+    // Load profile data from localStorage
     const loadProfileData = async () => {
-      if (!address) return;
+      if (!address) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
+        console.log("Loading profile for address:", address);
+        
         // Check if profile exists
         const hasProfile = await profileService.checkProfileExists(address);
         setProfileExists(hasProfile);
+        console.log("Profile exists:", hasProfile);
 
         if (hasProfile) {
           // Get profile data
           const profileData = await profileService.getProfile(address);
           if (profileData) {
+            console.log("Profile data loaded:", profileData);
             setNickname(ensName || profileData.nickname || "");
             setBio(profileData.bio || "Web3 enthusiast and NodeSpeak community member");
             
@@ -76,6 +83,7 @@ export default function EditProfilePage() {
           }
         } else {
           // New user, set default values
+          console.log("New user, setting defaults");
           setNickname(ensName || "");
           setBio("Web3 enthusiast and NodeSpeak community member");
         }
@@ -87,12 +95,14 @@ export default function EditProfilePage() {
           variant: "destructive"
         });
       } finally {
+        console.log("Setting isLoading to false");
         setIsLoading(false);
       }
     };
 
     loadProfileData();
-  }, [address, ensName, isConnected, router, profileService]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, ensName, isConnected, router]);
 
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -147,7 +157,20 @@ export default function EditProfilePage() {
   };
 
   const handleSave = async () => {
+    console.log("=== STARTING PROFILE SAVE ===");
+    console.log("Nickname:", nickname);
+    console.log("Has profile picture:", !!profilePicture);
+    console.log("Has cover photo:", !!coverPhoto);
+    console.log("Bio:", bio);
+    console.log("Profile exists:", profileExists);
+    
     setIsSaving(true);
+    
+    // Show initial toast
+    toast({
+      title: "Processing...",
+      description: "Uploading your profile to IPFS (decentralized storage)...",
+    });
     
     try {
       let success;
@@ -155,6 +178,12 @@ export default function EditProfilePage() {
       // Check if we're creating or updating profile
       if (profileExists) {
         // Update existing profile
+        console.log("Updating existing profile...");
+        toast({
+          title: "Uploading to IPFS...",
+          description: "Please wait while we upload your profile data to IPFS.",
+        });
+        
         success = await profileService.updateProfile(
           nickname,
           profilePicture,
@@ -162,14 +191,22 @@ export default function EditProfilePage() {
           bio
         );
         
+        console.log("Update result:", success);
+        
         if (success) {
           toast({
-            title: "Profile updated",
-            description: "Your profile has been successfully updated on the blockchain."
+            title: "✅ Profile updated",
+            description: "Your profile has been successfully saved to IPFS. All data is stored permanently on the decentralized network.",
           });
         }
       } else {
         // Create new profile
+        console.log("Creating new profile...");
+        toast({
+          title: "Uploading to IPFS...",
+          description: "Please wait while we upload your profile data to IPFS.",
+        });
+        
         success = await profileService.createProfile(
           nickname,
           profilePicture,
@@ -177,32 +214,42 @@ export default function EditProfilePage() {
           bio
         );
         
+        console.log("Create result:", success);
+        
         if (success) {
           toast({
-            title: "Profile created",
-            description: "Your profile has been successfully created on the blockchain."
+            title: "✅ Profile created",
+            description: "Your profile has been successfully saved to IPFS. All data is stored permanently on the decentralized network.",
           });
         }
       }
       
       if (success) {
+        console.log("Profile saved successfully, redirecting...");
         // Navigate back to profile page
-        router.push('/profile');
+        setTimeout(() => router.push('/profile'), 2000);
       } else {
+        console.error("Profile save returned false");
         toast({
-          title: "Transaction failed",
-          description: "There was an error with the blockchain transaction. Please try again.",
+          title: "Upload failed",
+          description: "There was an error uploading your profile to IPFS. Please try again.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error("=== ERROR SAVING PROFILE ===");
+      console.error("Error details:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       toast({
         title: "Error saving profile",
-        description: "There was an error saving your profile. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error saving your profile. Please try again.",
         variant: "destructive"
       });
     } finally {
+      console.log("=== PROFILE SAVE COMPLETED ===");
       setIsSaving(false);
     }
   };
@@ -340,12 +387,14 @@ export default function EditProfilePage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[var(--matrix-green)] mb-1">USER_ID:</div>
+                    <div className="text-[var(--matrix-green)] mb-1">NICKNAME:</div>
                     <Input
+                      type="text"
                       id="nickname"
-                      placeholder={address ? shortenAddress(address) : ""}
+                      placeholder="Enter your nickname"
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
+                      disabled={isSaving}
                       className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20 rounded-none h-8"
                     />
                   </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
-import { MessageSquare, ImagePlus, Send } from "lucide-react";
+import { ImagePlus, Send } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import axios from "axios";
@@ -14,6 +14,7 @@ import Bold from '@tiptap/extension-bold';
 import Italic from '@tiptap/extension-italic';
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
+import { UserAvatar } from "@/components/UserAvatar";
 
 // Types
 interface Community {
@@ -53,15 +54,6 @@ interface Comment {
     timestamp: number;
     isActive: boolean;
     likeCount?: number;
-    replies?: CommentReply[];
-}
-
-interface CommentReply {
-    id: string;
-    commentId: string;
-    author: string;
-    content: string;
-    timestamp: number;
 }
 
 interface Topic {
@@ -970,81 +962,9 @@ export const IntegratedView = ({
         }
     };
 
-    // Function to reply to a comment
-    const addReplyToComment = async (commentId: string) => {
-        if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to reply to comments");
-            return;
-        }
-
-        if (!newReplyText[commentId] || newReplyText[commentId].trim() === "") {
-            alert("Reply cannot be empty");
-            return;
-        }
-
-        try {
-            setSubmittingReply(prev => ({
-                ...prev,
-                [commentId]: true
-            }));
-
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            console.log(`Adding reply to comment ${commentId}: "${newReplyText[commentId]}"`);
-
-            // Assuming the contract has a replyToComment function that takes the comment ID and reply content
-            const tx = await contract.replyToComment(commentId, newReplyText[commentId]);
-            console.log("Reply transaction submitted:", tx.hash);
-
-            const receipt = await tx.wait();
-            console.log("Reply transaction confirmed:", receipt);
-
-            // Clear the reply input
-            setNewReplyText(prev => ({
-                ...prev,
-                [commentId]: ""
-            }));
-
-            // Find the post ID for this comment
-            const postId = comments[commentId]?.[0]?.postId;
-            if (postId) {
-                // Refresh comments for this post to include the new reply
-                await fetchCommentsForPost(postId);
-            }
-
-            console.log(`Reply added to comment ${commentId} successfully.`);
-
-            // Hide the reply form
-            setReplyingToComment(prev => ({
-                ...prev,
-                [commentId]: false
-            }));
-        } catch (error) {
-            console.error("Error adding reply:", error);
-            alert("Failed to add reply. Make sure your wallet is connected and you have enough gas.");
-        } finally {
-            setSubmittingReply(prev => ({
-                ...prev,
-                [commentId]: false
-            }));
-        }
-    };
-
-    // Toggle the reply form for a comment
-    const toggleReplyForm = (commentId: string) => {
-        setReplyingToComment(prev => ({
-            ...prev,
-            [commentId]: !prev[commentId]
-        }));
-    };
 
     const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
     const [likingComment, setLikingComment] = useState<Record<string, boolean>>({});
-    const [replyingToComment, setReplyingToComment] = useState<Record<string, boolean>>({});
-    const [newReplyText, setNewReplyText] = useState<Record<string, string>>({});
-    const [submittingReply, setSubmittingReply] = useState<Record<string, boolean>>({});
-    const [commentReplies, setCommentReplies] = useState<Record<string, CommentReply[]>>({});
 
     // Render Create Post Form
     const renderCreatePostForm = () => (
@@ -1577,24 +1497,15 @@ export const IntegratedView = ({
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div>
-                                {/* Add user profile and name display */}
+                                {/* User profile with avatar and nickname */}
                                 <div className="flex items-center mb-2">
-                                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-3">
-                                        <img 
-                                            src={`https://effigy.im/a/${post.author || 'unknown'}.svg`} 
-                                            alt="User avatar"
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                // Fallback for avatar
-                                                const target = e.target as HTMLImageElement;
-                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-white">
-                                            {post.author ? formatAddress(post.author) : 'Anonymous User'}
-                                        </div>
+                                    <UserAvatar 
+                                        address={post.author || ''} 
+                                        size="md" 
+                                        showNickname={true}
+                                        className="mr-3"
+                                    />
+                                    <div className="flex flex-col">
                                         <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
                                             <span>{formatDate(post.timestamp)}</span>
                                             <span>•</span>
@@ -1639,7 +1550,7 @@ export const IntegratedView = ({
                                 onClick={() => toggleComments(post.id)}
                                 className="flex items-center space-x-2 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
                             >
-                                <MessageSquare size={16} />
+                                <span>💬</span>
                                 <span className="relative">
                                     {post.commentCount} comments
                                 </span>
@@ -1721,64 +1632,7 @@ export const IntegratedView = ({
                                                                 </span>
                                                                 <span>{comment.likeCount || 0} likes</span>
                                                             </button>
-                                                            <button
-                                                                onClick={() => toggleReplyForm(comment.id)}
-                                                                className="flex items-center space-x-1 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
-                                                            >
-                                                                <MessageSquare size={12} />
-                                                                <span>Reply</span>
-                                                            </button>
                                                         </div>
-                                                        
-                                                        {/* Reply form */}
-                                                        {replyingToComment[comment.id] && (
-                                                            <div className="mt-3">
-                                                                <div className="flex">
-                                                                    <input
-                                                                        type="text"
-                                                                        value={newReplyText[comment.id] || ""}
-                                                                        onChange={(e) => setNewReplyText({
-                                                                            ...newReplyText,
-                                                                            [comment.id]: e.target.value
-                                                                        })}
-                                                                        placeholder="Write a reply..."
-                                                                        className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-1 text-white text-xs focus:outline-none focus:ring-1 focus:ring-[var(--matrix-green)]"
-                                                                        onKeyPress={(e) => {
-                                                                            if (e.key === 'Enter') {
-                                                                                addReplyToComment(comment.id);
-                                                                            }
-                                                                        }}
-                                                                        disabled={submittingReply[comment.id]}
-                                                                    />
-                                                                    <button
-                                                                        onClick={() => addReplyToComment(comment.id)}
-                                                                        className="bg-[var(--matrix-green)] text-black px-2 py-1 rounded-r text-xs hover:bg-green-400 transition-colors disabled:opacity-50"
-                                                                        disabled={submittingReply[comment.id]}
-                                                                    >
-                                                                        {submittingReply[comment.id] ? "Sending..." : "Reply"}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        
-                                                        {/* Comment replies */}
-                                                        {comment.replies && comment.replies.length > 0 && (
-                                                            <div className="mt-3 pl-3 border-l-2 border-[var(--matrix-green)]/30 space-y-2">
-                                                                {comment.replies.map((reply) => (
-                                                                    <div key={reply.id} className="bg-black/40 p-2 rounded">
-                                                                        <div className="flex items-center">
-                                                                            <span className="text-[var(--matrix-green)] text-xs font-medium mr-2">
-                                                                                {formatAddress(reply.author)}
-                                                                            </span>
-                                                                            <span className="text-gray-500 text-xs">
-                                                                                {formatDate(reply.timestamp)}
-                                                                            </span>
-                                                                        </div>
-                                                                        <p className="text-white text-xs mt-1">{reply.content}</p>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
