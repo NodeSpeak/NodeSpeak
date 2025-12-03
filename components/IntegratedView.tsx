@@ -1603,11 +1603,11 @@ export const IntegratedView = ({
                                                         <UserAvatar 
                                                             address={comment.author || ''} 
                                                             size="sm"
+                                                            showNickname={true}
                                                         />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-[var(--matrix-green)] text-xs font-medium">{comment.author ? formatAddress(comment.author) : 'Anonymous User'}</span>
+                                                        <div className="flex justify-end items-center">
                                                             <span className="text-gray-500 text-xs">
                                                                 {formatDate(comment.timestamp)}
                                                             </span>
