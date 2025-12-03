@@ -156,6 +156,43 @@ export default function EditProfilePage() {
     }
   };
 
+  // Callback to handle transaction status updates
+  const handleStatusChange = (status: 'uploading' | 'signing' | 'pending' | 'confirmed' | 'failed', message?: string) => {
+    switch (status) {
+      case 'uploading':
+        toast({
+          title: "📤 Uploading to IPFS...",
+          description: message || "Please wait while we upload your files to IPFS.",
+        });
+        break;
+      case 'signing':
+        toast({
+          title: "✍️ Awaiting signature",
+          description: message || "Please sign the transaction in MetaMask to save your profile on-chain.",
+        });
+        break;
+      case 'pending':
+        toast({
+          title: "⏳ Transaction pending",
+          description: message || "Your transaction is being processed on Arbitrum...",
+        });
+        break;
+      case 'confirmed':
+        toast({
+          title: "✅ Transaction confirmed!",
+          description: message || "Your profile has been saved on the blockchain!",
+        });
+        break;
+      case 'failed':
+        toast({
+          title: "❌ Transaction failed",
+          description: message || "There was an error processing your transaction.",
+          variant: "destructive"
+        });
+        break;
+    }
+  };
+
   const handleSave = async () => {
     console.log("=== STARTING PROFILE SAVE ===");
     console.log("Nickname:", nickname);
@@ -166,12 +203,6 @@ export default function EditProfilePage() {
     
     setIsSaving(true);
     
-    // Show initial toast
-    toast({
-      title: "Processing...",
-      description: "Uploading your profile to IPFS (decentralized storage)...",
-    });
-    
     try {
       let success;
       
@@ -179,62 +210,35 @@ export default function EditProfilePage() {
       if (profileExists) {
         // Update existing profile
         console.log("Updating existing profile...");
-        toast({
-          title: "Uploading to IPFS...",
-          description: "Please wait while we upload your profile data to IPFS.",
-        });
         
         success = await profileService.updateProfile(
           nickname,
           profilePicture,
           coverPhoto,
-          bio
+          bio,
+          handleStatusChange
         );
         
         console.log("Update result:", success);
-        
-        if (success) {
-          toast({
-            title: "✅ Profile updated",
-            description: "Your profile has been successfully saved to IPFS. All data is stored permanently on the decentralized network.",
-          });
-        }
       } else {
         // Create new profile
         console.log("Creating new profile...");
-        toast({
-          title: "Uploading to IPFS...",
-          description: "Please wait while we upload your profile data to IPFS.",
-        });
         
         success = await profileService.createProfile(
           nickname,
           profilePicture,
           coverPhoto,
-          bio
+          bio,
+          handleStatusChange
         );
         
         console.log("Create result:", success);
-        
-        if (success) {
-          toast({
-            title: "✅ Profile created",
-            description: "Your profile has been successfully saved to IPFS. All data is stored permanently on the decentralized network.",
-          });
-        }
       }
       
       if (success) {
         console.log("Profile saved successfully, redirecting...");
         // Navigate back to profile page
         setTimeout(() => router.push('/profile'), 2000);
-      } else {
-        console.error("Profile save returned false");
-        toast({
-          title: "Upload failed",
-          description: "There was an error uploading your profile to IPFS. Please try again.",
-          variant: "destructive"
-        });
       }
     } catch (error) {
       console.error("=== ERROR SAVING PROFILE ===");

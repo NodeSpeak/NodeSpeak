@@ -3,30 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, ArrowLeft, Edit3 } from "lucide-react";
+import { User, ArrowLeft, Edit3, MessageSquare, Heart } from "lucide-react";
 import { MatrixRain } from "@/components/MatrixRain";
+import { BrowserProvider, Contract } from "ethers";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
 
-// Function to simulate loading profile data from blockchain
-const loadProfileData = async (address: string) => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Return mock data - in production, this would come from the blockchain
-  return {
-    nickname: "",
-    bio: "web3 enthusiast and NodeSpeak community member",
-    profilePicture: "",
-    coverPhoto: "",
-    likesReceived: 0,
-    likesGiven: 0,
-    followers: 0,
-    following: 0,
-    postCount: 0,
-    memberSince: "March 2023"
-  };
-};
+// Interface for recent activity
+interface RecentActivity {
+  type: 'post' | 'comment' | 'like';
+  title: string;
+  communityName?: string;
+  timestamp: number;
+  postId?: number;
+}
 
 // Helper function to shorten Ethereum addresses
 function shortenAddress(address: string, chars = 4): string {
@@ -43,9 +35,11 @@ function shortenAddress(address: string, chars = 4): string {
 export default function ProfilePage() {
   const router = useRouter();
   const { address, ensName, isConnected } = useWalletContext();
+  const profileService = useProfileService();
   
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("activity");
+  const [profileExists, setProfileExists] = useState(false);
   const [profileData, setProfileData] = useState({
     nickname: "",
     bio: "",
@@ -58,6 +52,7 @@ export default function ProfilePage() {
     postCount: 0,
     memberSince: ""
   });
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
     // Redirect if not connected
@@ -66,14 +61,74 @@ export default function ProfilePage() {
       return;
     }
 
-    // Load profile data
-    if (address) {
-      loadProfileData(address).then(data => {
-        setProfileData(data);
+    // Load profile data from blockchain
+    const loadData = async () => {
+      if (!address) {
         setIsLoading(false);
-      });
-    }
-  }, [address, isConnected, router]);
+        return;
+      }
+
+      try {
+        // Get profile from blockchain/IPFS
+        const profile = await profileService.getProfile(address);
+        
+        if (profile) {
+          setProfileExists(profile.exists);
+          setProfileData({
+            nickname: profile.nickname || "",
+            bio: profile.bio || "Web3 enthusiast and NodeSpeak community member",
+            profilePicture: profile.profilePicture || "",
+            coverPhoto: profile.coverPhoto || "",
+            likesReceived: profile.likesReceived || 0,
+            likesGiven: profile.likesGiven || 0,
+            followers: profile.followers || 0,
+            following: profile.following || 0,
+            postCount: 0,
+            memberSince: profile.createdAt 
+              ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) 
+              : "Recently joined"
+          });
+        }
+
+        // Load user's posts from blockchain for activity
+        const ethereum = (window as any).ethereum;
+        if (ethereum) {
+          try {
+            const browserProvider = new BrowserProvider(ethereum);
+            const contract = new Contract(forumAddress, forumABI, browserProvider);
+            
+            const allPosts = await contract.getActivePosts();
+            const myPosts = allPosts.filter((post: any) => 
+              post.author.toLowerCase() === address.toLowerCase()
+            );
+            
+            setProfileData(prev => ({
+              ...prev,
+              postCount: myPosts.length
+            }));
+            
+            // Create recent activity from posts
+            const activities: RecentActivity[] = myPosts.slice(0, 5).map((post: any) => ({
+              type: 'post' as const,
+              title: post.title,
+              communityName: `Community #${post.communityId}`,
+              timestamp: Number(post.timestamp) * 1000,
+              postId: Number(post.id)
+            }));
+            setRecentActivity(activities);
+          } catch (e) {
+            console.log("Could not load posts:", e);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [address, isConnected, router, profileService]);
 
   // Create a blinking cursor effect
   useEffect(() => {
@@ -112,6 +167,41 @@ export default function ProfilePage() {
       <MatrixRain />
       
       <div className="relative z-10">
+        {/* Cover Photo */}
+        {profileData.coverPhoto && (
+          <div className="mb-4 border border-[var(--matrix-green)] overflow-hidden">
+            <div className="w-full h-48 relative">
+              <img 
+                src={profileData.coverPhoto} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner if no profile exists */}
+        {!profileExists && (
+          <div className="mb-4 border border-yellow-500/50 bg-yellow-500/10 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-500 font-bold">⚠️ Profile not found on blockchain</p>
+                <p className="text-yellow-500/70 text-sm mt-1">
+                  Create your on-chain profile to personalize your NodeSpeak experience.
+                </p>
+              </div>
+              <Button 
+                onClick={() => router.push('/profile/edit')}
+                className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500 border border-yellow-500"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Create Profile
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Terminal-style header */}
         <div className="mb-6 border border-[var(--matrix-green)] p-4">
           <div className="flex items-center space-x-2 mb-1">
@@ -140,7 +230,7 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="text-center text-[var(--matrix-green)] mt-2 font-bold">
-                {displayName}
+                {profileData.nickname || displayName}
               </div>
               <div className="text-[var(--matrix-green)]/70 text-xs text-center mt-1">
                 {fullAddress}
@@ -218,8 +308,41 @@ export default function ProfilePage() {
           {/* Tab content */}
           <div>
             {activeTab === "activity" && (
-              <div className="min-h-[200px] flex items-center justify-center">
-                <p className="text-[var(--matrix-green)]/70">No activity to display yet.</p>
+              <div className="min-h-[200px]">
+                {recentActivity.length > 0 ? (
+                  <div className="divide-y divide-[var(--matrix-green)]/30">
+                    {recentActivity.map((activity, index) => (
+                      <div key={index} className="p-4 hover:bg-[var(--matrix-green)]/5 transition-colors">
+                        <div className="flex items-start space-x-3">
+                          <div className="mt-1">
+                            {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-[var(--matrix-green)]" />}
+                            {activity.type === 'like' && <Heart className="h-4 w-4 text-[var(--matrix-green)]" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-[var(--matrix-green)] text-sm">
+                              {activity.type === 'post' && `Posted: "${activity.title}"`}
+                              {activity.type === 'like' && `Liked: "${activity.title}"`}
+                            </p>
+                            {activity.communityName && (
+                              <p className="text-[var(--matrix-green)]/50 text-xs mt-1">
+                                in {activity.communityName}
+                              </p>
+                            )}
+                            <p className="text-[var(--matrix-green)]/40 text-xs mt-1">
+                              {new Date(activity.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <MessageSquare className="h-12 w-12 text-[var(--matrix-green)]/30 mb-4" />
+                    <p className="text-[var(--matrix-green)]/70">No activity to display yet.</p>
+                    <p className="text-[var(--matrix-green)]/50 text-sm mt-2">Start posting to see your activity here!</p>
+                  </div>
+                )}
               </div>
             )}
             

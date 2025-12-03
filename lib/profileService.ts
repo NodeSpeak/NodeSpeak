@@ -1,14 +1,12 @@
 "use client";
 
-import { ethers } from "ethers";
+import { Contract } from "ethers";
 import { useCallback } from "react";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
 
-// LocalStorage keys
-const PROFILES_STORAGE_KEY = 'nodespeak_profiles';
-const FOLLOWERS_STORAGE_KEY = 'nodespeak_followers';
-const FOLLOWING_STORAGE_KEY = 'nodespeak_following';
+// Transaction status callback type
+export type TransactionStatusCallback = (status: 'uploading' | 'signing' | 'pending' | 'confirmed' | 'failed', message?: string) => void;
 
 // IPFS configuration - using Pinata
 const ipfsGateway = "https://gateway.pinata.cloud/ipfs/";
@@ -38,8 +36,8 @@ const uploadToIPFS = async (file: File | Blob, filename?: string): Promise<strin
     const formData = new FormData();
     formData.append('file', file, filename || 'file');
 
-    const pinataMetadata = JSON.stringify({ 
-      name: filename || 'profile-data' 
+    const pinataMetadata = JSON.stringify({
+      name: filename || 'profile-data'
     });
     formData.append('pinataMetadata', pinataMetadata);
 
@@ -57,7 +55,7 @@ const uploadToIPFS = async (file: File | Blob, filename?: string): Promise<strin
     }
 
     const data = await response.json();
-    console.log("Uploaded to IPFS:", data.IpfsHash);
+
     return data.IpfsHash;
   } catch (error) {
     console.error("Error uploading to IPFS:", error);
@@ -65,54 +63,100 @@ const uploadToIPFS = async (file: File | Blob, filename?: string): Promise<strin
   }
 };
 
-// Helper functions for localStorage
-const getProfiles = (): Record<string, any> => {
-  if (typeof window === 'undefined') return {};
-  const stored = localStorage.getItem(PROFILES_STORAGE_KEY);
-  return stored ? JSON.parse(stored) : {};
-};
-
-const saveProfile = (address: string, profileData: any) => {
-  if (typeof window === 'undefined') return;
-  const profiles = getProfiles();
-  profiles[address.toLowerCase()] = profileData;
-  localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profiles));
-};
-
 export const useProfileService = () => {
   const { provider, address } = useWalletContext();
 
-  // Check if user has profile
+  // Check if user has profile on blockchain
   const checkProfileExists = useCallback(async (userAddress: string): Promise<boolean> => {
     try {
-      const profiles = getProfiles();
-      return !!profiles[userAddress.toLowerCase()];
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) return false;
+
+      const { BrowserProvider } = await import('ethers');
+      const browserProvider = new BrowserProvider(ethereum);
+      const contract = new Contract(forumAddress, forumABI, browserProvider);
+
+      const hasProfile = await contract.hasProfile(userAddress);
+
+      return hasProfile;
     } catch (error) {
       console.error("Error checking profile:", error);
       return false;
     }
   }, []);
 
-  // Get user profile
+  // Get user profile from blockchain + IPFS
   const getProfile = useCallback(async (userAddress: string): Promise<ProfileData | null> => {
     try {
-      const profiles = getProfiles();
-      const profile = profiles[userAddress.toLowerCase()];
-      
-      if (!profile) return null;
-      
+
+
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) {
+        return {
+          exists: false,
+          nickname: "",
+          profilePicture: "",
+          coverPhoto: "",
+          bio: "Web3 enthusiast and NodeSpeak community member",
+          likesReceived: 0,
+          likesGiven: 0,
+          followers: 0,
+          following: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+      }
+
+      const { BrowserProvider } = await import('ethers');
+      const browserProvider = new BrowserProvider(ethereum);
+      const contract = new Contract(forumAddress, forumABI, browserProvider);
+
+      // Check if profile exists on-chain
+      const hasProfile = await contract.hasProfile(userAddress);
+
+
+      if (!hasProfile) {
+        return {
+          exists: false,
+          nickname: "",
+          profilePicture: "",
+          coverPhoto: "",
+          bio: "Web3 enthusiast and NodeSpeak community member",
+          likesReceived: 0,
+          likesGiven: 0,
+          followers: 0,
+          following: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        };
+      }
+
+      const onChainProfile = await contract.getProfile(userAddress);
+
+
+      // Fetch bio from IPFS if bioCID exists
+      let bio = "Web3 enthusiast";
+      if (onChainProfile.bioCID && onChainProfile.bioCID.length > 0) {
+        try {
+          const bioResponse = await fetch(`${ipfsGateway}${onChainProfile.bioCID}`);
+          bio = await bioResponse.text();
+        } catch (e) {
+
+        }
+      }
+
       return {
         exists: true,
-        nickname: profile.nickname || "",
-        profilePicture: profile.profileCID ? `${ipfsGateway}${profile.profileCID}` : "",
-        coverPhoto: profile.coverCID ? `${ipfsGateway}${profile.coverCID}` : "",
-        bio: profile.bio || "",
-        likesReceived: profile.likesReceived || 0,
-        likesGiven: profile.likesGiven || 0,
-        followers: profile.followers || 0,
-        following: profile.following || 0,
-        createdAt: profile.createdAt || Date.now(),
-        updatedAt: profile.updatedAt || Date.now()
+        nickname: onChainProfile.nickname || "",
+        profilePicture: onChainProfile.profileCID ? `${ipfsGateway}${onChainProfile.profileCID}` : "",
+        coverPhoto: onChainProfile.coverCID ? `${ipfsGateway}${onChainProfile.coverCID}` : "",
+        bio: bio,
+        likesReceived: Number(onChainProfile.likesReceived) || 0,
+        likesGiven: Number(onChainProfile.likesGiven) || 0,
+        followers: Number(onChainProfile.followerCount) || 0,
+        following: Number(onChainProfile.followingCount) || 0,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
       };
     } catch (error) {
       console.error("Error getting profile:", error);
@@ -125,160 +169,213 @@ export const useProfileService = () => {
     nickname: string,
     profilePicture: File | null,
     coverPhoto: File | null,
-    bio: string
+    bio: string,
+    onStatusChange?: TransactionStatusCallback
   ): Promise<boolean> => {
-    console.log(">>> createProfile called");
-    console.log(">>> Address:", address);
-    console.log(">>> Provider:", !!provider);
-    
+
+
+
+
     try {
       if (!address) {
         console.error(">>> No wallet address");
         throw new Error("No wallet address");
       }
-      
+
       if (!provider) {
         console.error(">>> No provider available");
         throw new Error("No provider available");
       }
-      
+
       // Step 1: Upload images to IPFS using Pinata
+      onStatusChange?.('uploading', 'Uploading files to IPFS...');
+
       let profileCID = "";
       let coverCID = "";
-      
+      let bioCID = "";
+
       if (profilePicture) {
-        console.log(">>> Uploading profile picture to IPFS...");
+
         profileCID = await uploadToIPFS(profilePicture, 'profile-picture.jpg');
-        console.log(">>> Profile picture uploaded:", profileCID);
+
       }
-      
+
       if (coverPhoto) {
-        console.log(">>> Uploading cover photo to IPFS...");
+
         coverCID = await uploadToIPFS(coverPhoto, 'cover-photo.jpg');
-        console.log(">>> Cover photo uploaded:", coverCID);
+
       }
-      
-      // Step 2: Create profile data object (similar to community data)
-      const profileData = {
-        nickname,
-        profilePicture: profileCID,
-        coverPhoto: coverCID,
-        bio,
-        address,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      };
-      
-      console.log(">>> Profile data object:", profileData);
-      
-      // Step 3: Upload complete profile data to IPFS as JSON
-      console.log(">>> Creating profile data blob...");
-      const profileDataBlob = new Blob([JSON.stringify(profileData)], { type: 'application/json' });
-      console.log(">>> Uploading complete profile data to IPFS...");
-      const profileDataCID = await uploadToIPFS(profileDataBlob, 'profile-data.json');
-      console.log(">>> Complete profile data uploaded to IPFS:", profileDataCID);
-      
-      // Step 4: Save to localStorage with the main CID
-      // Note: We're storing everything in IPFS (permanent) and localStorage (quick access)
-      // No blockchain transaction needed - IPFS provides the decentralized storage
-      const localStorageData = {
-        nickname,
-        profileCID,
-        coverCID,
-        bio,
-        profileDataCID, // Main CID that contains all profile data
-        likesReceived: 0,
-        likesGiven: 0,
-        followers: 0,
-        following: 0,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      };
-      
-      saveProfile(address, localStorageData);
-      console.log(">>> Profile saved successfully!");
-      console.log(">>> Profile CID:", profileDataCID);
-      console.log(">>> Profile stored in IPFS (permanent) and localStorage (quick access)");
-      
+
+      // Upload bio to IPFS
+      if (bio) {
+
+        const bioBlob = new Blob([bio], { type: 'text/plain' });
+        bioCID = await uploadToIPFS(bioBlob, 'bio.txt');
+
+      }
+
+
+
+
+
+
+      // Step 2: Send transaction to smart contract
+      onStatusChange?.('signing', 'Please sign the transaction in MetaMask...');
+
+      const signer = await provider.getSigner();
+      const contract = new Contract(forumAddress, forumABI, signer);
+
+      try {
+        // Estimate gas first to catch potential errors
+
+        await contract.createProfile.estimateGas(
+          nickname,
+          profileCID,
+          coverCID,
+          bioCID
+        );
+
+        // If estimation succeeds, proceed with the transaction
+
+        const tx = await contract.createProfile(
+          nickname,
+          profileCID,
+          coverCID,
+          bioCID
+        );
+
+
+        onStatusChange?.('pending', `Transaction pending: ${tx.hash.slice(0, 10)}...`);
+
+        // Wait for transaction confirmation
+        await tx.wait();
+
+
+        onStatusChange?.('confirmed', 'Profile created successfully on blockchain!');
+
+      } catch (estimateError: any) {
+        console.error(">>> Gas estimation or transaction error:", estimateError);
+        onStatusChange?.('failed', estimateError.message || 'Transaction failed');
+        throw estimateError;
+      }
+
       return true;
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Error creating profile:", error);
+      onStatusChange?.('failed', error.message || 'Error creating profile');
       return false;
     }
-  }, [address]);
+  }, [address, provider]);
 
   // Update existing profile
   const updateProfile = useCallback(async (
     nickname: string,
     profilePicture: File | null,
     coverPhoto: File | null,
-    bio: string
+    bio: string,
+    onStatusChange?: TransactionStatusCallback
   ): Promise<boolean> => {
     try {
       if (!address) throw new Error("No wallet address");
-      
-      // Get existing profile
-      const profiles = getProfiles();
-      const existingProfile = profiles[address.toLowerCase()] || {};
-      
-      // Upload only new files to IPFS if provided
-      let profileCID = existingProfile.profileCID || "";
-      let coverCID = existingProfile.coverCID || "";
-      
+      if (!provider) throw new Error("No provider available");
+
+      // Get existing profile from blockchain
+      const { BrowserProvider } = await import('ethers');
+      const ethereum = (window as any).ethereum;
+      const browserProvider = new BrowserProvider(ethereum);
+      const readContract = new Contract(forumAddress, forumABI, browserProvider);
+
+      let existingProfileCID = "";
+      let existingCoverCID = "";
+      let existingBioCID = "";
+
+      try {
+        const existingProfile = await readContract.getProfile(address);
+        existingProfileCID = existingProfile.profileCID || "";
+        existingCoverCID = existingProfile.coverCID || "";
+        existingBioCID = existingProfile.bioCID || "";
+      } catch (e) {
+
+      }
+
+      // Step 1: Upload files to IPFS (only new files)
+      onStatusChange?.('uploading', 'Uploading files to IPFS...');
+
+      let profileCID = existingProfileCID;
+      let coverCID = existingCoverCID;
+      let bioCID = existingBioCID;
+
       if (profilePicture) {
-        console.log("Uploading new profile picture to IPFS...");
+
         profileCID = await uploadToIPFS(profilePicture, 'profile-picture.jpg');
-        console.log("New profile picture uploaded:", profileCID);
+
       }
-      
+
       if (coverPhoto) {
-        console.log("Uploading new cover photo to IPFS...");
+
         coverCID = await uploadToIPFS(coverPhoto, 'cover-photo.jpg');
-        console.log("New cover photo uploaded:", coverCID);
+
       }
-      
-      // Create updated profile data object
-      const profileData = {
-        nickname,
-        profilePicture: profileCID,
-        coverPhoto: coverCID,
-        bio,
-        address,
-        createdAt: existingProfile.createdAt || Date.now(),
-        updatedAt: Date.now()
-      };
-      
-      console.log("Updated profile data object:", profileData);
-      
-      // Upload complete profile data to IPFS as JSON
-      const profileDataBlob = new Blob([JSON.stringify(profileData)], { type: 'application/json' });
-      const profileDataCID = await uploadToIPFS(profileDataBlob, 'profile-data.json');
-      console.log(">>> Updated profile data uploaded to IPFS:", profileDataCID);
-      
-      // Update localStorage with the new CID
-      // IPFS provides permanent decentralized storage
-      const localStorageData = {
-        ...existingProfile,
-        nickname,
-        profileCID,
-        coverCID,
-        bio,
-        profileDataCID, // Main CID that contains all profile data
-        updatedAt: Date.now()
-      };
-      
-      saveProfile(address, localStorageData);
-      console.log(">>> Profile updated successfully!");
-      console.log(">>> Updated Profile CID:", profileDataCID);
-      console.log(">>> Profile stored in IPFS (permanent) and localStorage (quick access)");
+
+      // Always upload bio to IPFS
+      if (bio) {
+
+        const bioBlob = new Blob([bio], { type: 'text/plain' });
+        bioCID = await uploadToIPFS(bioBlob, 'bio.txt');
+
+      }
+
+
+
+      // Step 2: Send transaction to smart contract
+      onStatusChange?.('signing', 'Please sign the transaction in MetaMask...');
+
+      const signer = await provider.getSigner();
+      const contract = new Contract(forumAddress, forumABI, signer);
+
+      try {
+        // Estimate gas first to catch potential errors
+
+        await contract.updateProfile.estimateGas(
+          nickname,
+          profileCID,
+          coverCID,
+          bioCID
+        );
+
+        // If estimation succeeds, proceed with the transaction
+
+        const tx = await contract.updateProfile(
+          nickname,
+          profileCID,
+          coverCID,
+          bioCID
+        );
+
+
+        onStatusChange?.('pending', `Transaction pending: ${tx.hash.slice(0, 10)}...`);
+
+        // Wait for transaction confirmation
+        await tx.wait();
+
+
+        onStatusChange?.('confirmed', 'Profile updated successfully on blockchain!');
+
+      } catch (estimateError: any) {
+        console.error(">>> Gas estimation or transaction error:", estimateError);
+        onStatusChange?.('failed', estimateError.message || 'Transaction failed');
+        throw estimateError;
+      }
+
       return true;
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Error updating profile:", error);
+      onStatusChange?.('failed', error.message || 'Error updating profile');
       return false;
     }
-  }, [address]);
+  }, [address, provider]);
 
   // Follow user (localStorage implementation)
   const followUser = async (userToFollow: string): Promise<boolean> => {
