@@ -215,33 +215,25 @@ export default function ProfilePage() {
           {/* User Info Section */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Avatar Section */}
-            <div className="flex flex-col items-center justify-center border border-[var(--matrix-green)]/50 p-4">
-              <div className="h-24 w-24 rounded-none border-2 border-[var(--matrix-green)] flex items-center justify-center mb-2 overflow-hidden">
-                {profileData.profilePicture ? (
-                  <img 
-                    src={profileData.profilePicture} 
-                    alt={displayName} 
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-[var(--matrix-green)]/10">
-                    <User className="h-12 w-12 text-[var(--matrix-green)]" />
-                  </div>
-                )}
-              </div>
-              <div className="text-center text-[var(--matrix-green)] mt-2 font-bold">
-                {profileData.nickname || displayName}
-              </div>
-              <div className="text-[var(--matrix-green)]/70 text-xs text-center mt-1">
-                {fullAddress}
-              </div>
+            <div className="border border-[var(--matrix-green)]/50 overflow-hidden flex items-center justify-center">
+              {profileData.profilePicture ? (
+                <img 
+                  src={profileData.profilePicture} 
+                  alt={displayName} 
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-24 w-24 flex items-center justify-center bg-[var(--matrix-green)]/10">
+                  <User className="h-12 w-12 text-[var(--matrix-green)]" />
+                </div>
+              )}
             </div>
             
             {/* User Details */}
             <div className="md:col-span-3 border border-[var(--matrix-green)]/50 p-4">
               <div className="grid grid-cols-1 gap-2">
                 <div className="flex">
-                  <span className="text-[var(--matrix-green)]/70 w-32">USER_ID:</span>
+                  <span className="text-[var(--matrix-green)]/70 w-32">NICKNAME:</span>
                   <span className="text-[var(--matrix-green)]">{displayName}</span>
                 </div>
                 <div className="flex">
