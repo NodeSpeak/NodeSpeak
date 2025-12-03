@@ -1599,16 +1599,10 @@ export const IntegratedView = ({
                                         comments[post.id].map((comment) => (
                                             <div key={comment.id} className="border border-gray-700 rounded p-3 bg-black/60">
                                                 <div className="flex items-start mb-2">
-                                                    <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--matrix-green)] mr-2 flex-shrink-0">
-                                                        <img 
-                                                            src={`https://effigy.im/a/${comment.author || 'unknown'}.svg`} 
-                                                            alt="User avatar"
-                                                            className="w-full h-full object-cover"
-                                                            onError={(e) => {
-                                                                // Fallback for avatar
-                                                                const target = e.target as HTMLImageElement;
-                                                                target.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-                                                            }}
+                                                    <div className="mr-2 flex-shrink-0">
+                                                        <UserAvatar 
+                                                            address={comment.author || ''} 
+                                                            size="sm"
                                                         />
                                                     </div>
                                                     <div className="flex-1">

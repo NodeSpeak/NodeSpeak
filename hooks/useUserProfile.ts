@@ -28,18 +28,29 @@ export const useUserProfile = (address: string | undefined) => {
         const profileData = await getCompleteProfile(address);
         
         if (profileData) {
+          // Helper to build IPFS URL - only add gateway if it's just a CID
+          const buildIpfsUrl = (cid: string) => {
+            if (!cid) return '';
+            // If already a full URL, return as is
+            if (cid.startsWith('http://') || cid.startsWith('https://')) {
+              return cid;
+            }
+            // Otherwise, add the gateway prefix
+            return `https://gateway.pinata.cloud/ipfs/${cid}`;
+          };
+          
+          const profilePictureUrl = buildIpfsUrl(profileData.profilePicture);
+          console.log(`[useUserProfile] Address: ${address}, profileCID: ${profileData.profilePicture}, URL: ${profilePictureUrl}`);
+          
           setProfile({
             address,
             nickname: profileData.nickname || shortenAddress(address),
-            profilePicture: profileData.profilePicture 
-              ? `https://gateway.pinata.cloud/ipfs/${profileData.profilePicture}` 
-              : '',
-            coverPhoto: profileData.coverPhoto 
-              ? `https://gateway.pinata.cloud/ipfs/${profileData.coverPhoto}` 
-              : '',
+            profilePicture: profilePictureUrl,
+            coverPhoto: buildIpfsUrl(profileData.coverPhoto),
             bio: profileData.bio || ''
           });
         } else {
+          console.log(`[useUserProfile] No profile data found for: ${address}`);
           // Default profile if none exists
           setProfile({
             address,

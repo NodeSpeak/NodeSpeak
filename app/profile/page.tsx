@@ -110,8 +110,9 @@ export default function ProfilePage() {
             // Create recent activity from posts
             const activities: RecentActivity[] = myPosts.slice(0, 5).map((post: any) => ({
               type: 'post' as const,
-              title: post.title,
-              communityName: `Community #${post.communityId}`,
+              title: '', // we no longer show the post title in the activity list
+              // Prefer a community name field if available, otherwise fallback to a generic label
+              communityName: (post.communityName || post.community || 'Community') as string,
               timestamp: Number(post.timestamp) * 1000,
               postId: Number(post.id)
             }));
@@ -311,12 +312,8 @@ export default function ProfilePage() {
                             {activity.type === 'like' && <Heart className="h-4 w-4 text-[var(--matrix-green)]" />}
                           </div>
                           <div className="flex-1">
-                            <p className="text-[var(--matrix-green)] text-sm">
-                              {activity.type === 'post' && `Posted: "${activity.title}"`}
-                              {activity.type === 'like' && `Liked: "${activity.title}"`}
-                            </p>
                             {activity.communityName && (
-                              <p className="text-[var(--matrix-green)]/50 text-xs mt-1">
+                              <p className="text-[var(--matrix-green)] text-sm">
                                 in {activity.communityName}
                               </p>
                             )}

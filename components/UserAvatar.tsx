@@ -1,8 +1,39 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { User } from 'lucide-react';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { User, UserPlus, UserCheck } from 'lucide-react';
+import { BrowserProvider, Contract } from 'ethers';
+import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_Commuties_arbitrum';
+
+// ABI for ForumProfileManager (only the functions we need)
+const profileManagerABI = [
+  {
+    "inputs": [{ "internalType": "address", "name": "userToFollow", "type": "address" }],
+    "name": "followUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "userToUnfollow", "type": "address" }],
+    "name": "unfollowUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
+    "name": "isFollowing",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
 
 interface UserAvatarProps {
   address: string;
@@ -18,6 +49,20 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   className = ''
 }) => {
   const { profile, loading } = useUserProfile(address);
+  const { address: currentUserAddress } = useWalletContext();
+  const [showMenu, setShowMenu] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  
+  // Reset image error when profile changes
+  useEffect(() => {
+    setImageError(false);
+  }, [profile?.profilePicture]);
+
+  // Check if this is the current user's avatar
+  const isCurrentUser = currentUserAddress?.toLowerCase() === address?.toLowerCase();
 
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -31,6 +76,87 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     lg: 'w-8 h-8'
   };
 
+  // Check if current user is following this user
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!currentUserAddress || !address || isCurrentUser) return;
+      
+      try {
+        const ethereum = (window as any).ethereum;
+        if (!ethereum) return;
+        
+        const provider = new BrowserProvider(ethereum);
+        
+        // Get profileManager address from main contract
+        const mainContract = new Contract(forumAddress, forumABI, provider);
+        const profileManagerAddress = await mainContract.profileManager();
+        
+        // Call profileManager directly for isFollowing check
+        const profileManager = new Contract(profileManagerAddress, profileManagerABI, provider);
+        const following = await profileManager.isFollowing(currentUserAddress, address);
+        setIsFollowing(following);
+      } catch (error) {
+        console.error('Error checking follow status:', error);
+      }
+    };
+    
+    checkFollowStatus();
+  }, [currentUserAddress, address, isCurrentUser]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleFollow = async () => {
+    if (!currentUserAddress || !address) return;
+    
+    setFollowLoading(true);
+    try {
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) return;
+      
+      const provider = new BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      
+      // Get profileManager address from main contract
+      const mainContract = new Contract(forumAddress, forumABI, provider);
+      const profileManagerAddress = await mainContract.profileManager();
+      
+      // Call profileManager directly - this allows following ANY address
+      // even if they don't have a profile created
+      const profileManager = new Contract(profileManagerAddress, profileManagerABI, signer);
+      
+      if (isFollowing) {
+        const tx = await profileManager.unfollowUser(address);
+        await tx.wait();
+        setIsFollowing(false);
+      } else {
+        const tx = await profileManager.followUser(address);
+        await tx.wait();
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing user:', error);
+    } finally {
+      setFollowLoading(false);
+      setShowMenu(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (!isCurrentUser && currentUserAddress) {
+      setShowMenu(!showMenu);
+    }
+  };
+
   if (loading) {
     return (
       <div className={`${sizeClasses[size]} rounded-full bg-[var(--matrix-green)]/20 animate-pulse ${className}`} />
@@ -38,26 +164,51 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   }
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden border border-[var(--matrix-green)] flex items-center justify-center bg-black`}>
-        {profile?.profilePicture ? (
+    <div className={`flex items-center gap-2 ${className} relative`} ref={menuRef}>
+      <div 
+        className={`${sizeClasses[size]} rounded-full overflow-hidden border border-[var(--matrix-green)] flex items-center justify-center bg-black ${!isCurrentUser && currentUserAddress ? 'cursor-pointer hover:border-[var(--matrix-green)]/80' : ''}`}
+        onClick={handleAvatarClick}
+      >
+        {profile?.profilePicture && !imageError ? (
           <img 
             src={profile.profilePicture} 
-            alt={profile.nickname}
+            alt={profile.nickname || 'User'}
             className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to default icon if image fails to load
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              if (target.nextSibling) {
-                (target.nextSibling as HTMLElement).style.display = 'block';
-              }
+            onError={() => {
+              console.log('Image failed to load:', profile.profilePicture);
+              setImageError(true);
             }}
           />
         ) : (
           <User className={`${iconSizes[size]} text-[var(--matrix-green)]`} />
         )}
       </div>
+      
+      {/* Follow Menu - only for other users */}
+      {showMenu && !isCurrentUser && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-black border border-[var(--matrix-green)] rounded shadow-lg shadow-[var(--matrix-green)]/20 min-w-[140px]">
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            className="w-full px-4 py-2 text-left text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10 flex items-center gap-2 font-mono text-sm disabled:opacity-50"
+          >
+            {followLoading ? (
+              <span className="animate-pulse">...</span>
+            ) : isFollowing ? (
+              <>
+                <UserCheck className="w-4 h-4" />
+                Unfollow
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                Follow
+              </>
+            )}
+          </button>
+        </div>
+      )}
+      
       {showNickname && profile && (
         <span className="text-[var(--matrix-green)] text-sm font-mono">
           {profile.nickname}

@@ -32,7 +32,7 @@ export default function Home() {
         title: string;
         content: string;
         timestamp: number;
-        address: string;
+        author: string;
         imageUrl?: string;
         cid: string;
         topic: string;
@@ -317,7 +317,7 @@ export default function Home() {
                         title,
                         content,
                         timestamp: parseInt(post.timestamp.toString(), 10),
-                        address: post.author,
+                        author: post.author,
                         imageUrl,
                         cid: post.contentCID,
                         topic: post.topic,
