@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { User, UserPlus, UserCheck } from 'lucide-react';
+import { User, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_Commuties_arbitrum';
 
@@ -48,6 +49,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   showNickname = false,
   className = ''
 }) => {
+  const router = useRouter();
   const { profile, loading } = useUserProfile(address);
   const { address: currentUserAddress } = useWalletContext();
   const [showMenu, setShowMenu] = useState(false);
@@ -184,9 +186,21 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         )}
       </div>
       
-      {/* Follow Menu - only for other users */}
+      {/* User Menu - only for other users */}
       {showMenu && !isCurrentUser && (
         <div className="absolute top-full left-0 mt-2 z-50 bg-black border border-[var(--matrix-green)] rounded shadow-lg shadow-[var(--matrix-green)]/20 min-w-[140px]">
+          {/* View Profile Button */}
+          <button
+            onClick={() => {
+              router.push(`/profile?address=${address}`);
+              setShowMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10 flex items-center gap-2 font-mono text-sm border-b border-[var(--matrix-green)]/30"
+          >
+            <ExternalLink className="w-4 h-4" />
+            View Profile
+          </button>
+          {/* Follow/Unfollow Button */}
           <button
             onClick={handleFollow}
             disabled={followLoading}

@@ -1,15 +1,43 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, ArrowLeft, Edit3, MessageSquare, Heart } from "lucide-react";
+import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck } from "lucide-react";
 import { MatrixRain } from "@/components/MatrixRain";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
+
+// ABI for ForumProfileManager (only the functions we need for follow)
+const profileManagerABI = [
+  {
+    "inputs": [{ "internalType": "address", "name": "userToFollow", "type": "address" }],
+    "name": "followUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "userToUnfollow", "type": "address" }],
+    "name": "unfollowUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" },
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
+    "name": "isFollowing",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
 
 // Interface for recent activity
 interface RecentActivity {
@@ -34,12 +62,20 @@ function shortenAddress(address: string, chars = 4): string {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { address, ensName, isConnected } = useWalletContext();
+  const searchParams = useSearchParams();
+  const { address: currentUserAddress, ensName, isConnected } = useWalletContext();
   const profileService = useProfileService();
+  
+  // Get target address from URL param or use current user's address
+  const targetAddress = searchParams.get('address') || currentUserAddress;
+  const isOwnProfile = !searchParams.get('address') || 
+    (currentUserAddress && searchParams.get('address')?.toLowerCase() === currentUserAddress.toLowerCase());
   
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("activity");
   const [profileExists, setProfileExists] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     nickname: "",
     bio: "",
@@ -54,23 +90,81 @@ export default function ProfilePage() {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
+  // Check follow status for other users
   useEffect(() => {
-    // Redirect if not connected
-    if (!isConnected) {
+    const checkFollowStatus = async () => {
+      if (!currentUserAddress || !targetAddress || isOwnProfile) return;
+      
+      try {
+        const ethereum = (window as any).ethereum;
+        if (!ethereum) return;
+        
+        const provider = new BrowserProvider(ethereum);
+        const mainContract = new Contract(forumAddress, forumABI, provider);
+        const profileManagerAddress = await mainContract.profileManager();
+        const profileManager = new Contract(profileManagerAddress, profileManagerABI, provider);
+        
+        const following = await profileManager.isFollowing(currentUserAddress, targetAddress);
+        setIsFollowing(following);
+      } catch (error) {
+        console.error('Error checking follow status:', error);
+      }
+    };
+    
+    checkFollowStatus();
+  }, [currentUserAddress, targetAddress, isOwnProfile]);
+
+  // Handle follow/unfollow
+  const handleFollow = async () => {
+    if (!currentUserAddress || !targetAddress) return;
+    
+    setFollowLoading(true);
+    try {
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) return;
+      
+      const provider = new BrowserProvider(ethereum);
+      const signer = await provider.getSigner();
+      
+      const mainContract = new Contract(forumAddress, forumABI, provider);
+      const profileManagerAddress = await mainContract.profileManager();
+      const profileManager = new Contract(profileManagerAddress, profileManagerABI, signer);
+      
+      if (isFollowing) {
+        const tx = await profileManager.unfollowUser(targetAddress);
+        await tx.wait();
+        setIsFollowing(false);
+        setProfileData(prev => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
+      } else {
+        const tx = await profileManager.followUser(targetAddress);
+        await tx.wait();
+        setIsFollowing(true);
+        setProfileData(prev => ({ ...prev, followers: prev.followers + 1 }));
+      }
+    } catch (error) {
+      console.error('Error following/unfollowing user:', error);
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only redirect if viewing own profile and not connected
+    if (isOwnProfile && !isConnected) {
       router.push('/');
       return;
     }
 
     // Load profile data from blockchain
     const loadData = async () => {
-      if (!address) {
+      if (!targetAddress) {
         setIsLoading(false);
         return;
       }
 
       try {
         // Get profile from blockchain/IPFS
-        const profile = await profileService.getProfile(address);
+        const profile = await profileService.getProfile(targetAddress);
         
         if (profile) {
           setProfileExists(profile.exists);
@@ -99,7 +193,7 @@ export default function ProfilePage() {
             
             const allPosts = await contract.getActivePosts();
             const myPosts = allPosts.filter((post: any) => 
-              post.author.toLowerCase() === address.toLowerCase()
+              post.author.toLowerCase() === targetAddress.toLowerCase()
             );
             
             setProfileData(prev => ({
@@ -129,7 +223,7 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [address, isConnected, router, profileService]);
+  }, [targetAddress, isConnected, isOwnProfile, router, profileService]);
 
   // Create a blinking cursor effect
   useEffect(() => {
@@ -143,9 +237,9 @@ export default function ProfilePage() {
     return () => clearInterval(cursorInterval);
   }, []);
 
-  // Get display name
-  const displayName = ensName || profileData.nickname || (address ? shortenAddress(address) : "");
-  const fullAddress = address || "";
+  // Get display name - use ensName only for own profile
+  const displayName = (isOwnProfile ? ensName : null) || profileData.nickname || (targetAddress ? shortenAddress(targetAddress) : "");
+  const fullAddress = targetAddress || "";
 
   if (isLoading) {
     return (
@@ -183,7 +277,7 @@ export default function ProfilePage() {
         )}
 
         {/* Banner if no profile exists */}
-        {!profileExists && (
+        {!profileExists && isOwnProfile && (
           <div className="mb-4 border border-yellow-500/50 bg-yellow-500/10 p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -200,6 +294,14 @@ export default function ProfilePage() {
                 Create Profile
               </Button>
             </div>
+          </div>
+        )}
+        
+        {!profileExists && !isOwnProfile && (
+          <div className="mb-4 border border-[var(--matrix-green)]/50 bg-[var(--matrix-green)]/10 p-4">
+            <p className="text-[var(--matrix-green)]">
+              This user hasn't created a profile yet. You can still follow them.
+            </p>
           </div>
         )}
 
@@ -271,13 +373,35 @@ export default function ProfilePage() {
               <span>Back to Forum</span>
             </Button>
             
-            <Button 
-              onClick={() => router.push('/profile/edit')}
-              className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
-            >
-              <Edit3 className="h-4 w-4" />
-              <span>Edit Profile</span>
-            </Button>
+            {isOwnProfile ? (
+              <Button 
+                onClick={() => router.push('/profile/edit')}
+                className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>Edit Profile</span>
+              </Button>
+            ) : currentUserAddress ? (
+              <Button 
+                onClick={handleFollow}
+                disabled={followLoading}
+                className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)] disabled:opacity-50"
+              >
+                {followLoading ? (
+                  <span className="animate-pulse">...</span>
+                ) : isFollowing ? (
+                  <>
+                    <UserCheck className="h-4 w-4" />
+                    <span>Unfollow</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4" />
+                    <span>Follow</span>
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
         </div>
         
