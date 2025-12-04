@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, User, Save, Upload, ImagePlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { MatrixRain } from "@/components/MatrixRain";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -272,13 +271,13 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 flex items-center justify-center min-h-screen bg-black text-[var(--matrix-green)]">
-        <div className="flex flex-col items-center">
-          <p className="text-lg font-mono">$ loading profile_data.dat</p>
-          <div className="mt-4 flex space-x-1">
-            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-0"></div>
-            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-150"></div>
-            <div className="h-2 w-2 bg-[var(--matrix-green)] animate-pulse delay-300"></div>
+      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] flex items-center justify-center">
+        <div className="flex flex-col items-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200">
+          <p className="text-lg text-slate-700 font-medium">Loading profile...</p>
+          <div className="mt-4 flex space-x-2">
+            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse"></div>
+            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-150"></div>
+            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-300"></div>
           </div>
         </div>
       </div>
@@ -294,32 +293,23 @@ export default function EditProfilePage() {
   const displayName = ensName || nickname || (address ? shortenAddress(address) : "");
 
   return (
-    <div className="container mx-auto p-4 bg-black min-h-screen font-mono">
-      {/* Matrix-style background animation with very low intensity */}
-      <MatrixRain intensity="low" className="absolute inset-0 opacity-10" />
-      
-      <div className="relative z-10">
-        {/* Terminal-style header */}
-        <div className="mb-6 border border-[var(--matrix-green)] p-4">
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="text-[var(--matrix-green)]">root@nodespeak:~# </span>
-            <span className="text-[var(--matrix-green)]">cat user_profile.dat</span>
-            <span className="cursor h-4 w-2 bg-[var(--matrix-green)]"></span>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h1 className="text-xl font-semibold text-slate-900 mb-6">Edit Profile</h1>
           
-          <div className="border-t border-[var(--matrix-green)]/30 my-2"></div>
-          
-          {/* User profile layout similar to the image */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          {/* User profile layout */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             {/* Cover Photo Section */}
-            <div className="md:col-span-4 border border-[var(--matrix-green)] p-3 mb-2">
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-[var(--matrix-green)] text-sm">COVER_IMAGE:</div>
+            <div className="md:col-span-4 bg-slate-50 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-slate-700 text-sm font-medium">Cover Image</span>
                 <Label
                   htmlFor="coverPhoto"
-                  className="cursor-pointer text-[var(--matrix-green)] text-xs py-1 px-2 border border-[var(--matrix-green)]/50 hover:bg-[var(--matrix-green)]/10"
+                  className="cursor-pointer text-sky-600 text-xs py-1.5 px-3 bg-sky-50 hover:bg-sky-100 rounded-full border border-sky-200 transition-colors"
                 >
-                  UPLOAD_COVER
+                  Upload Cover
                 </Label>
                 <Input
                   id="coverPhoto"
@@ -329,42 +319,42 @@ export default function EditProfilePage() {
                   className="hidden"
                 />
               </div>
-              <div className="w-full h-32 border border-[var(--matrix-green)]/50 flex items-center justify-center overflow-hidden">
+              <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-white">
                 {coverPhotoPreview ? (
                   <img 
                     src={coverPhotoPreview} 
                     alt="Cover" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-lg"
                   />
                 ) : (
-                  <div className="flex flex-col items-center text-[var(--matrix-green)]/50">
-                    <ImagePlus className="w-8 h-8 mb-1" />
-                    <span className="text-xs">[NO_COVER_IMAGE]</span>
+                  <div className="flex flex-col items-center text-slate-400">
+                    <ImagePlus className="w-8 h-8 mb-2" />
+                    <span className="text-xs">No cover image</span>
                   </div>
                 )}
               </div>
             </div>
             
             {/* User Avatar Section */}
-            <div className="border border-[var(--matrix-green)] p-4">
+            <div className="bg-slate-50 rounded-xl p-5">
               <div className="flex flex-col items-center">
-                <div className="w-full aspect-square border border-[var(--matrix-green)] flex items-center justify-center mb-4 overflow-hidden">
+                <div className="w-full aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center mb-4 overflow-hidden bg-white">
                   {profilePicturePreview ? (
                     <img 
                       src={profilePicturePreview} 
                       alt={displayName} 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-xl"
                     />
                   ) : (
-                    <User className="w-16 h-16 text-[var(--matrix-green)]" />
+                    <User className="w-16 h-16 text-slate-300" />
                   )}
                 </div>
                 
-                <div className="text-center text-[var(--matrix-green)] text-sm mb-2">
+                <div className="text-center text-slate-900 font-medium text-sm mb-1">
                   {displayName}
                 </div>
                 
-                <div className="text-xs text-[var(--matrix-green)]/70 text-center break-all">
+                <div className="text-xs text-slate-500 text-center break-all">
                   {address}
                 </div>
               </div>
@@ -372,9 +362,9 @@ export default function EditProfilePage() {
               <div className="mt-4 flex justify-center">
                 <Label
                   htmlFor="profilePicture"
-                  className="cursor-pointer text-center text-[var(--matrix-green)] text-xs py-1 px-2 border border-[var(--matrix-green)]/50 hover:bg-[var(--matrix-green)]/10"
+                  className="cursor-pointer text-center text-sky-600 text-xs py-1.5 px-3 bg-sky-50 hover:bg-sky-100 rounded-full border border-sky-200 transition-colors"
                 >
-                  UPLOAD_AVATAR
+                  Upload Avatar
                 </Label>
                 <Input
                   id="profilePicture"
@@ -387,11 +377,11 @@ export default function EditProfilePage() {
             </div>
             
             {/* User details section */}
-            <div className="md:col-span-3 border border-[var(--matrix-green)] p-4">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="md:col-span-3 bg-slate-50 rounded-xl p-5">
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <div className="text-[var(--matrix-green)] mb-1">NICKNAME:</div>
+                    <Label className="text-slate-700 text-sm font-medium mb-2 block">Nickname</Label>
                     <Input
                       type="text"
                       id="nickname"
@@ -399,39 +389,36 @@ export default function EditProfilePage() {
                       value={nickname}
                       onChange={(e) => setNickname(e.target.value)}
                       disabled={isSaving}
-                      className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20 rounded-none h-8"
+                      className="border-slate-200 bg-white text-slate-900 focus:border-sky-400 focus:ring-sky-200 rounded-xl"
                     />
                   </div>
                   
                   <div>
-                    <div className="text-[var(--matrix-green)] mb-1">ADDRESS:</div>
-                    <div className="text-[var(--matrix-green)] text-sm truncate">{shortenAddress(address || '', 12)}</div>
+                    <Label className="text-slate-700 text-sm font-medium mb-2 block">Address</Label>
+                    <div className="text-slate-600 text-sm font-mono bg-white px-3 py-2 rounded-xl border border-slate-200 truncate">{shortenAddress(address || '', 12)}</div>
                   </div>
                 </div>
                 
-                <div>
-                  <div className="text-[var(--matrix-green)] mb-1">STATUS:</div>
-                  <div className="text-[var(--matrix-green)]">ACTIVE</div>
+                <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <Label className="text-slate-700 text-sm font-medium mb-2 block">Status</Label>
+                    <span className="inline-flex px-3 py-1 bg-emerald-100 text-emerald-700 text-sm rounded-full">Active</span>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-slate-700 text-sm font-medium mb-2 block">Member Since</Label>
+                    <div className="text-slate-600 text-sm">March 2023</div>
+                  </div>
                 </div>
                 
-                <div>
-                  <div className="text-[var(--matrix-green)] mb-1">MEMBER_SINCE:</div>
-                  <div className="text-[var(--matrix-green)]">March 2023</div>
-                </div>
-                
-                <div>
-                  <div className="text-[var(--matrix-green)] mb-1">POSTS:</div>
-                  <div className="text-[var(--matrix-green)]">0</div>
-                </div>
-                
-                <div className="border-t border-[var(--matrix-green)]/30 my-2 pt-2">
-                  <div className="text-[var(--matrix-green)] mb-1">BIO:</div>
+                <div className="border-t border-slate-200 pt-5">
+                  <Label className="text-slate-700 text-sm font-medium mb-2 block">Bio</Label>
                   <Textarea
                     id="bio"
                     placeholder="Tell the community about yourself"
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    className="border-[var(--matrix-green)]/50 bg-black text-[var(--matrix-green)] focus:border-[var(--matrix-green)] focus:ring-[var(--matrix-green)]/20 rounded-none resize-none"
+                    className="border-slate-200 bg-white text-slate-900 focus:border-sky-400 focus:ring-sky-200 rounded-xl resize-none"
                     rows={3}
                   />
                 </div>
@@ -439,47 +426,27 @@ export default function EditProfilePage() {
             </div>
           </div>
           
-          {/* Submit button */}
-          <div className="mt-4 flex justify-between">
+          {/* Action buttons */}
+          <div className="flex justify-between pt-4 border-t border-slate-200">
             <Button 
               onClick={() => router.push('/profile')}
-              className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5 text-sm"
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Profile</span>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Profile
             </Button>
             
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)]"
+              className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5 text-sm disabled:opacity-50"
             >
-              <Save className="h-4 w-4" />
-              <span>Edit Profile</span>
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Saving..." : "Save Profile"}
             </Button>
           </div>
         </div>
       </div>
-      
-      {/* Custom styles for matrix effects */}
-      <style jsx global>{`
-        :root {
-          --matrix-green: #00ff00;
-        }
-        
-        .cursor {
-          animation: blink 1s step-end infinite;
-        }
-        
-        @keyframes blink {
-          50% { opacity: 0; }
-        }
-        
-        /* Add a subtle text effect */
-        .text-[var(--matrix-green)] {
-          text-shadow: 0 0 5px var(--matrix-green);
-        }
-      `}</style>
     </div>
   );
 }

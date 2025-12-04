@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { BrowserProvider } from "ethers";
+import { BrowserProvider, JsonRpcProvider } from "ethers";
 
 interface WalletContextProps {
     isConnected: boolean;
@@ -26,10 +26,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [ensName, setEnsName] = useState<string | null>(null);
     const [provider, setProvider] = useState<BrowserProvider | null>(null);
 
-    // Nueva función para resolver ENS
-    const resolveEns = async (addr: string, prov: BrowserProvider) => {
+    // Función para resolver ENS usando mainnet (ENS vive en Ethereum mainnet)
+    const resolveEns = async (addr: string) => {
         try {
-            const name = await prov.lookupAddress(addr);
+            // Usar un provider público de Ethereum mainnet para resolver ENS
+            const mainnetProvider = new JsonRpcProvider("https://eth.llamarpc.com");
+            const name = await mainnetProvider.lookupAddress(addr);
             setEnsName(name);
         } catch (error) {
             console.warn("Error al resolver ENS:", error);
@@ -64,7 +66,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setProvider(prov);
 
             // Resolver ENS después de conectar
-            await resolveEns(accounts[0], prov);
+            await resolveEns(accounts[0]);
         } catch (error) {
             console.error("Error al conectar la wallet:", error);
         }
@@ -86,7 +88,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 } else {
                     setAddress(accounts[0]);
                     // Actualizar ENS cuando cambia la cuenta
-                    await resolveEns(accounts[0], provider);
+                    await resolveEns(accounts[0]);
                 }
             });
         }

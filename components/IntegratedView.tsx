@@ -1183,26 +1183,26 @@ export const IntegratedView = ({
                                     }`}
                                 onClick={() => handleCommunityClick(community)}
                             >
-                                {/* Cover image - displayed at the top */}
-                                {community.coverImage && (
-                                    <div className="w-full h-32 rounded-lg overflow-hidden mb-4 -mt-4 -mx-4 px-4 pt-4">
-                                        <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
-                                            alt={`${community.name} cover`}
-                                            className="w-full h-full object-cover rounded-t-lg"
-                                            onError={(e) => {
-                                                // If image fails to load, hide the container
-                                                const target = e.target as HTMLImageElement;
-                                                target.parentElement!.style.display = 'none';
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                                
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-start space-x-3">
-                                        {/* Community Photo */}
-                                        <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full border-2 border-slate-200">
+                                {/* Cover image with overlapping community photo */}
+                                <div className={`relative ${community.coverImage ? 'mb-14' : 'mb-3'}`}>
+                                    {community.coverImage && (
+                                        <div className="w-full h-36 rounded-xl overflow-hidden -mt-5 -mx-5 px-5 pt-5" style={{width: 'calc(100% + 2.5rem)'}}>
+                                            <img 
+                                                src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                                alt={`${community.name} cover`}
+                                                className="w-full h-full object-cover rounded-t-xl"
+                                                onError={(e) => {
+                                                    // If image fails to load, hide the container
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.parentElement!.style.display = 'none';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    
+                                    {/* Community Photo - overlapping cover */}
+                                    <div className={`${community.coverImage ? 'absolute -bottom-12 left-4' : ''} flex items-end gap-4`}>
+                                        <div className={`flex-shrink-0 ${community.coverImage ? 'w-24 h-24' : 'w-16 h-16'} overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg`}>
                                             {community.photo ? (
                                                 <img 
                                                     src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
@@ -1215,13 +1215,22 @@ export const IntegratedView = ({
                                                 />
                                             ) : (
                                                 // Placeholder for communities without a photo
-                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 font-semibold">
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 font-bold text-2xl">
                                                     {community.name.charAt(0).toUpperCase()}
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className="text-xl font-semibold text-slate-900">{community.name}</h3>
+                                        {community.coverImage && (
+                                            <h3 className="text-xl font-semibold text-slate-900 mb-1">{community.name}</h3>
+                                        )}
                                     </div>
+                                </div>
+                                
+                                <div className="flex justify-between items-start mb-3">
+                                    {!community.coverImage && (
+                                        <h3 className="text-xl font-semibold text-slate-900">{community.name}</h3>
+                                    )}
+                                    {community.coverImage && <div></div>}
                                     <div className="flex flex-col items-end">
                                         <div className="flex space-x-2">
                                             <span className="text-slate-500 text-sm">
@@ -1425,34 +1434,39 @@ export const IntegratedView = ({
                     {(() => {
                         const community = localCommunities.find(c => c.id === selectedCommunityId);
                         return community?.coverImage ? (
-                            <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-                                <img 
-                                    src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
-                                    alt={`${getCommunityName(selectedCommunityId)} cover`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        // If image fails to load, hide the container
-                                        const target = e.target as HTMLImageElement;
-                                        target.parentElement!.style.display = 'none';
-                                    }}
-                                />
-                                {/* Community photo overlaid on cover image */}
-                                {community.photo && (
-                                    <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full border-3 border-white overflow-hidden bg-white shadow-lg">
-                                        <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
-                                            alt={community.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                // Fallback to a default image
-                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                            }}
-                                        />
+                            <div className="relative mb-12">
+                                {/* Cover image container */}
+                                <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                                    <img 
+                                        src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                        alt={`${getCommunityName(selectedCommunityId)} cover`}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            // If image fails to load, hide the container
+                                            const target = e.target as HTMLImageElement;
+                                            target.parentElement!.style.display = 'none';
+                                        }}
+                                    />
+                                </div>
+                                {/* Community photo overlapping cover image */}
+                                <div className="absolute -bottom-10 left-6 flex items-end gap-4">
+                                    {community.photo && (
+                                        <div className="w-28 h-28 rounded-2xl border-4 border-white overflow-hidden bg-white shadow-xl">
+                                            <img 
+                                                src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                alt={community.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    // Fallback to a default image
+                                                    (e.target as HTMLImageElement).src = '/community-placeholder.png';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Community name next to photo */}
+                                    <div className="mb-2">
+                                        <h2 className="text-2xl font-semibold text-slate-900">{community.name}</h2>
                                     </div>
-                                )}
-                                {/* Community name overlaid on cover image */}
-                                <div className="absolute bottom-4 left-28 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm">
-                                    <h2 className="text-xl font-semibold text-slate-900">{community.name}</h2>
                                 </div>
                             </div>
                         ) : (
