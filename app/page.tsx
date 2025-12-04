@@ -97,10 +97,6 @@ function Landing() {
                         <h1 className="text-xl font-semibold text-slate-900">Node Speak v3.0</h1>
                     </div>
                     <div className="flex items-center gap-4">
-                        <span className="hidden md:inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 border border-sky-200">
-                            <span className="mr-2 h-1.5 w-1.5 rounded-full bg-sky-500" />
-                            Now live on Arbitrum One
-                        </span>
                         <WalletConnect />
                     </div>
                 </header>
@@ -108,9 +104,6 @@ function Landing() {
                 <main className="grid gap-8 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.4fr)] items-start">
                     <section className="space-y-6">
                         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 px-8 py-10">
-                            <p className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 border border-sky-200 mb-6">
-                                Now live on Arbitrum One
-                            </p>
                             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 mb-4">
                                 A calm social space for decentralized communities.
                             </h2>
