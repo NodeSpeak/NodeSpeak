@@ -104,7 +104,7 @@ const MatrixEditor = ({ content, setContent }: { content: string; setContent: Re
         },
         editorProps: {
             attributes: {
-                class: 'bg-black border-2 border-[var(--matrix-green)] text-white p-4 rounded focus:outline-none min-h-[150px] prose prose-invert prose-sm max-w-none',
+                class: 'bg-white border border-slate-200 text-slate-900 p-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400 min-h-[150px] prose prose-sm max-w-none',
             },
         },
     });
@@ -114,23 +114,23 @@ const MatrixEditor = ({ content, setContent }: { content: string; setContent: Re
     }
 
     return (
-        <div className="matrix-editor">
+        <div className="rich-editor">
             <div className="flex gap-2 mb-2 flex-wrap">
                 <button
                     onClick={() => editor.chain().focus().toggleBold().run()}
-                    className={`px-2 py-1 text-xs border border-[var(--matrix-green)] rounded hover:bg-[var(--matrix-green)] hover:text-black ${editor.isActive('bold') ? 'bg-[var(--matrix-green)] text-black' : 'text-[var(--matrix-green)]'}`}
+                    className={`px-3 py-1.5 text-xs border rounded-lg transition-colors ${editor.isActive('bold') ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
                 >
                     Bold
                 </button>
                 <button
                     onClick={() => editor.chain().focus().toggleItalic().run()}
-                    className={`px-2 py-1 text-xs border border-[var(--matrix-green)] rounded hover:bg-[var(--matrix-green)] hover:text-black ${editor.isActive('italic') ? 'bg-[var(--matrix-green)] text-black' : 'text-[var(--matrix-green)]'}`}
+                    className={`px-3 py-1.5 text-xs border rounded-lg transition-colors ${editor.isActive('italic') ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
                 >
                     Italic
                 </button>
                 <button
                     onClick={() => editor.chain().focus().toggleCode().run()}
-                    className={`px-2 py-1 text-xs border border-[var(--matrix-green)] rounded hover:bg-[var(--matrix-green)] hover:text-black ${editor.isActive('code') ? 'bg-[var(--matrix-green)] text-black' : 'text-[var(--matrix-green)]'}`}
+                    className={`px-3 py-1.5 text-xs border rounded-lg transition-colors ${editor.isActive('code') ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
                 >
                     Code
                 </button>
@@ -141,13 +141,13 @@ const MatrixEditor = ({ content, setContent }: { content: string; setContent: Re
                             editor.chain().focus().setLink({ href: url }).run();
                         }
                     }}
-                    className={`px-2 py-1 text-xs border border-[var(--matrix-green)] rounded hover:bg-[var(--matrix-green)] hover:text-black ${editor.isActive('link') ? 'bg-[var(--matrix-green)] text-black' : 'text-[var(--matrix-green)]'}`}
+                    className={`px-3 py-1.5 text-xs border rounded-lg transition-colors ${editor.isActive('link') ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
                 >
                     Link
                 </button>
                 <button
                     onClick={() => editor.chain().focus().unsetLink().run()}
-                    className={`px-2 py-1 text-xs border border-[var(--matrix-green)] rounded hover:bg-[var(--matrix-green)] hover:text-black`}
+                    className="px-3 py-1.5 text-xs border rounded-lg transition-colors bg-white text-slate-700 border-slate-200 hover:bg-slate-50 disabled:opacity-50"
                     disabled={!editor.isActive('link')}
                 >
                     Unlink
@@ -166,7 +166,7 @@ const FormattedContent = ({ htmlContent }: { htmlContent: string }) => {
 
     return (
         <div
-            className="post-content prose prose-invert prose-sm max-w-none text-white"
+            className="post-content prose prose-sm max-w-none text-slate-700"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
     );
@@ -968,18 +968,18 @@ export const IntegratedView = ({
 
     // Render Create Post Form
     const renderCreatePostForm = () => (
-        <div className="border-2 border-[var(--matrix-green)] rounded-lg p-6 bg-black">
-            <h2 className="text-xl font-mono mb-4 text-center text-[var(--matrix-green)]">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-center text-slate-900">
                 Create New Post
             </h2>
             <div className="space-y-4">
                 {/* Community Selector */}
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Community</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Community</label>
                     <select
                         value={selectedCommunityId || ""}
                         onChange={handleCommunityChange}
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded w-full"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                     >
                         <option value="" disabled>Select a community</option>
                         {communities.map(community => (
@@ -992,13 +992,13 @@ export const IntegratedView = ({
                             </option>
                         ))}
                     </select>
-                    <p className="text-xs text-gray-400 mt-1">You can only create posts in communities you have joined.</p>
+                    <p className="text-xs text-slate-500 mt-1">You can only create posts in communities you have joined.</p>
                 </div>
 
                 {/* Topic Selector */}
                 {selectedCommunityId && (
                     <div className="flex flex-col">
-                        <label className="text-[var(--matrix-green)] mb-1">Topic</label>
+                        <label className="text-slate-700 font-medium mb-1 text-sm">Topic</label>
                         <TopicsDropdown
                             onTopicSelect={handleTopicChange}
                             topics={communityTopics}
@@ -1011,13 +1011,13 @@ export const IntegratedView = ({
 
                 {/* Post Content - Rich Text Editor */}
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Content</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Content</label>
                     <MatrixEditor content={newPost} setContent={setNewPost} />
                 </div>
 
                 {/* Image Selector */}
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1 flex items-center">
+                    <label className="text-slate-700 font-medium mb-1 text-sm flex items-center">
                         <span>Image</span>
                         <span className="ml-2 cursor-pointer">
                             <input
@@ -1027,13 +1027,13 @@ export const IntegratedView = ({
                                 className="hidden"
                                 id="image-upload"
                             />
-                            <label htmlFor="image-upload">
-                                <ImagePlus className="h-4 w-4 hover:text-[var(--matrix-green)]" />
+                            <label htmlFor="image-upload" className="cursor-pointer">
+                                <ImagePlus className="h-4 w-4 text-slate-500 hover:text-sky-600" />
                             </label>
                         </span>
                     </label>
                     {selectedImage && (
-                        <div className="mt-1 text-xs text-[var(--matrix-green)] p-2 border border-dashed border-[var(--matrix-green)] rounded">
+                        <div className="mt-1 text-xs text-slate-600 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50">
                             {selectedImage.name}
                         </div>
                     )}
@@ -1043,13 +1043,13 @@ export const IntegratedView = ({
                 <div className="flex justify-between items-center pt-2">
                     <Button
                         onClick={() => setIsCreatingPost(false)}
-                        className="bg-transparent border-2 border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10"
+                        className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmitPost}
-                        className="bg-[var(--matrix-green)] text-black hover:bg-opacity-80"
+                        className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5"
                         disabled={loading || !postSelectedTopic || !selectedCommunityId}
                     >
                         {loading ? (
@@ -1069,54 +1069,55 @@ export const IntegratedView = ({
 
     // Render Create Community Form
     const renderCreateCommunityForm = () => (
-        <div className="border-2 border-[var(--matrix-green)] rounded-lg p-6 bg-black">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4 text-center text-slate-900">Create New Community</h2>
             <form className="space-y-4">
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Community Name</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Community Name</label>
                     <input
                         type="text"
                         placeholder="Enter community name"
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                         id="community-name"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Description</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Description</label>
                     <textarea
                         placeholder="What is this community about?"
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded h-32"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl h-32 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                         id="community-description"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Topics (comma separated)</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Topics (comma separated)</label>
                     <input
                         type="text"
                         placeholder="General, Technology, Blockchain"
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                         id="community-topics"
                     />
-                    <p className="text-xs text-gray-400 mt-1">At least one topic is required</p>
+                    <p className="text-xs text-slate-500 mt-1">At least one topic is required</p>
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Photo</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Photo</label>
                     <input
                         type="file"
                         accept="image/*"
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                         id="community-photo"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-[var(--matrix-green)] mb-1">Cover Image</label>
+                    <label className="text-slate-700 font-medium mb-1 text-sm">Cover Image</label>
                     <input
                         type="file"
                         accept="image/*"
-                        className="bg-black border-2 border-[var(--matrix-green)] text-white p-2 rounded"
+                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                         id="community-cover"
                     />
                 </div>
@@ -1143,7 +1144,7 @@ export const IntegratedView = ({
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
+                    className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-full py-3"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
@@ -1161,7 +1162,7 @@ export const IntegratedView = ({
         <div>
             <div className="space-y-4">
                 {localCommunities.length === 0 ? (
-                    <p className="text-center text-gray-400">No communities found. Create the first one!</p>
+                    <p className="text-center text-slate-500">No communities found. Create the first one!</p>
                 ) : (
                     [...localCommunities]
                         .sort((a, b) => {
@@ -1176,9 +1177,9 @@ export const IntegratedView = ({
                         }).map((community) => (
                             <div
                                 key={community.id}
-                                className={`border-2 rounded-lg p-4 flex flex-col bg-black cursor-pointer transition-all ${selectedCommunityId === community.id
-                                    ? "border-[var(--matrix-green)] border-4"
-                                    : "border-[var(--matrix-green)] hover:border-opacity-80"
+                                className={`rounded-2xl p-5 flex flex-col bg-white/90 backdrop-blur-sm cursor-pointer transition-all shadow-sm hover:shadow-md ${selectedCommunityId === community.id
+                                    ? "border-2 border-sky-400 ring-2 ring-sky-100"
+                                    : "border border-slate-200 hover:border-slate-300"
                                     }`}
                                 onClick={() => handleCommunityClick(community)}
                             >
@@ -1201,7 +1202,7 @@ export const IntegratedView = ({
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-start space-x-3">
                                         {/* Community Photo */}
-                                        <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full border border-[var(--matrix-green)]">
+                                        <div className="flex-shrink-0 w-12 h-12 overflow-hidden rounded-full border-2 border-slate-200">
                                             {community.photo ? (
                                                 <img 
                                                     src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
@@ -1214,25 +1215,25 @@ export const IntegratedView = ({
                                                 />
                                             ) : (
                                                 // Placeholder for communities without a photo
-                                                <div className="w-full h-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)]">
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 font-semibold">
                                                     {community.name.charAt(0).toUpperCase()}
                                                 </div>
                                             )}
                                         </div>
-                                        <h3 className="text-xl font-bold text-white">{community.name}</h3>
+                                        <h3 className="text-xl font-semibold text-slate-900">{community.name}</h3>
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <div className="flex space-x-2">
-                                            <span className="text-gray-400 text-sm">
+                                            <span className="text-slate-500 text-sm">
                                                 {community.memberCount || 0} members
                                                 {community.isCreator && " (including you)"}
                                             </span>
                                         </div>
-                                        <span className="text-gray-400 text-sm">{community.postCount} posts</span>
+                                        <span className="text-slate-500 text-sm">{community.postCount} posts</span>
                                     </div>
                                 </div>
 
-                                <p className="text-gray-300 mb-3">
+                                <p className="text-slate-600 mb-3">
                                     {community.description.length > 100
                                         ? community.description.substring(0, 100) + "..."
                                         : community.description}
@@ -1240,15 +1241,17 @@ export const IntegratedView = ({
 
                                 {/* Topics section */}
                                 <div className="mb-3">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-sm text-[var(--matrix-green)]">Topics:</span>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm text-slate-600 font-medium">Topics:</span>
 
                                         {/* Add Topic Button - Only shown for creators */}
                                         {community.isCreator && (
                                             <button
                                                 onClick={(e) => toggleAddTopicForm(community.id, e)}
-                                                className={`text-xs py-1 px-2 border w-24 ${showAddTopicForm[community.id] ? 'bg-[rgba(0,255,0,0.1)]' : 'bg-transparent'
-                                                    } border-[var(--matrix-green)] text-[var(--matrix-green)] hover:bg-[rgba(0,255,0,0.1)] rounded flex items-center justify-center transition-colors`}
+                                                className={`text-xs py-1.5 px-3 rounded-lg transition-colors ${showAddTopicForm[community.id] 
+                                                    ? 'bg-slate-100 text-slate-700' 
+                                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                    }`}
                                             >
                                                 {showAddTopicForm[community.id] ? "Cancel" : "Add Topic"}
                                             </button>
@@ -1260,7 +1263,7 @@ export const IntegratedView = ({
                                             <button
                                                 key={index}
                                                 onClick={(e) => handleTopicClick(e, topic)}
-                                                className="px-2 py-1 bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] text-xs rounded-full border border-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 cursor-pointer"
+                                                className="px-3 py-1 bg-sky-50 text-sky-700 text-xs rounded-full border border-sky-200 hover:bg-sky-100 cursor-pointer transition-colors"
                                             >
                                                 {topic}
                                             </button>
@@ -1270,27 +1273,27 @@ export const IntegratedView = ({
 
                                 {/* Add Topic Form */}
                                 <div
-                                    className={`mb-3 border border-[var(--matrix-green)]/30 rounded overflow-hidden transition-all duration-300 ${showAddTopicForm[community.id]
-                                        ? 'max-h-24 opacity-100 p-2'
+                                    className={`mb-3 bg-slate-50 rounded-xl overflow-hidden transition-all duration-300 ${showAddTopicForm[community.id]
+                                        ? 'max-h-24 opacity-100 p-3'
                                         : 'max-h-0 opacity-0 p-0'
                                         }`}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     {showAddTopicForm[community.id] && (
                                         <form onSubmit={(e) => handleAddTopic(community.id, e)} className="flex flex-col">
-                                            <div className="flex mb-2">
+                                            <div className="flex mb-2 gap-2">
                                                 <input
                                                     type="text"
                                                     ref={topicInputRef}
                                                     value={newTopic}
                                                     onChange={(e) => setNewTopic(e.target.value)}
                                                     placeholder="Enter new topic name"
-                                                    className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-1 text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--matrix-green)]"
+                                                    className="flex-grow bg-white border border-slate-200 rounded-lg p-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                                 <button
                                                     type="submit"
-                                                    className="bg-[var(--matrix-green)] text-black px-2 py-1 rounded-r text-sm disabled:opacity-50 min-w-16"
+                                                    className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-slate-800 transition-colors"
                                                     disabled={isSubmittingTopic}
                                                 >
                                                     {isSubmittingTopic ? "Adding..." : "Add"}
@@ -1307,15 +1310,15 @@ export const IntegratedView = ({
                                 </div>
 
                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-2">
                                         {/* Status badges */}
                                         {community.isCreator && (
-                                            <span className="px-2 py-1 rounded text-xs font-medium bg-purple-800 text-white">
+                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
                                                 Creator
                                             </span>
                                         )}
                                         {community.isMember && !community.isCreator && (
-                                            <span className="px-2 py-1 rounded text-xs font-medium bg-blue-700 text-white">
+                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700 border border-sky-200">
                                                 Member
                                             </span>
                                         )}
@@ -1332,11 +1335,11 @@ export const IntegratedView = ({
                                                     handleJoinCommunity(community.id);
                                                 }
                                             }}
-                                            className={`px-3 py-1 rounded text-sm font-medium ${joiningCommunityId === community.id || leavingCommunityId === community.id
-                                                ? "bg-gray-600 text-white"
+                                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${joiningCommunityId === community.id || leavingCommunityId === community.id
+                                                ? "bg-slate-200 text-slate-500"
                                                 : community.isMember
-                                                    ? "bg-red-800 hover:bg-red-700 text-white"
-                                                    : "bg-[var(--matrix-green)] hover:bg-opacity-80 text-black"
+                                                    ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+                                                    : "bg-slate-900 hover:bg-slate-800 text-white"
                                                 }`}
                                             disabled={joiningCommunityId === community.id || leavingCommunityId === community.id}
                                         >
@@ -1363,16 +1366,16 @@ export const IntegratedView = ({
     const renderPostsList = () => (
         <div className="space-y-6">
             {/* Topics filter strip */}
-            <div className="mb-4 p-3 border border-[var(--matrix-green)]/50 rounded bg-black/80">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-[var(--matrix-green)]">Filter by topic:</span>
+            <div className="mb-4 p-4 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="text-slate-600 font-medium text-sm">Filter by topic:</span>
 
                     {/* Show all option */}
                     <button
                         onClick={() => setSelectedTopic(null)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTopic === null
-                            ? "bg-[var(--matrix-green)] text-black"
-                            : "bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] border border-[var(--matrix-green)]"
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedTopic === null
+                            ? "bg-slate-900 text-white"
+                            : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
                             }`}
                     >
                         All
@@ -1383,9 +1386,9 @@ export const IntegratedView = ({
                         <button
                             key={topic}
                             onClick={() => setSelectedTopic(topic)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTopic === topic
-                                ? "bg-[var(--matrix-green)] text-black"
-                                : "bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] border border-[var(--matrix-green)]"
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedTopic === topic
+                                ? "bg-sky-600 text-white"
+                                : "bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
                                 }`}
                         >
                             {topic}
@@ -1395,10 +1398,10 @@ export const IntegratedView = ({
 
                 {/* Community info and back button */}
                 <div className="flex items-center justify-between">
-                    <span className="text-white text-sm">
+                    <span className="text-slate-600 text-sm">
                         {selectedCommunityId ? (
                             <>
-                                Viewing posts in: <span className="text-[var(--matrix-green)] font-semibold">
+                                Viewing posts in: <span className="text-slate-900 font-semibold">
                                     {getCommunityName(selectedCommunityId)}
                                 </span>
                             </>
@@ -1410,7 +1413,7 @@ export const IntegratedView = ({
                     </span>
                     <button
                         onClick={toggleView}
-                        className="text-[var(--matrix-green)] text-xs border border-[var(--matrix-green)] px-2 py-1 rounded hover:bg-[var(--matrix-green)]/10"
+                        className="text-slate-600 text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
                     >
                         Back to Communities
                     </button>
@@ -1422,7 +1425,7 @@ export const IntegratedView = ({
                     {(() => {
                         const community = localCommunities.find(c => c.id === selectedCommunityId);
                         return community?.coverImage ? (
-                            <div className="relative w-full h-40 rounded-lg overflow-hidden border border-[var(--matrix-green)]">
+                            <div className="relative w-full h-40 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
                                 <img 
                                     src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
                                     alt={`${getCommunityName(selectedCommunityId)} cover`}
@@ -1435,7 +1438,7 @@ export const IntegratedView = ({
                                 />
                                 {/* Community photo overlaid on cover image */}
                                 {community.photo && (
-                                    <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden bg-black shadow-lg">
+                                    <div className="absolute bottom-4 left-4 w-20 h-20 rounded-full border-3 border-white overflow-hidden bg-white shadow-lg">
                                         <img 
                                             src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
                                             alt={community.name}
@@ -1448,15 +1451,15 @@ export const IntegratedView = ({
                                     </div>
                                 )}
                                 {/* Community name overlaid on cover image */}
-                                <div className="absolute bottom-4 left-28 bg-black/70 px-3 py-1 rounded-md border border-[var(--matrix-green)]">
-                                    <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community.name}</h2>
+                                <div className="absolute bottom-4 left-28 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm">
+                                    <h2 className="text-xl font-semibold text-slate-900">{community.name}</h2>
                                 </div>
                             </div>
                         ) : (
                             // Fallback when no cover image
-                            <div className="w-full p-4 rounded-lg border border-[var(--matrix-green)] bg-black/80 mb-4 flex items-center">
+                            <div className="w-full p-4 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
                                 {community?.photo ? (
-                                    <div className="w-16 h-16 rounded-full border-2 border-[var(--matrix-green)] overflow-hidden mr-4">
+                                    <div className="w-16 h-16 rounded-full border-2 border-slate-200 overflow-hidden mr-4">
                                         <img 
                                             src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
                                             alt={community.name}
@@ -1468,20 +1471,20 @@ export const IntegratedView = ({
                                         />
                                     </div>
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] border-2 border-[var(--matrix-green)] mr-4">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 font-semibold border-2 border-slate-200 mr-4">
                                         {community?.name.charAt(0).toUpperCase() || "C"}
                                     </div>
                                 )}
-                                <h2 className="text-xl font-bold text-[var(--matrix-green)]">{community?.name}</h2>
+                                <h2 className="text-xl font-semibold text-slate-900">{community?.name}</h2>
                             </div>
                         );
                     })()}
                 </div>
             )}
             {filteredPosts.length === 0 ? (
-                <div className="p-6 text-center border border-[var(--matrix-green)]/30 rounded-lg bg-black">
-                    <p className="text-[var(--matrix-green)] mb-2">No posts found with the current filters.</p>
-                    <p className="text-gray-400 text-sm">
+                <div className="p-8 text-center bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm">
+                    <p className="text-slate-700 mb-2 font-medium">No posts found with the current filters.</p>
+                    <p className="text-slate-500 text-sm">
                         {selectedTopic
                             ? `There are no posts with the topic "${selectedTopic}".`
                             : selectedCommunityId
@@ -1493,7 +1496,7 @@ export const IntegratedView = ({
                 filteredPosts.map((post) => (
                     <div
                         key={post.id}
-                        className="border border-[var(--matrix-green)] rounded-lg bg-black p-4"
+                        className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow"
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div>
@@ -1506,14 +1509,14 @@ export const IntegratedView = ({
                                         className="mr-3"
                                     />
                                     <div className="flex flex-col">
-                                        <div className="flex items-center space-x-2 text-xs text-[var(--matrix-green)]/70">
+                                        <div className="flex items-center space-x-2 text-xs text-slate-500">
                                             <span>{formatDate(post.timestamp)}</span>
                                             <span>•</span>
-                                            <span className="bg-[var(--matrix-green)]/20 px-2 py-0.5 rounded-full">
-                                                Topic: {post.topic}
+                                            <span className="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full border border-sky-200">
+                                                {post.topic}
                                             </span>
                                             <span>•</span>
-                                            <span>Community: {getCommunityName(post.communityId)}</span>
+                                            <span>{getCommunityName(post.communityId)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1530,25 +1533,25 @@ export const IntegratedView = ({
                                 <img
                                     src={post.imageUrl}
                                     alt="Post attachment"
-                                    className="max-w-full max-h-95 rounded border border-[var(--matrix-green)]/30 object-contain"
+                                    className="max-w-full max-h-96 rounded-xl border border-slate-200 object-contain"
                                 />
                             </div>
                         )}
 
-                        <div className="flex items-center mt-4 space-x-4 text-xs text-[var(--matrix-green)]/70">
+                        <div className="flex items-center mt-4 space-x-4 text-sm text-slate-500">
                             <button
                                 onClick={() => likePost(post.id)}
-                                className="flex items-center space-x-1 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
+                                className="flex items-center space-x-1 hover:text-rose-500 transition-colors"
                                 disabled={likingPost[post.id]}
                             >
                                 <span className={`${likingPost[post.id] ? 'animate-pulse' : ''}`}>
-                                    {likingPost[post.id] ? '💗' : '❤'}
+                                    {likingPost[post.id] ? '💗' : '❤️'}
                                 </span>
                                 <span>{post.likeCount} likes</span>
                             </button>
                             <button
                                 onClick={() => toggleComments(post.id)}
-                                className="flex items-center space-x-2 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
+                                className="flex items-center space-x-2 hover:text-sky-500 transition-colors"
                             >
                                 <span>💬</span>
                                 <span className="relative">
@@ -1559,11 +1562,11 @@ export const IntegratedView = ({
 
                         {/* Comments section */}
                         {expandedComments[post.id] && (
-                            <div className="mt-4 w-full border-t border-[var(--matrix-green)]/30 pt-4">
-                                <h3 className="text-[var(--matrix-green)] mb-2 font-mono">Comments</h3>
+                            <div className="mt-4 w-full border-t border-slate-200 pt-4">
+                                <h3 className="text-slate-700 mb-3 font-medium">Comments</h3>
 
                                 {/* Comment input */}
-                                <div className="flex mt-2 mb-4">
+                                <div className="flex mt-2 mb-4 gap-2">
                                     <input
                                         type="text"
                                         value={newCommentText[post.id] || ""}
@@ -1572,7 +1575,7 @@ export const IntegratedView = ({
                                             [post.id]: e.target.value
                                         })}
                                         placeholder="Add your comment..."
-                                        className="flex-grow bg-black border border-[var(--matrix-green)] rounded-l p-2 text-white focus:outline-none focus:ring-1 focus:ring-[var(--matrix-green)]"
+                                        className="flex-grow bg-white border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter') {
                                                 addComment(post.id);
@@ -1582,7 +1585,7 @@ export const IntegratedView = ({
                                     />
                                     <button
                                         onClick={() => addComment(post.id)}
-                                        className="bg-[var(--matrix-green)] text-black px-4 py-2 rounded-r hover:bg-green-400 transition-colors disabled:opacity-50"
+                                        className="bg-slate-900 text-white px-5 py-2 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
                                         disabled={submittingComment[post.id]}
                                     >
                                         {submittingComment[post.id] ? "Sending..." : "Send"}
@@ -1592,14 +1595,14 @@ export const IntegratedView = ({
                                 {/* Comments list */}
                                 <div className="space-y-3 mb-4">
                                     {loadingComments[post.id] ? (
-                                        <div className="text-center text-[var(--matrix-green)]/70">
+                                        <div className="text-center text-slate-500">
                                             Loading comments...
                                         </div>
                                     ) : comments[post.id]?.length > 0 ? (
                                         comments[post.id].map((comment) => (
-                                            <div key={comment.id} className="border border-gray-700 rounded p-3 bg-black/60">
+                                            <div key={comment.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50">
                                                 <div className="flex items-start mb-2">
-                                                    <div className="mr-2 flex-shrink-0">
+                                                    <div className="mr-3 flex-shrink-0">
                                                         <UserAvatar 
                                                             address={comment.author || ''} 
                                                             size="sm"
@@ -1608,21 +1611,21 @@ export const IntegratedView = ({
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="flex justify-end items-center">
-                                                            <span className="text-gray-500 text-xs">
+                                                            <span className="text-slate-400 text-xs">
                                                                 {formatDate(comment.timestamp)}
                                                             </span>
                                                         </div>
-                                                        <p className="text-white text-sm mt-1">{comment.content}</p>
+                                                        <p className="text-slate-700 text-sm mt-1">{comment.content}</p>
                                                         
                                                         {/* Comment actions */}
                                                         <div className="flex mt-2 space-x-4 text-xs">
                                                             <button
                                                                 onClick={() => likeComment(comment.id)}
-                                                                className="flex items-center space-x-1 text-[var(--matrix-green)] hover:text-green-400 transition-colors"
+                                                                className="flex items-center space-x-1 text-slate-500 hover:text-rose-500 transition-colors"
                                                                 disabled={likingComment[comment.id]}
                                                             >
                                                                 <span className={`${likingComment[comment.id] ? 'animate-pulse' : ''}`}>
-                                                                    {likingComment[comment.id] ? '💗' : '❤'}
+                                                                    {likingComment[comment.id] ? '💗' : '❤️'}
                                                                 </span>
                                                                 <span>{comment.likeCount || 0} likes</span>
                                                             </button>
@@ -1632,7 +1635,7 @@ export const IntegratedView = ({
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-gray-500 text-sm italic">No comments yet. Be the first to comment!</p>
+                                        <p className="text-slate-500 text-sm italic">No comments yet. Be the first to comment!</p>
                                     )}
                                 </div>
                             </div>
@@ -1649,9 +1652,9 @@ export const IntegratedView = ({
     }, [localCommunities]);
 
     return (
-        <div className="terminal-window p-6 rounded-lg">
+        <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-lg">
             {/* Title always at top */}
-            <h1 className="text-2xl font-mono text-center text-[var(--matrix-green)] mb-2">
+            <h1 className="text-2xl font-semibold text-center text-slate-900 mb-4">
                 {isCreatingCommunity
                     ? "Create New Community"
                     : isCreatingPost
@@ -1662,7 +1665,7 @@ export const IntegratedView = ({
             </h1>
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between mb-4 pb-2">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
                 <div className="flex gap-2">
                     {/* Show View Posts button if user has communities and we're in communities view */}
                     {showCommunityList && hasAccessibleCommunities && !isCreatingCommunity && (
@@ -1670,7 +1673,7 @@ export const IntegratedView = ({
                             onClick={() => {
                                 setShowCommunityList(false);
                             }}
-                            className="bg-[var(--matrix-green)]/20 text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/30 border border-[var(--matrix-green)]"
+                            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5"
                         >
                             View Posts
                         </Button>
@@ -1683,9 +1686,9 @@ export const IntegratedView = ({
                     {showCommunityList && (
                         <Button
                             onClick={() => setIsCreatingCommunity(!isCreatingCommunity)}
-                            className={`${isCreatingCommunity
-                                ? "bg-red-800 hover:bg-red-700 text-white"
-                                : "bg-[var(--matrix-green)] text-black hover:bg-opacity-80"}`}
+                            className={`rounded-full px-5 ${isCreatingCommunity
+                                ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+                                : "bg-slate-900 text-white hover:bg-slate-800"}`}
                         >
                             {isCreatingCommunity ? "Cancel" : "Create Community"}
                         </Button>
@@ -1695,9 +1698,9 @@ export const IntegratedView = ({
                     {!showCommunityList && !isCreatingCommunity && (
                         <Button
                             onClick={() => setIsCreatingPost(!isCreatingPost)}
-                            className={`${isCreatingPost
-                                ? "bg-red-800 hover:bg-red-700 text-white"
-                                : "bg-[var(--matrix-green)] text-black hover:bg-opacity-80"}`}
+                            className={`rounded-full px-5 ${isCreatingPost
+                                ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
+                                : "bg-slate-900 text-white hover:bg-slate-800"}`}
                         >
                             {isCreatingPost ? "Cancel" : "Create Post"}
                         </Button>

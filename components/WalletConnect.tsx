@@ -29,25 +29,21 @@ export const WalletConnect = () => {
     };
 
     return (
-        <div className="text-xs flex items-center justify-end">
+        <div className="text-sm flex items-center justify-end">
             {isConnected ? (
-                <div className="flex items-center space-x-2">
-                    <Check className="h-3 w-3 text-[var(--matrix-green)]" />
-                    <div>
-                        {ensName ? (
-                            <span>{ensName}</span>
-                        ) : (
-                            <span className="font-mono">
-                                {address?.slice(0, 6)}...{address?.slice(-4)}
-                            </span>
-                        )}
+                <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200">
+                        <Check className="h-3 w-3" />
+                        <span className="font-medium">
+                            {ensName ? ensName : `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                        </span>
                     </div>
                     <CypherpunkProfileButton />
                     <Button
                         onClick={handleDisconnect}
-                        className="bg-[#441111] hover:bg-[#661111] text-white text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-red-500"
+                        className="bg-red-50 hover:bg-red-100 text-red-600 text-xs py-1.5 px-3 h-auto flex items-center space-x-1 border border-red-200 rounded-full transition-colors"
                     >
-                        <LogOut className="h-4 w-4" /> <span>Exit</span>
+                        <LogOut className="h-3 w-3" /> <span>Exit</span>
                     </Button>
                 </div>
             ) : (

@@ -15,9 +15,9 @@ export function CypherpunkProfileButton({ className = "" }: CypherpunkProfileBut
   return (
     <Button
       onClick={() => router.push('/profile')}
-      className={`bg-[#001800] hover:bg-[#002800] text-[var(--matrix-green)] text-xs py-1 px-2 h-auto flex items-center space-x-1 border border-[var(--matrix-green)] ${className}`}
+      className={`bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs py-1.5 px-3 h-auto flex items-center space-x-1 border border-slate-200 rounded-full transition-colors ${className}`}
     >
-      <User className="h-4 w-4" />
+      <User className="h-3 w-3" />
       <span>Profile</span>
     </Button>
   );

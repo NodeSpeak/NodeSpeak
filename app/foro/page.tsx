@@ -1,7 +1,5 @@
 "use client";
-import { MatrixRain } from '@/components/MatrixRain';
 import { WalletConnect } from '@/components/WalletConnect';
-import { SystemStatus } from '@/components/SystemStatus';
 import { useState, useEffect, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -599,15 +597,18 @@ const handleCreateCommunity = async (
     }, [isConnected, provider]);
 
     return (
-        <div className="min-h-screen relative">
-            <MatrixRain />
-            <div className="container mx-auto p-4 relative z-10">
-                <header className="mb-8">
-                    <div className="flex justify-between items-start">
-                        <h1 className="text-2xl font-mono">{siteConfig.name}</h1>
-                        <div className="flex flex-col items-end space-y-2">
+        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                <header className="mb-10">
+                    <div className="flex justify-between items-center">
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold tracking-[0.25em] text-slate-500 uppercase">
+                                Arbitrum Social
+                            </p>
+                            <h1 className="text-2xl font-semibold text-slate-900">{siteConfig.name}</h1>
+                        </div>
+                        <div className="flex items-center gap-4">
                             <WalletConnect />
-                            <SystemStatus />
                         </div>
                     </div>
                 </header>
@@ -616,8 +617,8 @@ const handleCreateCommunity = async (
                     <main className="space-y-6">
                         {/* Loading indicator */}
                         {isLoading && (
-                            <div className="text-center p-4">
-                                <p className="text-[var(--matrix-green)] animate-pulse">Loading...</p>
+                            <div className="text-center p-6">
+                                <p className="text-slate-500 animate-pulse">Loading...</p>
                             </div>
                         )}
 

@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { WalletProvider } from '@/contexts/WalletContext';
 
 export const metadata: Metadata = {
-    title: 'Node Speak Terminal',
-    description: 'Enter the Matrix - A Web3 Community Platform',
+    title: 'Node Speak',
+    description: 'A calm social space for decentralized communities',
     icons: {
         icon: [
             { url: '/favicon.ico' },
@@ -26,8 +26,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet" />
-                {/* Explicitly add favicon links for debugging */}
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
                 <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
@@ -35,7 +34,7 @@ export default function RootLayout({
                 <link rel="manifest" href="/site.webmanifest" />
             </head>
             <body>
-                <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
                     <WalletProvider>
                         {children}
                         <Toaster />

@@ -56,22 +56,24 @@ export function TopicsDropdown({ onTopicSelect, topics, setTopics, disableAdding
     return (
         <div className="relative mb-4">
             <div
-                className="bg-black border-2 border-[var(--matrix-green)] rounded p-2 cursor-pointer flex justify-between items-center"
+                className="bg-white border border-slate-200 rounded-xl p-3 cursor-pointer flex justify-between items-center hover:border-slate-300 transition-colors"
                 onClick={toggleDropdown}
             >
-                <span className="text-white">
-                    {selectedTopic || "Seleccionar Tópico"}
+                <span className="text-slate-700">
+                    {selectedTopic || "Select Topic"}
                 </span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
 
             {isOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-black border-2 border-[var(--matrix-green)] rounded shadow-lg">
+                <div className="absolute z-10 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
                     <ul className="py-1">
                         {topics.map((topic) => (
                             <li
                                 key={topic.id}
-                                className={`px-2 py-1 cursor-pointer hover:bg-gray-900 ${selectedTopic === topic.name ? 'text-[var(--matrix-green)]' : 'text-white'
+                                className={`px-4 py-2 cursor-pointer transition-colors ${selectedTopic === topic.name 
+                                    ? 'bg-sky-50 text-sky-700' 
+                                    : 'text-slate-700 hover:bg-slate-50'
                                     }`}
                                 onClick={() => selectTopic(topic.name)}
                             >
@@ -83,31 +85,31 @@ export function TopicsDropdown({ onTopicSelect, topics, setTopics, disableAdding
                             <>
                                 {!addingTopic && (
                                     <li
-                                        className="px-2 py-1 cursor-pointer hover:bg-gray-900 text-[var(--matrix-green)] flex items-center"
+                                        className="px-4 py-2 cursor-pointer hover:bg-slate-50 text-sky-600 flex items-center border-t border-slate-100"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             setAddingTopic(true);
                                         }}
                                     >
-                                        <Plus className="h-4 w-4 mr-1" /> Añadir Tópico
+                                        <Plus className="h-4 w-4 mr-2" /> Add Topic
                                     </li>
                                 )}
 
                                 {addingTopic && (
-                                    <li className="px-2 py-1 flex items-center" onClick={(e) => e.stopPropagation()}>
+                                    <li className="px-3 py-2 flex items-center gap-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                                         <input
                                             type="text"
                                             value={newTopic}
                                             onChange={(e) => setNewTopic(e.target.value)}
-                                            className="bg-black border border-[var(--matrix-green)] text-white p-1 rounded flex-1 mr-2"
-                                            placeholder="Nuevo tópico"
+                                            className="bg-white border border-slate-200 text-slate-900 p-2 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                                            placeholder="New topic"
                                             autoFocus
                                         />
                                         <Button
                                             onClick={addNewTopic}
-                                            className="text-xs py-1 px-2 h-auto bg-[var(--matrix-green)] text-black hover:bg-[var(--matrix-dark-green)]"
+                                            className="text-xs py-2 px-3 h-auto bg-slate-900 text-white hover:bg-slate-800 rounded-lg"
                                         >
-                                            Añadir
+                                            Add
                                         </Button>
                                     </li>
                                 )}
