@@ -601,12 +601,9 @@ const handleCreateCommunity = async (
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold tracking-[0.25em] text-slate-500 uppercase">
-                                Arbitrum Social
-                            </p>
-                            <h1 className="text-2xl font-semibold text-slate-900">{siteConfig.name}</h1>
-                        </div>
+                        <a href="/" className="block">
+                            <h1 className="text-2xl font-semibold text-slate-900 hover:text-indigo-600 transition-colors">Node Speak v3.3</h1>
+                        </a>
                         <div className="flex items-center gap-4">
                             <WalletConnect />
                         </div>

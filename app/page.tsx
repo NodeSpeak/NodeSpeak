@@ -90,12 +90,7 @@ function Landing() {
         <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] text-slate-900">
             <div className="max-w-7xl mx-auto px-8 pt-12 pb-20">
                 <header className="flex items-center justify-between mb-16">
-                    <div className="space-y-1">
-                        <p className="text-xs font-semibold tracking-[0.25em] text-slate-500 uppercase">
-                            Arbitrum Social
-                        </p>
-                        <h1 className="text-2xl font-semibold text-slate-900">Node Speak v3.0</h1>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900">Node Speak v3.3</h1>
                     <div className="flex items-center gap-4">
                         <WalletConnect />
                     </div>

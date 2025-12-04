@@ -968,18 +968,18 @@ export const IntegratedView = ({
 
     // Render Create Post Form
     const renderCreatePostForm = () => (
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-center text-slate-900">
-                Create New Post
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-6 text-slate-900">
+                New Post
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-5">
                 {/* Community Selector */}
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Community</label>
+                    <label className="text-slate-600 font-medium mb-2 text-sm">Community</label>
                     <select
                         value={selectedCommunityId || ""}
                         onChange={handleCommunityChange}
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                     >
                         <option value="" disabled>Select a community</option>
                         {communities.map(community => (
@@ -998,7 +998,7 @@ export const IntegratedView = ({
                 {/* Topic Selector */}
                 {selectedCommunityId && (
                     <div className="flex flex-col">
-                        <label className="text-slate-700 font-medium mb-1 text-sm">Topic</label>
+                        <label className="text-slate-600 font-medium mb-2 text-sm">Topic</label>
                         <TopicsDropdown
                             onTopicSelect={handleTopicChange}
                             topics={communityTopics}
@@ -1011,14 +1011,14 @@ export const IntegratedView = ({
 
                 {/* Post Content - Rich Text Editor */}
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Content</label>
+                    <label className="text-slate-600 font-medium mb-2 text-sm">Content</label>
                     <MatrixEditor content={newPost} setContent={setNewPost} />
                 </div>
 
                 {/* Image Selector */}
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm flex items-center">
-                        <span>Image</span>
+                    <label className="text-slate-600 font-medium mb-2 text-sm flex items-center">
+                        <span>Attach Image</span>
                         <span className="ml-2 cursor-pointer">
                             <input
                                 type="file"
@@ -1028,34 +1028,32 @@ export const IntegratedView = ({
                                 id="image-upload"
                             />
                             <label htmlFor="image-upload" className="cursor-pointer">
-                                <ImagePlus className="h-4 w-4 text-slate-500 hover:text-sky-600" />
+                                <ImagePlus className="h-4 w-4 text-slate-400 hover:text-indigo-500" />
                             </label>
                         </span>
                     </label>
                     {selectedImage && (
-                        <div className="mt-1 text-xs text-slate-600 p-3 border border-dashed border-slate-300 rounded-xl bg-slate-50">
+                        <div className="mt-1 text-xs text-slate-500 p-3 border border-dashed border-slate-200 rounded-xl bg-slate-50">
                             {selectedImage.name}
                         </div>
                     )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-between items-center pt-2">
+                <div className="flex justify-end items-center gap-3 pt-4">
                     <Button
                         onClick={() => setIsCreatingPost(false)}
-                        className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5"
+                        className="bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 rounded-xl px-5"
                     >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleSubmitPost}
-                        className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5"
+                        className="bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl px-6 font-medium shadow-md shadow-indigo-200"
                         disabled={loading || !postSelectedTopic || !selectedCommunityId}
                     >
                         {loading ? (
-                            <div className="flex items-center">
-                                <span className="mr-2 animate-pulse">Publishing...</span>
-                            </div>
+                            <span className="animate-pulse">Publishing...</span>
                         ) : (
                             <>
                                 Publish <Send className="h-3 w-3 ml-1" />
@@ -1069,57 +1067,59 @@ export const IntegratedView = ({
 
     // Render Create Community Form
     const renderCreateCommunityForm = () => (
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-center text-slate-900">Create New Community</h2>
-            <form className="space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-6 text-slate-900">New Community</h2>
+            <form className="space-y-5">
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Community Name</label>
+                    <label className="text-slate-600 font-medium mb-2 text-sm">Community Name</label>
                     <input
                         type="text"
                         placeholder="Enter community name"
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                         id="community-name"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Description</label>
+                    <label className="text-slate-600 font-medium mb-2 text-sm">Description</label>
                     <textarea
                         placeholder="What is this community about?"
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl h-32 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl h-28 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none"
                         id="community-description"
                     />
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Topics (comma separated)</label>
+                    <label className="text-slate-600 font-medium mb-2 text-sm">Topics</label>
                     <input
                         type="text"
                         placeholder="General, Technology, Blockchain"
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                         id="community-topics"
                     />
-                    <p className="text-xs text-slate-500 mt-1">At least one topic is required</p>
+                    <p className="text-xs text-slate-400 mt-1.5">Comma separated, at least one required</p>
                 </div>
 
-                <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Photo</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
-                        id="community-photo"
-                    />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-2 text-sm">Logo</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                            id="community-photo"
+                        />
+                    </div>
 
-                <div className="flex flex-col">
-                    <label className="text-slate-700 font-medium mb-1 text-sm">Cover Image</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="bg-white border border-slate-200 text-slate-900 p-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
-                        id="community-cover"
-                    />
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-2 text-sm">Cover Image</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                            id="community-cover"
+                        />
+                    </div>
                 </div>
 
                 <Button
@@ -1144,12 +1144,12 @@ export const IntegratedView = ({
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-slate-900 text-white hover:bg-slate-800 rounded-full py-3"
+                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl py-3 font-medium shadow-md shadow-indigo-200 transition-all"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
                         <div className="flex items-center justify-center">
-                            <span className="mr-2 animate-pulse">Creating...</span>
+                            <span className="animate-pulse">Creating...</span>
                         </div>
                     ) : "Create Community"}
                 </Button>
@@ -1159,181 +1159,58 @@ export const IntegratedView = ({
 
     // Render Communities List
     const renderCommunitiesList = () => (
-        <div>
-            <div className="space-y-4">
-                {localCommunities.length === 0 ? (
-                    <p className="text-center text-slate-500">No communities found. Create the first one!</p>
-                ) : (
-                    [...localCommunities]
-                        .sort((a, b) => {
-                            // Convertir IDs a números si es posible o comparar como strings
-                            const idA = parseInt(a.id) || a.id;
-                            const idB = parseInt(b.id) || b.id;
-
-                            // Orden descendente (b - a)
-                            return typeof idA === 'number' && typeof idB === 'number'
-                                ? idB - idA
-                                : String(idB).localeCompare(String(idA));
-                        }).map((community) => (
-                            <div
-                                key={community.id}
-                                className={`rounded-2xl p-5 flex flex-col bg-white/90 backdrop-blur-sm cursor-pointer transition-all shadow-sm hover:shadow-md ${selectedCommunityId === community.id
-                                    ? "border-2 border-sky-400 ring-2 ring-sky-100"
-                                    : "border border-slate-200 hover:border-slate-300"
-                                    }`}
-                                onClick={() => handleCommunityClick(community)}
-                            >
-                                {/* Cover image with overlapping community photo */}
-                                <div className={`relative ${community.coverImage ? 'mb-14' : 'mb-3'}`}>
-                                    {community.coverImage && (
-                                        <div className="w-full h-36 rounded-xl overflow-hidden -mt-5 -mx-5 px-5 pt-5" style={{width: 'calc(100% + 2.5rem)'}}>
-                                            <img 
-                                                src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
-                                                alt={`${community.name} cover`}
-                                                className="w-full h-full object-cover rounded-t-xl"
-                                                onError={(e) => {
-                                                    // If image fails to load, hide the container
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.parentElement!.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                    
-                                    {/* Community Photo - overlapping cover */}
-                                    <div className={`${community.coverImage ? 'absolute -bottom-12 left-4' : ''} flex items-end gap-4`}>
-                                        <div className={`flex-shrink-0 ${community.coverImage ? 'w-24 h-24' : 'w-16 h-16'} overflow-hidden rounded-2xl border-4 border-white bg-white shadow-lg`}>
-                                            {community.photo ? (
-                                                <img 
-                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
-                                                    alt={community.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        // Fallback to a default image
-                                                        (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                                    }}
-                                                />
-                                            ) : (
-                                                // Placeholder for communities without a photo
-                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-600 font-bold text-2xl">
-                                                    {community.name.charAt(0).toUpperCase()}
-                                                </div>
-                                            )}
-                                        </div>
-                                        {community.coverImage && (
-                                            <h3 className="text-xl font-semibold text-slate-900 mb-1">{community.name}</h3>
-                                        )}
-                                    </div>
-                                </div>
+        <div className="space-y-6">
+            {localCommunities.length === 0 ? (
+                <div className="text-center py-16 bg-slate-50 rounded-2xl">
+                    <p className="text-slate-500 font-medium">No communities yet</p>
+                    <p className="text-slate-400 text-sm mt-1">Create the first one!</p>
+                </div>
+            ) : (
+                [...localCommunities]
+                    .sort((a, b) => {
+                        const idA = parseInt(a.id) || a.id;
+                        const idB = parseInt(b.id) || b.id;
+                        return typeof idA === 'number' && typeof idB === 'number'
+                            ? idB - idA
+                            : String(idB).localeCompare(String(idA));
+                    }).map((community) => (
+                        <div
+                            key={community.id}
+                            className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all hover:shadow-xl bg-white border ${selectedCommunityId === community.id
+                                ? "ring-2 ring-indigo-400 border-indigo-200"
+                                : "border-slate-200 hover:border-slate-300"
+                                }`}
+                            onClick={() => handleCommunityClick(community)}
+                        >
+                            {/* Banner section */}
+                            <div className="relative h-40">
+                                {community.coverImage ? (
+                                    <>
+                                        <img 
+                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                            alt={`${community.name} cover`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-slate-100 to-slate-50"></div>
+                                )}
                                 
-                                <div className="flex justify-between items-start mb-3">
-                                    {!community.coverImage && (
-                                        <h3 className="text-xl font-semibold text-slate-900">{community.name}</h3>
+                                {/* Actions on top-right of banner */}
+                                <div className="absolute top-4 right-4 flex items-center gap-2">
+                                    {community.isCreator && (
+                                        <button
+                                            onClick={(e) => toggleAddTopicForm(community.id, e)}
+                                            className="text-xs py-1.5 px-3 rounded-full transition-colors bg-white/90 hover:bg-white text-slate-600 font-medium shadow-sm"
+                                        >
+                                            {showAddTopicForm[community.id] ? "Cancel" : "+ Add Topic"}
+                                        </button>
                                     )}
-                                    {community.coverImage && <div></div>}
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex space-x-2">
-                                            <span className="text-slate-500 text-sm">
-                                                {community.memberCount || 0} members
-                                                {community.isCreator && " (including you)"}
-                                            </span>
-                                        </div>
-                                        <span className="text-slate-500 text-sm">{community.postCount} posts</span>
-                                    </div>
-                                </div>
-
-                                <p className="text-slate-600 mb-3">
-                                    {community.description.length > 100
-                                        ? community.description.substring(0, 100) + "..."
-                                        : community.description}
-                                </p>
-
-                                {/* Topics section */}
-                                <div className="mb-3">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm text-slate-600 font-medium">Topics:</span>
-
-                                        {/* Add Topic Button - Only shown for creators */}
-                                        {community.isCreator && (
-                                            <button
-                                                onClick={(e) => toggleAddTopicForm(community.id, e)}
-                                                className={`text-xs py-1.5 px-3 rounded-lg transition-colors ${showAddTopicForm[community.id] 
-                                                    ? 'bg-slate-100 text-slate-700' 
-                                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                                                    }`}
-                                            >
-                                                {showAddTopicForm[community.id] ? "Cancel" : "Add Topic"}
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {community.topics.map((topic, index) => (
-                                            <button
-                                                key={index}
-                                                onClick={(e) => handleTopicClick(e, topic)}
-                                                className="px-3 py-1 bg-sky-50 text-sky-700 text-xs rounded-full border border-sky-200 hover:bg-sky-100 cursor-pointer transition-colors"
-                                            >
-                                                {topic}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Add Topic Form */}
-                                <div
-                                    className={`mb-3 bg-slate-50 rounded-xl overflow-hidden transition-all duration-300 ${showAddTopicForm[community.id]
-                                        ? 'max-h-24 opacity-100 p-3'
-                                        : 'max-h-0 opacity-0 p-0'
-                                        }`}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {showAddTopicForm[community.id] && (
-                                        <form onSubmit={(e) => handleAddTopic(community.id, e)} className="flex flex-col">
-                                            <div className="flex mb-2 gap-2">
-                                                <input
-                                                    type="text"
-                                                    ref={topicInputRef}
-                                                    value={newTopic}
-                                                    onChange={(e) => setNewTopic(e.target.value)}
-                                                    placeholder="Enter new topic name"
-                                                    className="flex-grow bg-white border border-slate-200 rounded-lg p-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    className="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 hover:bg-slate-800 transition-colors"
-                                                    disabled={isSubmittingTopic}
-                                                >
-                                                    {isSubmittingTopic ? "Adding..." : "Add"}
-                                                </button>
-                                            </div>
-
-                                            {topicError && (
-                                                <div className="text-red-500 text-xs mb-1">
-                                                    {topicError}
-                                                </div>
-                                            )}
-                                        </form>
-                                    )}
-                                </div>
-
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center space-x-2">
-                                        {/* Status badges */}
-                                        {community.isCreator && (
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
-                                                Creator
-                                            </span>
-                                        )}
-                                        {community.isMember && !community.isCreator && (
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700 border border-sky-200">
-                                                Member
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Join/Leave button - Only show for non-creators */}
                                     {!community.isCreator && (
                                         <button
                                             onClick={(e) => {
@@ -1344,30 +1221,130 @@ export const IntegratedView = ({
                                                     handleJoinCommunity(community.id);
                                                 }
                                             }}
-                                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${joiningCommunityId === community.id || leavingCommunityId === community.id
+                                            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm ${joiningCommunityId === community.id || leavingCommunityId === community.id
                                                 ? "bg-slate-200 text-slate-500"
                                                 : community.isMember
-                                                    ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
-                                                    : "bg-slate-900 hover:bg-slate-800 text-white"
+                                                    ? "bg-white/90 hover:bg-white text-slate-600"
+                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
                                                 }`}
                                             disabled={joiningCommunityId === community.id || leavingCommunityId === community.id}
                                         >
-                                            {joiningCommunityId === community.id ? (
-                                                <span className="animate-pulse">Joining...</span>
-                                            ) : leavingCommunityId === community.id ? (
-                                                <span className="animate-pulse">Leaving...</span>
-                                            ) : community.isMember ? (
-                                                "Leave"
-                                            ) : (
-                                                "Join"
-                                            )}
+                                            {joiningCommunityId === community.id ? "Joining..." 
+                                                : leavingCommunityId === community.id ? "Leaving..." 
+                                                : community.isMember ? "Leave" : "Join"}
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Avatar + Name + Description on bottom-left of banner */}
+                                <div className="absolute bottom-0 left-0 right-0 p-5">
+                                    <div className="flex items-end gap-4">
+                                        {/* Avatar */}
+                                        <div className="flex-shrink-0 w-16 h-16 rounded-2xl border-3 border-white bg-white shadow-lg overflow-hidden">
+                                            {community.photo ? (
+                                                <img 
+                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                    alt={community.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold text-xl">
+                                                    {community.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Name + Description */}
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className={`text-2xl font-semibold tracking-tight truncate ${community.coverImage ? 'text-white drop-shadow-md' : 'text-slate-900'}`}>
+                                                {community.name}
+                                            </h3>
+                                            <p className={`text-sm mt-0.5 line-clamp-1 ${community.coverImage ? 'text-white/80' : 'text-slate-500'}`}>
+                                                {community.description}
+                                            </p>
+                                        </div>
+
+                                        {/* Stats on bottom-right */}
+                                        <div className={`flex-shrink-0 text-right ${community.coverImage ? 'text-white/90' : 'text-slate-500'}`}>
+                                            <div className="text-sm font-medium">{community.memberCount || 0} members</div>
+                                            <div className="text-xs opacity-80">{community.postCount} posts</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        ))
-                )}
-            </div>
+                            
+                            {/* Content below banner */}
+                            <div className="px-6 py-5">
+                                {/* Add Topic Form */}
+                                <div
+                                    className={`rounded-xl overflow-hidden transition-all duration-300 ${showAddTopicForm[community.id]
+                                        ? 'max-h-20 opacity-100 p-4 bg-slate-50 mb-4'
+                                        : 'max-h-0 opacity-0 p-0 mb-0'
+                                        }`}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {showAddTopicForm[community.id] && (
+                                        <form onSubmit={(e) => handleAddTopic(community.id, e)} className="flex gap-3">
+                                            <input
+                                                type="text"
+                                                ref={topicInputRef}
+                                                value={newTopic}
+                                                onChange={(e) => setNewTopic(e.target.value)}
+                                                placeholder="New topic name"
+                                                className="flex-grow bg-white border border-slate-200 rounded-xl px-4 py-2 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                            <button
+                                                type="submit"
+                                                className="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                                                disabled={isSubmittingTopic}
+                                            >
+                                                {isSubmittingTopic ? "..." : "Add"}
+                                            </button>
+                                        </form>
+                                    )}
+                                </div>
+
+                                {/* Topics + Badge row */}
+                                <div className="flex items-center justify-between gap-4">
+                                    {/* Topics - subtle styling */}
+                                    <div className="flex flex-wrap gap-1.5 flex-1">
+                                        {community.topics.slice(0, 4).map((topic, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={(e) => handleTopicClick(e, topic)}
+                                                className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+                                            >
+                                                {topic}
+                                            </button>
+                                        ))}
+                                        {community.topics.length > 4 && (
+                                            <span className="px-2.5 py-1 text-xs text-slate-400">
+                                                +{community.topics.length - 4} more
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Role badge - light styling */}
+                                    {community.isCreator && (
+                                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                            Creator
+                                        </span>
+                                    )}
+                                    {community.isMember && !community.isCreator && (
+                                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                                            Member
+                                        </span>
+                                    )}
+                                </div>
+
+                                {topicError && showAddTopicForm[community.id] && (
+                                    <div className="text-red-500 text-xs mt-2">{topicError}</div>
+                                )}
+                            </div>
+                        </div>
+                    ))
+            )}
         </div>
     );
 
@@ -1375,16 +1352,16 @@ export const IntegratedView = ({
     const renderPostsList = () => (
         <div className="space-y-6">
             {/* Topics filter strip */}
-            <div className="mb-4 p-4 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <span className="text-slate-600 font-medium text-sm">Filter by topic:</span>
+            <div className="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <span className="text-slate-500 text-sm mr-2">Filter:</span>
 
                     {/* Show all option */}
                     <button
                         onClick={() => setSelectedTopic(null)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedTopic === null
-                            ? "bg-slate-900 text-white"
-                            : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === null
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                             }`}
                     >
                         All
@@ -1395,9 +1372,9 @@ export const IntegratedView = ({
                         <button
                             key={topic}
                             onClick={() => setSelectedTopic(topic)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedTopic === topic
-                                ? "bg-sky-600 text-white"
-                                : "bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100"
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === topic
+                                ? "bg-indigo-600 text-white"
+                                : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                                 }`}
                         >
                             {topic}
@@ -1406,25 +1383,21 @@ export const IntegratedView = ({
                 </div>
 
                 {/* Community info and back button */}
-                <div className="flex items-center justify-between">
-                    <span className="text-slate-600 text-sm">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <span className="text-slate-500 text-sm">
                         {selectedCommunityId ? (
                             <>
-                                Viewing posts in: <span className="text-slate-900 font-semibold">
-                                    {getCommunityName(selectedCommunityId)}
-                                </span>
+                                Viewing: <span className="text-slate-900 font-medium">{getCommunityName(selectedCommunityId)}</span>
                             </>
                         ) : (
-                            <>
-                                Viewing posts from all your communities
-                            </>
+                            "All communities"
                         )}
                     </span>
                     <button
                         onClick={toggleView}
-                        className="text-slate-600 text-xs border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+                        className="text-slate-500 text-xs px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                     >
-                        Back to Communities
+                        ← Communities
                     </button>
                 </div>
             </div>
@@ -1510,9 +1483,9 @@ export const IntegratedView = ({
                 filteredPosts.map((post) => (
                     <div
                         key={post.id}
-                        className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+                        className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all"
                     >
-                        <div className="flex justify-between items-start mb-2">
+                        <div className="flex justify-between items-start mb-3">
                             <div>
                                 {/* User profile with avatar and nickname */}
                                 <div className="flex items-center mb-2">
@@ -1523,14 +1496,14 @@ export const IntegratedView = ({
                                         className="mr-3"
                                     />
                                     <div className="flex flex-col">
-                                        <div className="flex items-center space-x-2 text-xs text-slate-500">
+                                        <div className="flex items-center gap-2 text-xs text-slate-400">
                                             <span>{formatDate(post.timestamp)}</span>
                                             <span>•</span>
-                                            <span className="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full border border-sky-200">
+                                            <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">
                                                 {post.topic}
                                             </span>
                                             <span>•</span>
-                                            <span>{getCommunityName(post.communityId)}</span>
+                                            <span className="text-slate-500">{getCommunityName(post.communityId)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1552,35 +1525,33 @@ export const IntegratedView = ({
                             </div>
                         )}
 
-                        <div className="flex items-center mt-4 space-x-4 text-sm text-slate-500">
+                        <div className="flex items-center mt-5 pt-4 border-t border-slate-100 gap-4 text-sm text-slate-400">
                             <button
                                 onClick={() => likePost(post.id)}
-                                className="flex items-center space-x-1 hover:text-rose-500 transition-colors"
+                                className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
                                 disabled={likingPost[post.id]}
                             >
                                 <span className={`${likingPost[post.id] ? 'animate-pulse' : ''}`}>
                                     {likingPost[post.id] ? '💗' : '❤️'}
                                 </span>
-                                <span>{post.likeCount} likes</span>
+                                <span>{post.likeCount}</span>
                             </button>
                             <button
                                 onClick={() => toggleComments(post.id)}
-                                className="flex items-center space-x-2 hover:text-sky-500 transition-colors"
+                                className="flex items-center gap-1.5 hover:text-indigo-500 transition-colors"
                             >
                                 <span>💬</span>
-                                <span className="relative">
-                                    {post.commentCount} comments
-                                </span>
+                                <span>{post.commentCount}</span>
                             </button>
                         </div>
 
                         {/* Comments section */}
                         {expandedComments[post.id] && (
-                            <div className="mt-4 w-full border-t border-slate-200 pt-4">
-                                <h3 className="text-slate-700 mb-3 font-medium">Comments</h3>
+                            <div className="mt-5 pt-4 border-t border-slate-100">
+                                <h3 className="text-slate-600 mb-4 font-medium text-sm">Comments</h3>
 
                                 {/* Comment input */}
-                                <div className="flex mt-2 mb-4 gap-2">
+                                <div className="flex mb-5 gap-3">
                                     <input
                                         type="text"
                                         value={newCommentText[post.id] || ""}
@@ -1588,8 +1559,8 @@ export const IntegratedView = ({
                                             ...newCommentText,
                                             [post.id]: e.target.value
                                         })}
-                                        placeholder="Add your comment..."
-                                        className="flex-grow bg-white border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                                        placeholder="Write a comment..."
+                                        className="flex-grow bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter') {
                                                 addComment(post.id);
@@ -1599,10 +1570,10 @@ export const IntegratedView = ({
                                     />
                                     <button
                                         onClick={() => addComment(post.id)}
-                                        className="bg-slate-900 text-white px-5 py-2 rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+                                        className="bg-indigo-600 text-white px-5 py-2 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 text-sm font-medium"
                                         disabled={submittingComment[post.id]}
                                     >
-                                        {submittingComment[post.id] ? "Sending..." : "Send"}
+                                        {submittingComment[post.id] ? "..." : "Send"}
                                     </button>
                                 </div>
 
@@ -1666,55 +1637,56 @@ export const IntegratedView = ({
     }, [localCommunities]);
 
     return (
-        <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-slate-200 shadow-lg">
-            {/* Title always at top */}
-            <h1 className="text-2xl font-semibold text-center text-slate-900 mb-4">
-                {isCreatingCommunity
-                    ? "Create New Community"
-                    : isCreatingPost
-                        ? "Create New Post"
-                        : showCommunityList
-                            ? "Communities"
-                            : `Posts ${selectedTopic ? `- Topic: ${selectedTopic}` : ""}`}
-            </h1>
+        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-100 shadow-xl">
+            {/* Header section with title and actions */}
+            <div className="flex items-center justify-between mb-8">
+                {/* Title */}
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                        {isCreatingCommunity
+                            ? "Create Community"
+                            : isCreatingPost
+                                ? "Create Post"
+                                : showCommunityList
+                                    ? "Communities"
+                                    : "Posts"}
+                    </h1>
+                    {!showCommunityList && selectedTopic && (
+                        <p className="text-slate-500 text-sm mt-1">Filtered by: {selectedTopic}</p>
+                    )}
+                </div>
 
-            {/* Navigation buttons */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
-                <div className="flex gap-2">
-                    {/* Show View Posts button if user has communities and we're in communities view */}
+                {/* Action buttons */}
+                <div className="flex items-center gap-3">
+                    {/* View Posts - secondary action */}
                     {showCommunityList && hasAccessibleCommunities && !isCreatingCommunity && (
                         <Button
-                            onClick={() => {
-                                setShowCommunityList(false);
-                            }}
-                            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5"
+                            onClick={() => setShowCommunityList(false)}
+                            className="bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 rounded-full px-5 font-medium"
                         >
                             View Posts
                         </Button>
                     )}
-                </div>
 
-                {/* Right side buttons */}
-                <div className="flex gap-2">
-                    {/* Create/Cancel community button - Only in Communities view */}
+                    {/* Create Community - primary action */}
                     {showCommunityList && (
                         <Button
                             onClick={() => setIsCreatingCommunity(!isCreatingCommunity)}
-                            className={`rounded-full px-5 ${isCreatingCommunity
-                                ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
-                                : "bg-slate-900 text-white hover:bg-slate-800"}`}
+                            className={`rounded-full px-6 font-medium ${isCreatingCommunity
+                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200"}`}
                         >
                             {isCreatingCommunity ? "Cancel" : "Create Community"}
                         </Button>
                     )}
 
-                    {/* Create/Cancel post button - Only in Posts view */}
+                    {/* Create Post - primary action */}
                     {!showCommunityList && !isCreatingCommunity && (
                         <Button
                             onClick={() => setIsCreatingPost(!isCreatingPost)}
-                            className={`rounded-full px-5 ${isCreatingPost
-                                ? "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"
-                                : "bg-slate-900 text-white hover:bg-slate-800"}`}
+                            className={`rounded-full px-6 font-medium ${isCreatingPost
+                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200"}`}
                         >
                             {isCreatingPost ? "Cancel" : "Create Post"}
                         </Button>
