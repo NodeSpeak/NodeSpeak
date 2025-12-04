@@ -88,53 +88,53 @@ function Landing() {
     // Si no está conectado, muestra la landing principal con estilo claro
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] text-slate-900">
-            <div className="max-w-6xl mx-auto px-6 pt-8 pb-16">
-                <header className="flex items-center justify-between mb-10">
+            <div className="max-w-7xl mx-auto px-8 pt-12 pb-20">
+                <header className="flex items-center justify-between mb-16">
                     <div className="space-y-1">
                         <p className="text-xs font-semibold tracking-[0.25em] text-slate-500 uppercase">
                             Arbitrum Social
                         </p>
-                        <h1 className="text-xl font-semibold text-slate-900">Node Speak v3.0</h1>
+                        <h1 className="text-2xl font-semibold text-slate-900">Node Speak v3.0</h1>
                     </div>
                     <div className="flex items-center gap-4">
                         <WalletConnect />
                     </div>
                 </header>
 
-                <main className="grid gap-8 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.4fr)] items-start">
+                <main className="grid gap-10 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.4fr)] items-start">
                     <section className="space-y-6">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 px-8 py-10">
-                            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 mb-4">
+                        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 px-10 py-12">
+                            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-6">
                                 A calm social space for decentralized communities.
                             </h2>
-                            <p className="text-sm md:text-base text-slate-600 max-w-xl mb-7">
+                            <p className="text-base md:text-lg text-slate-600 max-w-xl mb-8">
                                 NodeSpeak helps onchain collectives host conversations, showcase projects, and reward contributorsall within a single interface fully backed by smart contracts.
                             </p>
-                            <div className="flex flex-wrap items-center gap-3 mb-8">
-                                <button className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-4 py-2 text-xs font-medium text-emerald-100 shadow-sm shadow-emerald-500/40 border border-emerald-700">
+                            <div className="flex flex-wrap items-center gap-4 mb-10">
+                                <button className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-6 py-3 text-sm font-medium text-emerald-100 shadow-sm shadow-emerald-500/40 border border-emerald-700">
                                     Connection
                                 </button>
-                                <button className="text-xs font-medium text-slate-800 hover:text-slate-900 underline-offset-4 hover:underline">
+                                <button className="text-sm font-medium text-slate-800 hover:text-slate-900 underline-offset-4 hover:underline">
                                     Explore the forum 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																
                                 </button>
                             </div>
 
-                            <div className="grid gap-4 md:grid-cols-3 text-sm">
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                                    <p className="font-medium text-slate-900 mb-1">Communities</p>
-                                    <p className="text-slate-500 text-xs">
+                            <div className="grid gap-5 md:grid-cols-3 text-sm">
+                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                                    <p className="font-medium text-slate-900 mb-2 text-base">Communities</p>
+                                    <p className="text-slate-500 text-sm">
                                         Create and grow tokenless or gated communities.
                                     </p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                                    <p className="font-medium text-slate-900 mb-1">Posts & Threads</p>
-                                    <p className="text-slate-500 text-xs">
+                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                                    <p className="font-medium text-slate-900 mb-2 text-base">Posts & Threads</p>
+                                    <p className="text-slate-500 text-sm">
                                         Rich TipTap editor publishing straight to IPFS.
                                     </p>
                                 </div>
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                                    <p className="font-medium text-slate-900 mb-1">Admin Mode</p>
-                                    <p className="text-slate-500 text-xs">
+                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
+                                    <p className="font-medium text-slate-900 mb-2 text-base">Admin Mode</p>
+                                    <p className="text-slate-500 text-sm">
                                         Moderate, curate, and protect spaces in one interface.
                                     </p>
                                 </div>
@@ -143,12 +143,12 @@ function Landing() {
                     </section>
 
                     <aside className="space-y-4">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200 border border-slate-100 px-6 py-5 flex flex-col gap-4">
+                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200 border border-slate-100 px-8 py-7 flex flex-col gap-5">
                             <div>
-                                <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase mb-2">
+                                <p className="text-sm font-semibold tracking-[0.2em] text-slate-500 uppercase mb-3">
                                     Why builders choose NodeSpeak
                                 </p>
-                                <p className="text-xs text-slate-600">
+                                <p className="text-sm text-slate-600">
                                     Every interaction is backed by Arbitrum smart contracts. Wallet identities, moderation tools, community joins, and reactions stay verifiable. UI layers get prettier, the underlying trust stays intact.
                                 </p>
                             </div>
@@ -156,34 +156,34 @@ function Landing() {
                     </aside>
                 </main>
 
-                <footer className="mt-12 border-t border-slate-200 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-                    <p className="text-[11px]">
-                        © {new Date().getFullYear()} NodeSpeak. Built for decentralized communities.
+                <footer className="mt-20 border-t border-slate-200 pt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-lg text-slate-500">
+                    <p className="text-lg">
+                        &copy; {new Date().getFullYear()} NodeSpeak. Built for decentralized communities.
                     </p>
-                    <div className="flex flex-wrap gap-2 text-xs">
+                    <div className="flex flex-wrap gap-4 text-lg">
                         <a
                             href="https://github.com/NodeSpeak/NodeSpeakv1.1-main"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-full bg-slate-900 text-slate-50 px-3 py-1 font-medium hover:bg-black transition-colors"
+                            className="inline-flex items-center rounded-full bg-slate-900 text-slate-50 px-4 py-2 font-medium hover:bg-black transition-colors"
                         >
-                            <Github className="w-3 h-3 mr-1" />
+                            <Github className="w-4 h-4 mr-2" />
                             GitHub
                         </a>
                         <a
                             href="https://twitter.com/NodeSpeak"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-3 py-1 font-medium hover:bg-slate-200 transition-colors"
+                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-4 py-2 font-medium hover:bg-slate-200 transition-colors"
                         >
-                            <X className="w-3 h-3 mr-1" />
+                            <X className="w-4 h-4 mr-2" />
                             @NodeSpeak
                         </a>
                         <a
                             href="mailto:support@nodespeak.xyz"
-                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-3 py-1 font-medium hover:bg-slate-200 transition-colors"
+                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-4 py-2 font-medium hover:bg-slate-200 transition-colors"
                         >
-                            <Mail className="w-3 h-3 mr-1" />
+                            <Mail className="w-4 h-4 mr-2" />
                             Support
                         </a>
                     </div>
