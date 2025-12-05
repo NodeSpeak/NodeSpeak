@@ -7,7 +7,7 @@ import { useAdminContext } from "@/contexts/AdminContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield } from "lucide-react";
+import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff } from "lucide-react";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
 
@@ -64,7 +64,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { address: currentUserAddress, ensName, isConnected } = useWalletContext();
-  const { isAdmin } = useAdminContext();
+  const { isAdmin, hideUser, isUserHidden } = useAdminContext();
   const profileService = useProfileService();
   
   // Get target address from URL param or use current user's address
@@ -397,14 +397,39 @@ export default function ProfilePage() {
                 </Button>
               ) : null}
               
-              {/* Botón de Moderación - Solo visible para administradores */}
-              {isAdmin && (
+              {/* Botón de Moderación - Solo visible para administradores en su propio perfil */}
+              {isAdmin && isOwnProfile && (
                 <Button 
                   onClick={() => router.push('/admin')}
                   className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm"
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Moderación
+                </Button>
+              )}
+              
+              {/* Botón Ocultar Usuario - Solo visible para administradores en perfil ajeno */}
+              {isAdmin && !isOwnProfile && targetAddress && (
+                <Button 
+                  onClick={() => {
+                    const displayName = profileData.nickname || shortenAddress(targetAddress);
+                    if (window.confirm(`¿Estás seguro de que quieres ocultar a ${displayName}?\n\nEsto ocultará todos sus posts y comentarios.`)) {
+                      // Usa la función del AdminContext
+                      hideUser(
+                        targetAddress, 
+                        displayName,
+                        prompt("Motivo opcional para ocultar al usuario:") || undefined
+                      );
+                      
+                      // Redirecciona al usuario de vuelta al foro
+                      alert(`Usuario ${displayName} ocultado correctamente.`);
+                      router.push('/foro');
+                    }
+                  }}
+                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm"
+                >
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Ocultar Usuario
                 </Button>
               )}
             </div>
