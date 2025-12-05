@@ -84,6 +84,8 @@ interface IntegratedViewProps {
     setIsCreating?: (value: boolean) => void;
     selectedCommunityId?: string | null;
     setSelectedCommunityId?: (communityId: string | null) => void;
+    showCommunityList?: boolean;
+    setShowCommunityList?: (value: boolean) => void;
 }
 
 // Rich Text Editor Component for Create Post
@@ -194,13 +196,17 @@ export const IntegratedView = ({
     setIsCreatingPost: externalSetIsCreatingPost,
     setIsCreating: externalSetIsCreating,
     selectedCommunityId: externalSelectedCommunityId,
-    setSelectedCommunityId: externalSetSelectedCommunityId
+    setSelectedCommunityId: externalSetSelectedCommunityId,
+    showCommunityList: externalShowCommunityList,
+    setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
     const { isConnected, provider: walletProvider } = useWalletContext();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
-    const [showCommunityList, setShowCommunityList] = useState(true);
+    const [internalShowCommunityList, setInternalShowCommunityList] = useState(true);
+    const showCommunityList = externalShowCommunityList !== undefined ? externalShowCommunityList : internalShowCommunityList;
+    const setShowCommunityList = externalSetShowCommunityList || setInternalShowCommunityList;
     const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
     const [localCommunities, setLocalCommunities] = useState<Community[]>(communities);
 
@@ -1382,7 +1388,7 @@ export const IntegratedView = ({
                     ))}
                 </div>
 
-                {/* Community info and back button */}
+                {/* Community info */}
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                     <span className="text-slate-500 text-sm">
                         {selectedCommunityId ? (
@@ -1393,12 +1399,6 @@ export const IntegratedView = ({
                             "All communities"
                         )}
                     </span>
-                    <button
-                        onClick={toggleView}
-                        className="text-slate-500 text-xs px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                    >
-                        ← Communities
-                    </button>
                 </div>
             </div>
 

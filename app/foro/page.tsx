@@ -608,6 +608,16 @@ const handleCreateCommunity = async (
                             <WalletConnect />
                         </div>
                     </div>
+                    {!showCommunityList && (
+                        <div className="mt-4">
+                            <button
+                                onClick={() => setShowCommunityList(true)}
+                                className="text-slate-500 text-sm px-4 py-2 rounded-lg hover:bg-white/50 transition-colors inline-flex items-center gap-2"
+                            >
+                                ← Communities
+                            </button>
+                        </div>
+                    )}
                 </header>
 
                 {isConnected && (
@@ -638,6 +648,8 @@ const handleCreateCommunity = async (
                             selectedCommunityId={selectedCommunityId}
                             setSelectedCommunityId={setSelectedCommunityId}
                             fetchPostsForCommunity={fetchPostsForCommunity}
+                            showCommunityList={showCommunityList}
+                            setShowCommunityList={setShowCommunityList}
                         />
                     </main>
                 )}
