@@ -473,6 +473,55 @@ export const IntegratedView = ({
 
         setLoading(true);
         try {
+            // Check if the topic exists in the community
+            const community = localCommunities.find(c => c.id === selectedCommunityId);
+            const topicExists = community?.topics.includes(postSelectedTopic);
+
+            // If topic doesn't exist, add it to the blockchain first
+            if (!topicExists && walletProvider) {
+                console.log(`Topic "${postSelectedTopic}" not found in community. Adding it first...`);
+                try {
+                    const signer = await walletProvider.getSigner();
+                    const contract = new Contract(forumAddress, forumABI, signer);
+                    
+                    console.log("Adding topic to blockchain...");
+                    const tx = await contract.addTopicToCommunity(selectedCommunityId, postSelectedTopic);
+                    console.log("Adding topic transaction submitted:", tx.hash);
+                    await tx.wait();
+                    console.log("Topic added successfully to blockchain");
+
+                    // Update local state
+                    setLocalCommunities(prevCommunities => 
+                        prevCommunities.map(c => {
+                            if (c.id === selectedCommunityId) {
+                                return {
+                                    ...c,
+                                    topics: [...c.topics, postSelectedTopic],
+                                    topicCount: c.topicCount + 1
+                                };
+                            }
+                            return c;
+                        })
+                    );
+
+                    // Refresh communities if available
+                    if (refreshCommunities) {
+                        await refreshCommunities();
+                    }
+                } catch (topicError: any) {
+                    console.error("Error adding topic:", topicError);
+                    let errorMessage = "Failed to add new topic to community";
+                    if (topicError.message?.includes("Only the community creator")) {
+                        errorMessage = "Only the community creator can add new topics. Please select an existing topic or ask the creator to add it.";
+                    } else if (topicError.message?.includes("user rejected")) {
+                        errorMessage = "Transaction was rejected by user";
+                    }
+                    alert(errorMessage);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             let imageCid: string | null = null;
 
             if (selectedImage) {
@@ -1008,8 +1057,11 @@ export const IntegratedView = ({
                         <TopicsDropdown
                             onTopicSelect={handleTopicChange}
                             topics={communityTopics}
-                            setTopics={() => { }} // We're not adding topics here
-                            disableAddingTopics={true}
+                            setTopics={(newTopics) => {
+                                // Update the community topics when a new topic is added
+                                setCommunityTopics(newTopics);
+                            }}
+                            disableAddingTopics={false}
                             selectedTopic={postSelectedTopic}
                         />
                     </div>

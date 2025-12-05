@@ -91,7 +91,7 @@ export function TopicsDropdown({ onTopicSelect, topics, setTopics, disableAdding
                                             setAddingTopic(true);
                                         }}
                                     >
-                                        <Plus className="h-4 w-4 mr-2" /> Add Topic
+                                        <Plus className="h-4 w-4 mr-2" /> New Topic
                                     </li>
                                 )}
 
