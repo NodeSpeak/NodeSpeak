@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
-import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { IntegratedView } from '@/components/IntegratedView';
 import siteConfig from '@/config';
 

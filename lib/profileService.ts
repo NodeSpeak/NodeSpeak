@@ -3,7 +3,7 @@
 import { Contract } from "ethers";
 import { useCallback } from "react";
 import { useWalletContext } from "@/contexts/WalletContext";
-import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
 // Transaction status callback type
 export type TransactionStatusCallback = (status: 'uploading' | 'signing' | 'pending' | 'confirmed' | 'failed', message?: string) => void;

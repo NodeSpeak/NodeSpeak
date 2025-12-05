@@ -7,7 +7,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { User, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { BrowserProvider, Contract } from 'ethers';
-import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_Commuties_arbitrum';
+import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 
 // ABI for ForumProfileManager (only the functions we need)
 const profileManagerABI = [

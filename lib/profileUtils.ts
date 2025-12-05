@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 import { ethers, BrowserProvider, Contract } from 'ethers';
-import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_Commuties_arbitrum';
+import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 
 // IPFS Gateways
 const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs/";

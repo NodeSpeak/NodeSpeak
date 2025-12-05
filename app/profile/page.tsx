@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff } from "lucide-react";
 import { BrowserProvider, Contract } from "ethers";
-import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
 // ABI for ForumProfileManager (only the functions we need for follow)
 const profileManagerABI = [
