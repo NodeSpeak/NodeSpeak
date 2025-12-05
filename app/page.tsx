@@ -100,17 +100,14 @@ function Landing() {
                     <section className="space-y-6">
                         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 px-10 py-12">
                             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-6">
-                                A calm social space for decentralized communities.
+                                The Decentralized and Immutable Forum
                             </h2>
                             <p className="text-base md:text-lg text-slate-600 max-w-xl mb-8">
-                                NodeSpeak helps onchain collectives host conversations, showcase projects, and reward contributorsall within a single interface fully backed by smart contracts.
+                                Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.
                             </p>
                             <div className="flex flex-wrap items-center gap-4 mb-10">
-                                <button className="inline-flex items-center justify-center rounded-full bg-emerald-900 px-6 py-3 text-sm font-medium text-emerald-100 shadow-sm shadow-emerald-500/40 border border-emerald-700">
-                                    Connection
-                                </button>
                                 <button className="text-sm font-medium text-slate-800 hover:text-slate-900 underline-offset-4 hover:underline">
-                                    Explore the forum 																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																
+                                    Explore the forum
                                 </button>
                             </div>
 
@@ -118,13 +115,14 @@ function Landing() {
                                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
                                     <p className="font-medium text-slate-900 mb-2 text-base">Communities</p>
                                     <p className="text-slate-500 text-sm">
-                                        Create and grow tokenless or gated communities.
+                                        Create and manage discussion topics.
+                                        Follow profiles of interest.
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
                                     <p className="font-medium text-slate-900 mb-2 text-base">Posts & Threads</p>
                                     <p className="text-slate-500 text-sm">
-                                        Rich TipTap editor publishing straight to IPFS.
+                                        Post messages and reply to other participants.
                                     </p>
                                 </div>
                                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
@@ -141,11 +139,22 @@ function Landing() {
                         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200 border border-slate-100 px-8 py-7 flex flex-col gap-5">
                             <div>
                                 <p className="text-sm font-semibold tracking-[0.2em] text-slate-500 uppercase mb-3">
-                                    Why builders choose NodeSpeak
+                                    Key Features
                                 </p>
-                                <p className="text-sm text-slate-600">
-                                    Every interaction is backed by Arbitrum smart contracts. Wallet identities, moderation tools, community joins, and reactions stay verifiable. UI layers get prettier, the underlying trust stays intact.
-                                </p>
+                                <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
+                                    <li>
+                                        <span className="font-semibold">Blockchain and Security:</span> All messages are backed by blockchain technology, ensuring transparency and reliability.
+                                    </li>
+                                    <li>
+                                        <span className="font-semibold">Permanent Storage:</span> We use IPFS (InterPlanetary File System) to ensure data is accessible in a decentralized and immutable way.
+                                    </li>
+                                    <li>
+                                        <span className="font-semibold">No Censorship or Arbitrary Moderation:</span> Content is always available and moderated by each community running a version of NodeSpeak.
+                                    </li>
+                                    <li>
+                                        <span className="font-semibold">Secure Content:</span> Persistent storage ensures content is protected against external manipulations.
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </aside>
