@@ -1,5 +1,6 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
+import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -654,6 +655,7 @@ const handleCreateCommunity = async (
                     </main>
                 )}
             </div>
+            <AdminFloatingButton />
         </div>
     );
 }

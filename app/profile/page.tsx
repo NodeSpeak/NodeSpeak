@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useAdminContext } from "@/contexts/AdminContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck } from "lucide-react";
+import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield } from "lucide-react";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_Commuties_arbitrum";
 
@@ -63,6 +64,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { address: currentUserAddress, ensName, isConnected } = useWalletContext();
+  const { isAdmin } = useAdminContext();
   const profileService = useProfileService();
   
   // Get target address from URL param or use current user's address
@@ -362,37 +364,50 @@ export default function ProfilePage() {
               Back to Forum
             </Button>
             
-            {isOwnProfile ? (
-              <Button 
-                onClick={() => router.push('/profile/edit')}
-                className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-4 text-sm"
-              >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-            ) : currentUserAddress ? (
-              <Button 
-                onClick={handleFollow}
-                disabled={followLoading}
-                className={`rounded-full px-4 text-sm ${isFollowing 
-                  ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
-                  : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50`}
-              >
-                {followLoading ? (
-                  <span className="animate-pulse">...</span>
-                ) : isFollowing ? (
-                  <>
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Unfollow
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Follow
-                  </>
-                )}
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {isOwnProfile ? (
+                <Button 
+                  onClick={() => router.push('/profile/edit')}
+                  className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-4 text-sm"
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+              ) : currentUserAddress ? (
+                <Button 
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={`rounded-full px-4 text-sm ${isFollowing 
+                    ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
+                    : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50`}
+                >
+                  {followLoading ? (
+                    <span className="animate-pulse">...</span>
+                  ) : isFollowing ? (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Unfollow
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Follow
+                    </>
+                  )}
+                </Button>
+              ) : null}
+              
+              {/* Botón de Moderación - Solo visible para administradores */}
+              {isAdmin && (
+                <Button 
+                  onClick={() => router.push('/admin')}
+                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Moderación
+                </Button>
+              )}
+            </div>
           </div>
         </div>
         

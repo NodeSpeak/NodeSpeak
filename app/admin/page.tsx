@@ -1,0 +1,254 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useWalletContext } from "@/contexts/WalletContext";
+import { useAdminContext } from "@/contexts/AdminContext";
+import { HiddenUsersPanel, HiddenCommunitiesPanel } from "@/components/admin";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, ArrowLeft, Users, Home, Settings, EyeOff } from "lucide-react";
+import Link from "next/link";
+
+export default function AdminPage() {
+  const router = useRouter();
+  const { isConnected, address, ensName } = useWalletContext();
+  const { isAdmin, hiddenUsers, hiddenCommunities } = useAdminContext();
+  const [activeTab, setActiveTab] = useState("hidden-users");
+
+  // Redirect if not connected
+  useEffect(() => {
+    if (!isConnected) {
+      router.push("/");
+    }
+  }, [isConnected, router]);
+
+  // Show loading while checking connection
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
+          <p className="text-slate-600">Verificando conexión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800 flex items-center gap-2">
+              <Shield className="w-6 h-6" />
+              Acceso Denegado
+            </CardTitle>
+            <CardDescription className="text-red-600">
+              No tienes permisos para acceder a esta página. Solo usuarios autorizados pueden acceder al panel de administración.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-red-200">
+                <p className="text-sm text-slate-600 mb-2">
+                  <strong>Dirección conectada:</strong>
+                </p>
+                <code className="text-xs bg-slate-100 px-2 py-1 rounded block break-all">
+                  {address}
+                </code>
+              </div>
+              <Button
+                onClick={() => router.push("/foro")}
+                className="w-full"
+                variant="outline"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Volver al Foro
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Admin dashboard
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-900 text-white p-2 rounded-lg">
+                  <Shield className="w-6 h-6" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">
+                    Panel de Administración
+                  </h1>
+                  <p className="text-sm text-slate-500">
+                    NodeSpeak - Centro de Moderación
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/foro">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Volver al Foro
+                </Button>
+              </Link>
+              <div className="bg-slate-100 px-4 py-2 rounded-lg">
+                <p className="text-xs text-slate-500 mb-1">Administrador conectado</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Usuarios Ocultados</CardDescription>
+              <CardTitle className="text-3xl flex items-center gap-2">
+                <Users className="w-6 h-6 text-slate-500" />
+                {hiddenUsers.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Usuarios actualmente ocultos en la plataforma
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Comunidades Ocultadas</CardDescription>
+              <CardTitle className="text-3xl flex items-center gap-2">
+                <Home className="w-6 h-6 text-slate-500" />
+                {hiddenCommunities.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600">
+                Comunidades actualmente ocultas en la plataforma
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-white border border-slate-200 p-1">
+            <TabsTrigger
+              value="hidden-users"
+              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              <Users className="w-4 h-4" />
+              Usuarios Ocultados
+            </TabsTrigger>
+            <TabsTrigger
+              value="hidden-communities"
+              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              <Home className="w-4 h-4" />
+              Comunidades Ocultadas
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              <Settings className="w-4 h-4" />
+              Configuración
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="hidden-users" className="space-y-6">
+            <HiddenUsersPanel />
+          </TabsContent>
+
+          <TabsContent value="hidden-communities" className="space-y-6">
+            <HiddenCommunitiesPanel />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración del Panel</CardTitle>
+                <CardDescription>
+                  Ajusta las configuraciones del panel de administración
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-2">
+                      Direcciones de Administrador
+                    </h3>
+                    <p className="text-sm text-slate-600 mb-3">
+                      Para agregar o modificar administradores, edita el archivo:
+                    </p>
+                    <code className="text-xs bg-slate-900 text-green-400 px-3 py-2 rounded block">
+                      /contexts/AdminContext.tsx
+                    </code>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h3 className="font-semibold text-blue-900 mb-2">
+                      Información
+                    </h3>
+                    <ul className="space-y-2 text-sm text-blue-800">
+                      <li>• Los datos de elementos ocultados se almacenan localmente</li>
+                      <li>• Los cambios son inmediatos y persisten entre sesiones</li>
+                      <li>• Solo los administradores pueden acceder a este panel</li>
+                      <li>• Las acciones de moderación no modifican los datos en blockchain</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Info Card */}
+        <Card className="mt-8 bg-slate-50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <EyeOff className="w-5 h-5" />
+              Sobre la Ocultación de Contenido
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-slate-600 space-y-4">
+              <p>
+                Al ocultar un usuario o comunidad, este contenido dejará de ser visible para los usuarios
+                de la plataforma, pero los datos seguirán existiendo en la blockchain.
+              </p>
+              <p>
+                La moderación se aplica solo a nivel de interfaz de usuario, proporcionando
+                una forma de filtrar contenido inapropiado sin comprometer la integridad
+                de los datos almacenados de forma descentralizada.
+              </p>
+              <p>
+                Puedes restablecer cualquier elemento ocultado en cualquier momento desde este panel.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}

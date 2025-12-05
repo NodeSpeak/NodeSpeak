@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { WalletProvider } from '@/contexts/WalletContext';
+import { AdminProvider } from '@/contexts/AdminContext';
 
 export const metadata: Metadata = {
     title: 'Node Speak',
@@ -36,8 +37,10 @@ export default function RootLayout({
             <body>
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
                     <WalletProvider>
-                        {children}
-                        <Toaster />
+                        <AdminProvider>
+                            {children}
+                            <Toaster />
+                        </AdminProvider>
                     </WalletProvider>
                 </ThemeProvider>
             </body>

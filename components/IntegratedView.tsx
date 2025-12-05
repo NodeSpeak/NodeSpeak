@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useAdminContext } from "@/contexts/AdminContext";
 import { ImagePlus, Send } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
@@ -201,6 +202,7 @@ export const IntegratedView = ({
     setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
     const { isConnected, provider: walletProvider } = useWalletContext();
+    const { isUserHidden, isCommunityHidden } = useAdminContext();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -556,9 +558,20 @@ export const IntegratedView = ({
 
     // Filter posts based on selected community and topic
     const filteredPosts = useMemo(() => {
+        // Primero filtrar posts por usuarios y comunidades ocultas
+        const visiblePosts = posts.filter(post => {
+            // Si el autor está oculto, filtrar el post
+            if (post.author && isUserHidden(post.author)) return false;
+            
+            // Si la comunidad está oculta, filtrar el post
+            if (isCommunityHidden(post.communityId)) return false;
+            
+            return true;
+        });
+
         // Si hay una comunidad seleccionada específicamente, mostrar solo sus posts
         if (selectedCommunityId) {
-            return posts.filter(post =>
+            return visiblePosts.filter(post =>
                 post.communityId === selectedCommunityId &&
                 (selectedTopic ? post.topic === selectedTopic : true)
             );
@@ -566,15 +579,15 @@ export const IntegratedView = ({
 
         // Si no hay comunidad seleccionada, mostrar posts de comunidades donde el usuario es miembro
         const userCommunities = localCommunities
-            .filter(c => c.isMember || c.isCreator)
+            .filter(c => (c.isMember || c.isCreator) && !isCommunityHidden(c.id))
             .map(c => c.id);
 
-        return posts.filter((post) => {
+        return visiblePosts.filter((post) => {
             const matchesCommunity = userCommunities.includes(post.communityId);
             const matchesTopic = selectedTopic ? post.topic === selectedTopic : true;
             return matchesCommunity && matchesTopic;
         });
-    }, [posts, selectedCommunityId, selectedTopic, localCommunities]);
+    }, [posts, selectedCommunityId, selectedTopic, localCommunities, isUserHidden, isCommunityHidden]);
 
     // Get all available topics from current posts 
     const availableTopics = useMemo(() => {
@@ -1636,7 +1649,9 @@ export const IntegratedView = ({
                                             Loading comments...
                                         </div>
                                     ) : comments[post.id]?.length > 0 ? (
-                                        comments[post.id].map((comment) => (
+                                        comments[post.id]
+                                            .filter(comment => !isUserHidden(comment.author))
+                                            .map((comment) => (
                                             <div key={comment.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50">
                                                 <div className="flex items-start mb-2">
                                                     <div className="mr-3 flex-shrink-0">
