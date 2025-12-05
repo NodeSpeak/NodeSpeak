@@ -1276,10 +1276,16 @@ export const IntegratedView = ({
                                 <div className="absolute top-4 right-4 flex items-center gap-2">
                                     {community.isCreator && (
                                         <button
-                                            onClick={(e) => toggleAddTopicForm(community.id, e)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                // Aquí implementaríamos la navegación a una página de edición de comunidad
+                                                console.log(`Editar comunidad: ${community.id}`);
+                                                // Por ejemplo: router.push(`/comunidad/editar/${community.id}`);
+                                                alert(`Función para editar comunidad ${community.name} (ID: ${community.id})`);
+                                            }}
                                             className="text-xs py-1.5 px-3 rounded-full transition-colors bg-white/90 hover:bg-white text-slate-600 font-medium shadow-sm"
                                         >
-                                            {showAddTopicForm[community.id] ? "Cancel" : "+ Add Topic"}
+                                            Editar Comunidad
                                         </button>
                                     )}
                                     {!community.isCreator && (
