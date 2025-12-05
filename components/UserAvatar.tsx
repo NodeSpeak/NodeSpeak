@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -223,10 +224,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         </div>
       )}
       
-      {showNickname && profile && (
-        <span className="text-[var(--matrix-green)] text-sm font-mono">
-          {profile.nickname}
-        </span>
+      {showNickname && (
+        <Link
+          href={`/profile?address=${address}`}
+          className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 text-xs font-medium"
+        >
+          <span>
+            {profile?.nickname
+              ? profile.nickname
+              : `${address.substring(0, 6)}...${address.substring(address.length - 4)}`}
+          </span>
+        </Link>
       )}
     </div>
   );
