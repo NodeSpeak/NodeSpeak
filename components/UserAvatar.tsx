@@ -188,35 +188,35 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       
       {/* User Menu - only for other users */}
       {showMenu && !isCurrentUser && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-black border border-[var(--matrix-green)] rounded shadow-lg shadow-[var(--matrix-green)]/20 min-w-[140px]">
+        <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-slate-200 rounded-lg shadow-lg min-w-[160px] overflow-hidden">
           {/* View Profile Button */}
           <button
             onClick={() => {
               router.push(`/profile?address=${address}`);
               setShowMenu(false);
             }}
-            className="w-full px-4 py-2 text-left text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10 flex items-center gap-2 font-mono text-sm border-b border-[var(--matrix-green)]/30"
+            className="w-full px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors border-b border-slate-100"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4 text-slate-500" />
             View Profile
           </button>
           {/* Follow/Unfollow Button */}
           <button
             onClick={handleFollow}
             disabled={followLoading}
-            className="w-full px-4 py-2 text-left text-[var(--matrix-green)] hover:bg-[var(--matrix-green)]/10 flex items-center gap-2 font-mono text-sm disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {followLoading ? (
-              <span className="animate-pulse">...</span>
+              <span className="animate-pulse text-slate-500">Loading...</span>
             ) : isFollowing ? (
               <>
-                <UserCheck className="w-4 h-4" />
-                Unfollow
+                <UserCheck className="w-4 h-4 text-red-500" />
+                <span className="text-red-600">Unfollow</span>
               </>
             ) : (
               <>
-                <UserPlus className="w-4 h-4" />
-                Follow
+                <UserPlus className="w-4 h-4 text-sky-500" />
+                <span className="text-sky-600">Follow</span>
               </>
             )}
           </button>
