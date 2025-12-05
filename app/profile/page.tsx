@@ -71,7 +71,6 @@ export default function ProfilePage() {
     (currentUserAddress && searchParams.get('address')?.toLowerCase() === currentUserAddress.toLowerCase());
   
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("activity");
   const [profileExists, setProfileExists] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -397,78 +396,64 @@ export default function ProfilePage() {
           </div>
         </div>
         
-        {/* Tabs */}
+        {/* Stats Section - Outside card */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Statistics</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 mb-1">Likes Received</p>
+              <p className="text-2xl font-semibold text-slate-900">{profileData.likesReceived}</p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 mb-1">Likes Given</p>
+              <p className="text-2xl font-semibold text-slate-900">{profileData.likesGiven}</p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 mb-1">Followers</p>
+              <p className="text-2xl font-semibold text-slate-900">{profileData.followers}</p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 mb-1">Following</p>
+              <p className="text-2xl font-semibold text-slate-900">{profileData.following}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity Section */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="flex border-b border-slate-200">
-            <button 
-              onClick={() => setActiveTab("activity")}
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${activeTab === "activity" ? "bg-slate-50 text-slate-900 border-b-2 border-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Activity
-            </button>
-            <button 
-              onClick={() => setActiveTab("stats")}
-              className={`flex-1 py-3 px-4 text-center font-medium transition-colors ${activeTab === "stats" ? "bg-slate-50 text-slate-900 border-b-2 border-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-            >
-              Stats
-            </button>
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
           </div>
           
-          {/* Tab content */}
-          <div>
-            {activeTab === "activity" && (
-              <div className="min-h-[200px]">
-                {recentActivity.length > 0 ? (
-                  <div className="divide-y divide-slate-100">
-                    {recentActivity.map((activity, index) => (
-                      <div key={index} className="p-4 hover:bg-slate-50 transition-colors">
-                        <div className="flex items-start space-x-3">
-                          <div className="mt-1 p-2 bg-slate-100 rounded-full">
-                            {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-slate-600" />}
-                            {activity.type === 'like' && <Heart className="h-4 w-4 text-rose-500" />}
-                          </div>
-                          <div className="flex-1">
-                            {activity.communityName && (
-                              <p className="text-slate-700 text-sm">
-                                Posted in <span className="font-medium">{activity.communityName}</span>
-                              </p>
-                            )}
-                            <p className="text-slate-400 text-xs mt-1">
-                              {new Date(activity.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
+          <div className="min-h-[200px]">
+            {recentActivity.length > 0 ? (
+              <div className="divide-y divide-slate-100">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start space-x-3">
+                      <div className="mt-1 p-2 bg-slate-100 rounded-full">
+                        {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-slate-600" />}
+                        {activity.type === 'like' && <Heart className="h-4 w-4 text-rose-500" />}
                       </div>
-                    ))}
+                      <div className="flex-1">
+                        {activity.communityName && (
+                          <p className="text-slate-700 text-sm">
+                            Posted in <span className="font-medium">{activity.communityName}</span>
+                          </p>
+                        )}
+                        <p className="text-slate-400 text-xs mt-1">
+                          {new Date(activity.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <MessageSquare className="h-12 w-12 text-slate-300 mb-4" />
-                    <p className="text-slate-500">No activity to display yet.</p>
-                    <p className="text-slate-400 text-sm mt-2">Start posting to see your activity here!</p>
-                  </div>
-                )}
+                ))}
               </div>
-            )}
-            
-            {activeTab === "stats" && (
-              <div className="grid grid-cols-2 sm:grid-cols-4">
-                <div className="border-r border-b border-slate-100 p-5">
-                  <p className="text-xs text-slate-500 mb-1">Likes Received</p>
-                  <p className="text-2xl font-semibold text-slate-900">{profileData.likesReceived}</p>
-                </div>
-                <div className="border-b border-slate-100 sm:border-r p-5">
-                  <p className="text-xs text-slate-500 mb-1">Likes Given</p>
-                  <p className="text-2xl font-semibold text-slate-900">{profileData.likesGiven}</p>
-                </div>
-                <div className="border-r border-slate-100 p-5">
-                  <p className="text-xs text-slate-500 mb-1">Followers</p>
-                  <p className="text-2xl font-semibold text-slate-900">{profileData.followers}</p>
-                </div>
-                <div className="p-5">
-                  <p className="text-xs text-slate-500 mb-1">Following</p>
-                  <p className="text-2xl font-semibold text-slate-900">{profileData.following}</p>
-                </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
+                <MessageSquare className="h-12 w-12 text-slate-300 mb-4" />
+                <p className="text-slate-500">No activity to display yet.</p>
+                <p className="text-slate-400 text-sm mt-2">Start posting to see your activity here!</p>
               </div>
             )}
           </div>
