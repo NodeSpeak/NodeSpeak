@@ -1710,16 +1710,6 @@ export const IntegratedView = ({
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-3">
-                    {/* View Posts - secondary action */}
-                    {showCommunityList && hasAccessibleCommunities && !isCreatingCommunity && (
-                        <Button
-                            onClick={() => setShowCommunityList(false)}
-                            className="bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 rounded-full px-5 font-medium"
-                        >
-                            View Posts
-                        </Button>
-                    )}
-
                     {/* Create Community - primary action */}
                     {showCommunityList && (
                         <Button
