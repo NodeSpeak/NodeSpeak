@@ -5,7 +5,7 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { Check, LogOut, User } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CypherpunkProfileButton } from '@/components/CypherpunkProfileButton';
+// import { CypherpunkProfileButton } from '@/components/CypherpunkProfileButton';
 
 export const WalletConnect = () => {
     const { isConnected, address, connect, disconnect, ensName } = useWalletContext();
@@ -32,13 +32,15 @@ export const WalletConnect = () => {
         <div className="text-sm flex items-center justify-end">
             {isConnected ? (
                 <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200">
+                    <Link
+                        href="/profile"
+                        className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200"
+                    >
                         <Check className="h-3 w-3" />
                         <span className="font-medium">
                             {ensName ? ensName : `${address?.slice(0, 6)}...${address?.slice(-4)}`}
                         </span>
-                    </div>
-                    <CypherpunkProfileButton />
+                    </Link>
                     <Button
                         onClick={handleDisconnect}
                         className="bg-red-50 hover:bg-red-100 text-red-600 text-xs py-1.5 px-3 h-auto flex items-center space-x-1 border border-red-200 rounded-full transition-colors"
