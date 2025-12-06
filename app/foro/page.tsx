@@ -8,7 +8,6 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { IntegratedView } from '@/components/IntegratedView';
-import siteConfig from '@/config';
 
 
 // Use a cached IPFS gateway to reduce rate limiting issues

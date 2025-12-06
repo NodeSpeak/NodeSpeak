@@ -1,18 +1,10 @@
 "use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import { Github, X, Mail, Shield, Database, Users, MessageSquare, Lock, Sparkles } from "lucide-react";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useRouter } from 'next/navigation';
-import siteConfig from "@/config";
-
-function MatrixRain() {
-    return (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="matrix-rain absolute inset-0" aria-hidden="true" />
-        </div>
-    );
-}
 
 function TypingEffect({ text }: { text: string }) {
     const [displayedText, setDisplayedText] = useState("");
