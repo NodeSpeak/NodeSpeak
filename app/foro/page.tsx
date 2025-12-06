@@ -2,6 +2,7 @@
 import { WalletConnect } from '@/components/WalletConnect';
 import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
+import { Sparkles } from "lucide-react";
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
@@ -602,8 +603,11 @@ const handleCreateCommunity = async (
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
-                        <a href="/" className="block">
-                            <h1 className="text-2xl font-semibold text-slate-900 hover:text-indigo-600 transition-colors">Node Speak v3.3</h1>
+                        <a href="/" className="flex items-center gap-3 group">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                                <Sparkles className="w-5 h-5 text-white" />
+                            </div>
+                            <h1 className="text-2xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">Node Speak <span className="text-lg font-normal text-slate-500">v3.3</span></h1>
                         </a>
                         <div className="flex items-center gap-4">
                             <WalletConnect />
