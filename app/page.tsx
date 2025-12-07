@@ -56,15 +56,31 @@ function TypingEffect({ text }: { text: string }) {
 }
 
 function Landing() {
-    const { isConnected } = useWalletContext();
+    const { isConnected, connect } = useWalletContext();
     const router = useRouter();
+    const [isExploring, setIsExploring] = useState(false);
+    const [redirectTo, setRedirectTo] = useState<string | null>(null);
+
+    // Handler para el botón "Explore the forum"
+    const handleExplore = async () => {
+        setIsExploring(true);
+        setRedirectTo('/activity');
+        try {
+            await connect();
+        } catch (error) {
+            console.error("Error connecting:", error);
+            setIsExploring(false);
+            setRedirectTo(null);
+        }
+    };
 
     // Efecto para redirigir cuando isConnected cambia
     useEffect(() => {
         if (isConnected) {
-            router.push('/foro');
+            // Si hay un redirectTo específico, usar ese, sino ir a /foro
+            router.push(redirectTo || '/foro');
         }
-    }, [isConnected, router]);
+    }, [isConnected, router, redirectTo]);
 
     // Si está conectado, podemos mostrar un mensaje de carga mientras redirige
     if (isConnected) {
@@ -127,8 +143,12 @@ function Landing() {
                                     Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.
                                 </p>
                                 <div className="flex flex-wrap items-center gap-4 mb-10">
-                                    <button className="group/btn relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg shadow-slate-300 hover:shadow-xl hover:shadow-slate-400/50 transition-all duration-300 hover:-translate-y-0.5">
-                                        <span>Explore the forum</span>
+                                    <button 
+                                        onClick={handleExplore}
+                                        disabled={isExploring}
+                                        className="group/btn relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg shadow-slate-300 hover:shadow-xl hover:shadow-slate-400/50 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        <span>{isExploring ? "Connecting..." : "Explore the forum"}</span>
                                         <svg className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                         </svg>
