@@ -1,6 +1,7 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import DOMPurify from 'dompurify';
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
@@ -88,11 +89,15 @@ export default function ActivityPage() {
         return `${address.slice(0, 6)}...${address.slice(-4)}`;
     };
 
-    // Truncate content
-    const truncateContent = (content: string, maxLength: number = 150) => {
+    // Strip HTML tags and truncate content for preview
+    const stripHtmlAndTruncate = (content: string, maxLength: number = 150) => {
         if (typeof content !== 'string') return '';
-        if (content.length <= maxLength) return content;
-        return content.slice(0, maxLength) + '...';
+        // Create a temporary element to parse HTML and extract text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = DOMPurify.sanitize(content);
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        if (textContent.length <= maxLength) return textContent;
+        return textContent.slice(0, maxLength) + '...';
     };
 
     // Fetch all activity
@@ -363,18 +368,14 @@ export default function ActivityPage() {
                                                 {/* Post Content */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between gap-4 mb-2">
-                                                        <h4 className="font-semibold text-slate-900 line-clamp-1">
-                                                            {post.title}
-                                                        </h4>
+                                                        <p className="text-sm text-slate-600 line-clamp-2 flex-1">
+                                                            {stripHtmlAndTruncate(post.content)}
+                                                        </p>
                                                         <span className="flex-shrink-0 text-xs text-slate-400 flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
                                                             {formatRelativeTime(post.timestamp)}
                                                         </span>
                                                     </div>
-                                                    
-                                                    <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                                                        {truncateContent(post.content)}
-                                                    </p>
                                                     
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-4">
