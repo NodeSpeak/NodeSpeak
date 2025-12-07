@@ -15,11 +15,12 @@ import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
 // Interface for recent activity
 interface RecentActivity {
-  type: 'post' | 'comment' | 'like';
-  title: string;
-  communityName?: string;
+  type: 'post' | 'comment';
+  content: string;
+  communityName: string;
   timestamp: number;
   postId?: number;
+  topic?: string;
 }
 
 // Helper function to shorten Ethereum addresses
@@ -173,7 +174,7 @@ export default function ProfilePage() {
           });
         }
 
-        // Load user's posts from blockchain for activity
+        // Load user's posts and comments from blockchain for activity
         const ethereum = (window as any).ethereum;
         if (ethereum) {
           try {
@@ -190,18 +191,93 @@ export default function ProfilePage() {
               postCount: myPosts.length
             }));
             
-            // Create recent activity from posts
-            const activities: RecentActivity[] = myPosts.slice(0, 5).map((post: any) => ({
-              type: 'post' as const,
-              title: '', // we no longer show the post title in the activity list
-              // Prefer a community name field if available, otherwise fallback to a generic label
-              communityName: (post.communityName || post.community || 'Community') as string,
-              timestamp: Number(post.timestamp) * 1000,
-              postId: Number(post.id)
-            }));
-            setRecentActivity(activities);
+            // Cache for community names
+            const communityCache: Record<string, string> = {};
+            
+            // Helper to get community name
+            const getCommunityName = async (communityId: number): Promise<string> => {
+              const cacheKey = communityId.toString();
+              if (communityCache[cacheKey]) return communityCache[cacheKey];
+              
+              try {
+                const community = await contract.getCommunity(communityId);
+                // Community contentCID contains JSON with name
+                if (community.contentCID) {
+                  const response = await fetch(`https://gateway.pinata.cloud/ipfs/${community.contentCID}`);
+                  const data = await response.json();
+                  communityCache[cacheKey] = data.name || `Community #${communityId}`;
+                } else {
+                  communityCache[cacheKey] = `Community #${communityId}`;
+                }
+              } catch {
+                communityCache[cacheKey] = `Community #${communityId}`;
+              }
+              return communityCache[cacheKey];
+            };
+            
+            // Helper to get post content from IPFS
+            const getPostContent = async (contentCID: string): Promise<string> => {
+              try {
+                const response = await fetch(`https://gateway.pinata.cloud/ipfs/${contentCID}`);
+                const text = await response.text();
+                // Strip HTML tags for preview
+                const stripped = text.replace(/<[^>]*>/g, '').trim();
+                return stripped.length > 100 ? stripped.substring(0, 100) + '...' : stripped;
+              } catch {
+                return 'Post content';
+              }
+            };
+            
+            // Create activities array
+            const activities: RecentActivity[] = [];
+            
+            // Add user's posts
+            for (const post of myPosts.slice(0, 5)) {
+              const communityName = await getCommunityName(Number(post.communityId));
+              const content = await getPostContent(post.contentCID);
+              
+              activities.push({
+                type: 'post',
+                content: content,
+                communityName: communityName,
+                timestamp: Number(post.timestamp) * 1000,
+                postId: Number(post.id),
+                topic: post.topic
+              });
+            }
+            
+            // Find user's comments across all posts
+            for (const post of allPosts.slice(0, 20)) { // Check first 20 posts for comments
+              try {
+                const comments = await contract.getComments(Number(post.id));
+                const myComments = comments.filter((c: any) => 
+                  c.author.toLowerCase() === targetAddress.toLowerCase() && c.isActive
+                );
+                
+                for (const comment of myComments) {
+                  const communityName = await getCommunityName(Number(post.communityId));
+                  const content = comment.content.length > 100 
+                    ? comment.content.substring(0, 100) + '...' 
+                    : comment.content;
+                  
+                  activities.push({
+                    type: 'comment',
+                    content: content,
+                    communityName: communityName,
+                    timestamp: Number(comment.timestamp) * 1000,
+                    postId: Number(post.id)
+                  });
+                }
+              } catch {
+                // Skip if can't load comments for this post
+              }
+            }
+            
+            // Sort by timestamp (newest first) and take top 10
+            activities.sort((a, b) => b.timestamp - a.timestamp);
+            setRecentActivity(activities.slice(0, 10));
           } catch (e) {
-            console.log("Could not load posts:", e);
+            console.log("Could not load activity:", e);
           }
         }
       } catch (error) {
@@ -462,16 +538,31 @@ export default function ProfilePage() {
                   <div key={index} className="p-4 hover:bg-slate-50 transition-colors">
                     <div className="flex items-start space-x-3">
                       <div className="mt-1 p-2 bg-slate-100 rounded-full">
-                        {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-slate-600" />}
-                        {activity.type === 'like' && <Heart className="h-4 w-4 text-rose-500" />}
+                        {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-indigo-600" />}
+                        {activity.type === 'comment' && <MessageSquare className="h-4 w-4 text-emerald-600" />}
                       </div>
                       <div className="flex-1">
-                        {activity.communityName && (
-                          <p className="text-slate-700 text-sm">
-                            Posted in <span className="font-medium">{activity.communityName}</span>
-                          </p>
-                        )}
-                        <p className="text-slate-400 text-xs mt-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            activity.type === 'post' 
+                              ? 'bg-indigo-100 text-indigo-700' 
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {activity.type === 'post' ? 'Post' : 'Comment'}
+                          </span>
+                          <span className="text-slate-500 text-xs">in</span>
+                          <span className="text-slate-700 text-xs font-medium">{activity.communityName}</span>
+                          {activity.topic && (
+                            <>
+                              <span className="text-slate-400 text-xs">•</span>
+                              <span className="text-slate-500 text-xs">{activity.topic}</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-slate-700 text-sm mt-1">
+                          {activity.content}
+                        </p>
+                        <p className="text-slate-400 text-xs mt-2">
                           {new Date(activity.timestamp).toLocaleString()}
                         </p>
                       </div>
