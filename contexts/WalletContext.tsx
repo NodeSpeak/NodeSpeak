@@ -3,6 +3,20 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { BrowserProvider, JsonRpcProvider } from "ethers";
 
+// Arbitrum One network configuration
+const ARBITRUM_CHAIN_ID = "0xa4b1"; // 42161 in hex
+const ARBITRUM_NETWORK = {
+    chainId: ARBITRUM_CHAIN_ID,
+    chainName: "Arbitrum One",
+    nativeCurrency: {
+        name: "Ether",
+        symbol: "ETH",
+        decimals: 18,
+    },
+    rpcUrls: ["https://arb1.arbitrum.io/rpc"],
+    blockExplorerUrls: ["https://arbiscan.io"],
+};
+
 interface WalletContextProps {
     isConnected: boolean;
     address: string | null;
@@ -59,6 +73,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         try {
             const accounts = await selectedProvider.request({ method: "eth_requestAccounts" });
+
+            // Switch to Arbitrum network
+            try {
+                await selectedProvider.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: ARBITRUM_CHAIN_ID }],
+                });
+            } catch (switchError: any) {
+                // If the chain is not added, add it
+                if (switchError.code === 4902) {
+                    await selectedProvider.request({
+                        method: "wallet_addEthereumChain",
+                        params: [ARBITRUM_NETWORK],
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
 
             setAddress(accounts[0]);
 
