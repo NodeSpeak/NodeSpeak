@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Github, X, Mail } from "lucide-react";
+import { Github, X, Mail, Users, MessageSquare, Shield, Lock, Globe, Database, Sparkles } from "lucide-react";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useRouter } from 'next/navigation';
@@ -87,89 +87,160 @@ function Landing() {
 
     // Si no está conectado, muestra la landing principal con estilo claro
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] text-slate-900">
-            <div className="max-w-7xl mx-auto px-8 pt-12 pb-20">
-                <header className="flex items-center justify-between mb-16">
-                    <h1 className="text-2xl font-semibold text-slate-900">Node Speak v3.3</h1>
+        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] text-slate-900 relative overflow-hidden">
+            {/* Decorative background elements */}
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-sky-100/40 to-indigo-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-violet-100/30 to-pink-100/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 pointer-events-none" />
+            
+            <div className="max-w-7xl mx-auto px-6 md:px-8 pt-8 md:pt-12 pb-20 relative z-10">
+                {/* Header */}
+                <header className="flex items-center justify-between mb-12 md:mb-20">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-200">
+                            <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
+                    </div>
                     <div className="flex items-center gap-4">
                         <WalletConnect />
                     </div>
                 </header>
 
-                <main className="grid gap-10 md:grid-cols-[minmax(0,2.1fr)_minmax(0,1.4fr)] items-start">
-                    <section className="space-y-6">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl shadow-slate-200 border border-slate-100 px-10 py-12">
-                            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900 mb-6">
-                                The Decentralized and Immutable Forum
-                            </h2>
-                            <p className="text-base md:text-lg text-slate-600 max-w-xl mb-8">
-                                Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.
-                            </p>
-                            <div className="flex flex-wrap items-center gap-4 mb-10">
-                                <button className="text-sm font-medium text-slate-800 hover:text-slate-900 underline-offset-4 hover:underline">
-                                    Explore the forum
-                                </button>
-                            </div>
+                {/* Hero Section */}
+                <main className="grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] items-start">
+                    <section className="space-y-8">
+                        {/* Main Hero Card */}
+                        <div className="group relative bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-slate-200/50 border border-white/60 px-8 md:px-12 py-10 md:py-14 overflow-hidden transition-all duration-500 hover:shadow-slate-300/60">
+                            {/* Subtle gradient overlay on hover */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-sky-50/0 to-indigo-50/0 group-hover:from-sky-50/50 group-hover:to-indigo-50/30 transition-all duration-500 rounded-[2rem]" />
+                            
+                            <div className="relative z-10">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-100 to-indigo-100 border border-sky-200/50 mb-6">
+                                    <Globe className="w-4 h-4 text-sky-600" />
+                                    <span className="text-xs font-semibold text-sky-700 tracking-wide uppercase">Web3 Forum</span>
+                                </div>
+                                
+                                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
+                                    The Decentralized and Immutable Forum
+                                </h2>
+                                <p className="text-base md:text-lg text-slate-600 max-w-xl mb-8 leading-relaxed">
+                                    Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.
+                                </p>
+                                <div className="flex flex-wrap items-center gap-4 mb-10">
+                                    <button className="group/btn relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg shadow-slate-300 hover:shadow-xl hover:shadow-slate-400/50 transition-all duration-300 hover:-translate-y-0.5">
+                                        <span>Explore the forum</span>
+                                        <svg className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                    </button>
+                                </div>
 
-                            <div className="grid gap-5 md:grid-cols-3 text-sm">
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
-                                    <p className="font-medium text-slate-900 mb-2 text-base">Communities</p>
-                                    <p className="text-slate-500 text-sm">
-                                        Create and manage discussion topics.
-                                        Follow profiles of interest.
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
-                                    <p className="font-medium text-slate-900 mb-2 text-base">Posts & Threads</p>
-                                    <p className="text-slate-500 text-sm">
-                                        Post messages and reply to other participants.
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
-                                    <p className="font-medium text-slate-900 mb-2 text-base">Admin Mode</p>
-                                    <p className="text-slate-500 text-sm">
-                                        Moderate, curate, and protect spaces in one interface.
-                                    </p>
+                                {/* Feature Cards */}
+                                <div className="grid gap-4 sm:grid-cols-3">
+                                    <div className="group/card relative rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50/80 p-5 transition-all duration-300 hover:border-sky-200 hover:shadow-lg hover:shadow-sky-100/50 hover:-translate-y-1">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-100 to-sky-50 flex items-center justify-center mb-3 group-hover/card:from-sky-200 group-hover/card:to-sky-100 transition-colors">
+                                            <Users className="w-5 h-5 text-sky-600" />
+                                        </div>
+                                        <p className="font-semibold text-slate-900 mb-1.5">Communities</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">
+                                            Create and manage discussion topics.
+                                            Follow profiles of interest.
+                                        </p>
+                                    </div>
+                                    <div className="group/card relative rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50/80 p-5 transition-all duration-300 hover:border-violet-200 hover:shadow-lg hover:shadow-violet-100/50 hover:-translate-y-1">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 flex items-center justify-center mb-3 group-hover/card:from-violet-200 group-hover/card:to-violet-100 transition-colors">
+                                            <MessageSquare className="w-5 h-5 text-violet-600" />
+                                        </div>
+                                        <p className="font-semibold text-slate-900 mb-1.5">Posts & Threads</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">
+                                            Post messages and reply to other participants.
+                                        </p>
+                                    </div>
+                                    <div className="group/card relative rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50/80 p-5 transition-all duration-300 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-100/50 hover:-translate-y-1">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center mb-3 group-hover/card:from-emerald-200 group-hover/card:to-emerald-100 transition-colors">
+                                            <Shield className="w-5 h-5 text-emerald-600" />
+                                        </div>
+                                        <p className="font-semibold text-slate-900 mb-1.5">Admin Mode</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">
+                                            Moderate, curate, and protect spaces in one interface.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    <aside className="space-y-4">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg shadow-slate-200 border border-slate-100 px-8 py-7 flex flex-col gap-5">
-                            <div>
-                                <p className="text-sm font-semibold tracking-[0.2em] text-slate-500 uppercase mb-3">
+                    {/* Sidebar */}
+                    <aside className="space-y-5">
+                        <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/40 border border-white/60 px-7 py-8 overflow-hidden">
+                            {/* Decorative accent */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-indigo-500 to-violet-500" />
+                            
+                            <div className="flex items-center gap-2 mb-5">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50 flex items-center justify-center">
+                                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                                </div>
+                                <p className="text-sm font-bold tracking-wide text-slate-800 uppercase">
                                     Key Features
                                 </p>
-                                <ul className="text-sm text-slate-600 list-disc list-inside space-y-1">
-                                    <li>
-                                        <span className="font-semibold">Blockchain and Security:</span> All messages are backed by blockchain technology, ensuring transparency and reliability.
-                                    </li>
-                                    <li>
-                                        <span className="font-semibold">Permanent Storage:</span> We use IPFS (InterPlanetary File System) to ensure data is accessible in a decentralized and immutable way.
-                                    </li>
-                                    <li>
-                                        <span className="font-semibold">No Censorship or Arbitrary Moderation:</span> Content is always available and moderated by each community running a version of NodeSpeak.
-                                    </li>
-                                    <li>
-                                        <span className="font-semibold">Secure Content:</span> Persistent storage ensures content is protected against external manipulations.
-                                    </li>
-                                </ul>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div className="flex gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-transparent hover:from-sky-50 transition-colors">
+                                    <div className="w-9 h-9 rounded-lg bg-sky-100 flex items-center justify-center flex-shrink-0">
+                                        <Lock className="w-4 h-4 text-sky-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900 text-sm mb-0.5">Blockchain and Security:</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">All messages are backed by blockchain technology, ensuring transparency and reliability.</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-transparent hover:from-violet-50 transition-colors">
+                                    <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                        <Database className="w-4 h-4 text-violet-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900 text-sm mb-0.5">Permanent Storage:</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">We use IPFS (InterPlanetary File System) to ensure data is accessible in a decentralized and immutable way.</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-transparent hover:from-emerald-50 transition-colors">
+                                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                        <Globe className="w-4 h-4 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900 text-sm mb-0.5">No Censorship or Arbitrary Moderation:</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">Content is always available and moderated by each community running a version of NodeSpeak.</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-50 to-transparent hover:from-amber-50 transition-colors">
+                                    <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                                        <Shield className="w-4 h-4 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-slate-900 text-sm mb-0.5">Secure Content:</p>
+                                        <p className="text-slate-500 text-sm leading-relaxed">Persistent storage ensures content is protected against external manipulations.</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </aside>
                 </main>
 
-                <footer className="mt-20 border-t border-slate-200 pt-10 flex flex-col md:flex-row items-center justify-between gap-6 text-lg text-slate-500">
-                    <p className="text-lg">
+                {/* Footer */}
+                <footer className="mt-20 md:mt-28 border-t border-slate-200/60 pt-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <p className="text-base text-slate-500">
                         &copy; {new Date().getFullYear()} NodeSpeak. Built for decentralized communities.
                     </p>
-                    <div className="flex flex-wrap gap-4 text-lg">
+                    <div className="flex flex-wrap gap-3">
                         <a
                             href="https://github.com/NodeSpeak/NodeSpeakv1.1-main"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-full bg-slate-900 text-slate-50 px-4 py-2 font-medium hover:bg-black transition-colors"
+                            className="inline-flex items-center rounded-full bg-slate-900 text-white px-5 py-2.5 text-sm font-medium shadow-lg shadow-slate-300/50 hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <Github className="w-4 h-4 mr-2" />
                             GitHub
@@ -178,14 +249,14 @@ function Landing() {
                             href="https://twitter.com/NodeSpeak"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-4 py-2 font-medium hover:bg-slate-200 transition-colors"
+                            className="inline-flex items-center rounded-full bg-white text-slate-700 px-5 py-2.5 text-sm font-medium border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <X className="w-4 h-4 mr-2" />
                             @NodeSpeak
                         </a>
                         <a
                             href="mailto:support@nodespeak.xyz"
-                            className="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-4 py-2 font-medium hover:bg-slate-200 transition-colors"
+                            className="inline-flex items-center rounded-full bg-white text-slate-700 px-5 py-2.5 text-sm font-medium border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <Mail className="w-4 h-4 mr-2" />
                             Support
