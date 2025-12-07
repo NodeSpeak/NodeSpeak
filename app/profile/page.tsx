@@ -11,33 +11,7 @@ import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shie
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
-// ABI for ForumProfileManager (only the functions we need for follow)
-const profileManagerABI = [
-  {
-    "inputs": [{ "internalType": "address", "name": "userToFollow", "type": "address" }],
-    "name": "followUser",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "address", "name": "userToUnfollow", "type": "address" }],
-    "name": "unfollowUser",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "name": "isFollowing",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
+// Note: followUser, unfollowUser, and isFollowing are available directly on the main forum contract
 
 // Interface for recent activity
 interface RecentActivity {
@@ -100,11 +74,10 @@ export default function ProfilePage() {
         if (!ethereum) return;
         
         const provider = new BrowserProvider(ethereum);
-        const mainContract = new Contract(forumAddress, forumABI, provider);
-        const profileManagerAddress = await mainContract.profileManager();
-        const profileManager = new Contract(profileManagerAddress, profileManagerABI, provider);
+        const contract = new Contract(forumAddress, forumABI, provider);
         
-        const following = await profileManager.isFollowing(currentUserAddress, targetAddress);
+        // Use isFollowing from main contract (follower, followed)
+        const following = await contract.isFollowing(currentUserAddress, targetAddress);
         setIsFollowing(following);
       } catch (error) {
         console.error('Error checking follow status:', error);
@@ -118,31 +91,47 @@ export default function ProfilePage() {
   const handleFollow = async () => {
     if (!currentUserAddress || !targetAddress) return;
     
+    // Check if target user has a profile (required by contract)
+    if (!profileExists) {
+      alert('This user has not created a profile yet. You can only follow users with an active profile.');
+      return;
+    }
+    
     setFollowLoading(true);
     try {
       const ethereum = (window as any).ethereum;
-      if (!ethereum) return;
+      if (!ethereum) {
+        alert('Please connect your wallet');
+        return;
+      }
       
       const provider = new BrowserProvider(ethereum);
       const signer = await provider.getSigner();
-      
-      const mainContract = new Contract(forumAddress, forumABI, provider);
-      const profileManagerAddress = await mainContract.profileManager();
-      const profileManager = new Contract(profileManagerAddress, profileManagerABI, signer);
+      const contract = new Contract(forumAddress, forumABI, signer);
       
       if (isFollowing) {
-        const tx = await profileManager.unfollowUser(targetAddress);
+        // Unfollow user
+        const tx = await contract.unfollowUser(targetAddress);
         await tx.wait();
         setIsFollowing(false);
         setProfileData(prev => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
       } else {
-        const tx = await profileManager.followUser(targetAddress);
+        // Follow user
+        const tx = await contract.followUser(targetAddress);
         await tx.wait();
         setIsFollowing(true);
         setProfileData(prev => ({ ...prev, followers: prev.followers + 1 }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error following/unfollowing user:', error);
+      // Show user-friendly error
+      if (error.reason) {
+        alert(`Transaction failed: ${error.reason}`);
+      } else if (error.message?.includes('user rejected')) {
+        // User cancelled, no alert needed
+      } else {
+        alert('Transaction failed. Please try again.');
+      }
     } finally {
       setFollowLoading(false);
     }
@@ -376,10 +365,11 @@ export default function ProfilePage() {
               ) : currentUserAddress ? (
                 <Button 
                   onClick={handleFollow}
-                  disabled={followLoading}
+                  disabled={followLoading || !profileExists}
+                  title={!profileExists ? 'This user has not created a profile yet' : ''}
                   className={`rounded-full px-4 text-sm ${isFollowing 
                     ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
-                    : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50`}
+                    : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {followLoading ? (
                     <span className="animate-pulse">...</span>
