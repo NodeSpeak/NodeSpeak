@@ -23,6 +23,14 @@ interface RecentActivity {
   topic?: string;
 }
 
+// Interface for user communities
+interface UserCommunity {
+  id: number;
+  name: string;
+  photo?: string;
+  memberCount: number;
+}
+
 // Helper function to shorten Ethereum addresses
 function shortenAddress(address: string, chars = 4): string {
   if (!address) return '';
@@ -65,6 +73,7 @@ export default function ProfilePage() {
     memberSince: ""
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [userCommunities, setUserCommunities] = useState<UserCommunity[]>([]);
 
   // Check follow status for other users
   useEffect(() => {
@@ -332,6 +341,58 @@ export default function ProfilePage() {
             // Sort by timestamp (newest first) and take top 10
             activities.sort((a, b) => b.timestamp - a.timestamp);
             setRecentActivity(activities.slice(0, 10));
+            
+            // Load user's communities
+            try {
+              // Get all active communities first
+              const allCommunities = await contract.getActiveCommunities();
+              const communities: UserCommunity[] = [];
+              
+              for (const community of allCommunities) {
+                try {
+                  const communityId = Number(community.id);
+                  // Check if user is member using isMember(communityId, address)
+                  const isMember = await contract.isMember(communityId, targetAddress);
+                  // Also check if user is creator
+                  const isCreator = community.creator.toLowerCase() === targetAddress.toLowerCase();
+                  
+                  if (isMember || isCreator) {
+                    const memberCount = await contract.getCommunityMemberCount(communityId);
+                    
+                    let name = `Community #${communityId}`;
+                    let photo = '';
+                    
+                    // Get community name from IPFS
+                    if (community.contentCID) {
+                      const text = await fetchFromIPFS(community.contentCID);
+                      if (text) {
+                        try {
+                          const data = JSON.parse(text);
+                          name = data.name || name;
+                        } catch {}
+                      }
+                    }
+                    
+                    if (community.profileCID) {
+                      photo = community.profileCID;
+                    }
+                    
+                    communities.push({
+                      id: communityId,
+                      name,
+                      photo,
+                      memberCount: Number(memberCount)
+                    });
+                  }
+                } catch {
+                  // Skip this community
+                }
+              }
+              
+              setUserCommunities(communities);
+            } catch (e) {
+              console.log("Could not load communities:", e);
+            }
           } catch (e) {
             console.log("Could not load activity:", e);
           }
@@ -584,6 +645,67 @@ export default function ProfilePage() {
               <p className="text-xs text-slate-500 mb-1">Following</p>
               <p className="text-2xl font-semibold text-slate-900">{profileData.following}</p>
             </div>
+          </div>
+        </div>
+
+        {/* Communities Section */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200">
+            <h2 className="text-lg font-semibold text-slate-900">Communities</h2>
+          </div>
+          
+          <div className="p-4">
+            {userCommunities.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {userCommunities.map((community) => (
+                  <div 
+                    key={community.id} 
+                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
+                      {community.photo ? (
+                        <img 
+                          src={`https://gateway.pinata.cloud/ipfs/${community.photo}`}
+                          alt={community.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Try alternative gateway
+                            const img = e.target as HTMLImageElement;
+                            if (!img.dataset.retried) {
+                              img.dataset.retried = 'true';
+                              img.src = `https://ipfs.io/ipfs/${community.photo}`;
+                            } else {
+                              // Hide image and show fallback initial
+                              img.style.display = 'none';
+                              const parent = img.parentElement;
+                              if (parent && !parent.querySelector('.fallback-initial')) {
+                                const fallback = document.createElement('div');
+                                fallback.className = 'fallback-initial w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium';
+                                fallback.textContent = community.name.charAt(0).toUpperCase();
+                                parent.appendChild(fallback);
+                              }
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                          {community.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{community.name}</p>
+                      <p className="text-xs text-slate-500">{community.memberCount} members</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <User className="h-10 w-10 text-slate-300 mb-3" />
+                <p className="text-slate-500 text-sm">Not a member of any community yet</p>
+              </div>
+            )}
           </div>
         </div>
 
