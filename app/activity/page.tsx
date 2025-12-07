@@ -40,12 +40,14 @@ interface Community {
     memberCount: number;
     photo?: string;
     posts: Post[];
+    isMember: boolean;
 }
 
 export default function ActivityPage() {
     const { isConnected, provider } = useWalletContext();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
 
     // Helper function to fetch IPFS content
     const fetchFromIPFS = async (cid: string) => {
@@ -139,11 +141,17 @@ export default function ActivityPage() {
                     }
                 }
 
-                // Get member count
+                // Get member count and check membership
                 let memberCount = 0;
+                let isMember = false;
                 try {
                     const count = await contract.getCommunityMemberCount(id);
                     memberCount = parseInt(count.toString(), 10);
+                    
+                    // Check if user is a member
+                    const signer = await provider.getSigner();
+                    const userAddress = await signer.getAddress();
+                    isMember = await contract.isMember(id, userAddress);
                 } catch (err) {
                     console.error(`Error getting member count for community ${id}:`, err);
                 }
@@ -198,7 +206,8 @@ export default function ActivityPage() {
                             postCount: parseInt(community.postCount.toString(), 10),
                             memberCount,
                             photo,
-                            posts
+                            posts,
+                            isMember
                         });
                     }
                 } catch (err) {
@@ -226,6 +235,65 @@ export default function ActivityPage() {
             fetchActivity();
         }
     }, [isConnected, provider]);
+
+    // Join a community
+    const handleJoinCommunity = async (communityId: string) => {
+        if (!provider) {
+            alert("No Ethereum provider connected.");
+            return;
+        }
+
+        try {
+            setJoiningCommunityId(communityId);
+
+            const signer = await provider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Verify if already a member
+            const userAddress = await signer.getAddress();
+            const isMember = await contract.isMember(communityId, userAddress);
+
+            if (isMember) {
+                // Update state locally without transaction
+                setCommunities(prev => prev.map(community => {
+                    if (community.id === communityId) {
+                        return { ...community, isMember: true };
+                    }
+                    return community;
+                }));
+                setJoiningCommunityId(null);
+                return;
+            }
+
+            // If not a member, proceed with transaction
+            const tx = await contract.joinCommunity(communityId);
+            await tx.wait();
+
+            // Update community list
+            setCommunities(prev => prev.map(community => {
+                if (community.id === communityId) {
+                    return { ...community, isMember: true, memberCount: community.memberCount + 1 };
+                }
+                return community;
+            }));
+
+        } catch (error: any) {
+            console.error("Error joining community:", error);
+
+            if (error.message && error.message.includes("Already a member")) {
+                setCommunities(prev => prev.map(community => {
+                    if (community.id === communityId) {
+                        return { ...community, isMember: true };
+                    }
+                    return community;
+                }));
+            } else {
+                alert("Error joining community. Check console.");
+            }
+        } finally {
+            setJoiningCommunityId(null);
+        }
+    };
 
     if (!isConnected) {
         return (
@@ -337,13 +405,27 @@ export default function ActivityPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Link
-                                            href="/foro"
-                                            className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
-                                        >
-                                            View all
-                                            <ArrowRight className="w-4 h-4" />
-                                        </Link>
+                                        {community.isMember ? (
+                                            <Link
+                                                href={`/foro?community=${community.id}`}
+                                                className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
+                                            >
+                                                View all
+                                                <ArrowRight className="w-4 h-4" />
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleJoinCommunity(community.id)}
+                                                disabled={joiningCommunityId === community.id}
+                                                className={`text-sm font-medium px-4 py-1.5 rounded-full transition-all ${
+                                                    joiningCommunityId === community.id
+                                                        ? "bg-slate-200 text-slate-500"
+                                                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                                }`}
+                                            >
+                                                {joiningCommunityId === community.id ? "Joining..." : "Join"}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 

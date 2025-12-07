@@ -2,6 +2,7 @@
 import { WalletConnect } from '@/components/WalletConnect';
 import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from 'next/navigation';
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
@@ -21,6 +22,7 @@ const communityDataCache = new Map();
 
 export default function Home() {
     const { isConnected, provider } = useWalletContext();
+    const searchParams = useSearchParams();
     const [creatingCommunity, setCreatingCommunity] = useState(false);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
     const [leavingCommunityId, setLeavingCommunityId] = useState<string | null>(null);
@@ -596,6 +598,19 @@ const handleCreateCommunity = async (
             loadUserData();
         }
     }, [isConnected, provider]);
+
+    // Handle community query parameter from URL
+    useEffect(() => {
+        const communityId = searchParams.get('community');
+        if (communityId && communities.length > 0) {
+            const community = communities.find(c => c.id === communityId);
+            if (community && (community.isMember || community.isCreator)) {
+                setSelectedCommunityId(communityId);
+                setShowCommunityList(false);
+                fetchPostsForCommunity(communityId);
+            }
+        }
+    }, [searchParams, communities]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
