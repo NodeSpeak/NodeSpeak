@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, User, Save, Upload, ImagePlus } from "lucide-react";
+import { ArrowLeft, User, Save, Upload, ImagePlus, Pencil } from "lucide-react";
+import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { toast } from "@/hooks/use-toast";
 
 export default function EditProfilePage() {
@@ -25,6 +26,8 @@ export default function EditProfilePage() {
   const [coverPhoto, setCoverPhoto] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState<string>("");
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string>("");
+  const [showCoverEditor, setShowCoverEditor] = useState(false);
+  const [tempCoverImage, setTempCoverImage] = useState<string>("");
   const [stats, setStats] = useState({
     likesReceived: 0,
     likesGiven: 0,
@@ -142,16 +145,44 @@ export default function EditProfilePage() {
         return;
       }
       
-      setCoverPhoto(file);
-      
-      // Create preview
+      // Create preview and open editor
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setCoverPhotoPreview(e.target.result as string);
+          setTempCoverImage(e.target.result as string);
+          setShowCoverEditor(true);
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCoverEditorSave = (croppedBlob: Blob) => {
+    // Convert blob to file
+    const file = new File([croppedBlob], 'cover.jpg', { type: 'image/jpeg' });
+    setCoverPhoto(file);
+    
+    // Create preview from blob
+    const url = URL.createObjectURL(croppedBlob);
+    setCoverPhotoPreview(url);
+    setShowCoverEditor(false);
+    setTempCoverImage("");
+    
+    toast({
+      title: "Cover image adjusted",
+      description: "Your cover image has been cropped and saved."
+    });
+  };
+
+  const handleCoverEditorCancel = () => {
+    setShowCoverEditor(false);
+    setTempCoverImage("");
+  };
+
+  const handleEditExistingCover = () => {
+    if (coverPhotoPreview) {
+      setTempCoverImage(coverPhotoPreview);
+      setShowCoverEditor(true);
     }
   };
 
@@ -305,12 +336,23 @@ export default function EditProfilePage() {
             <div className="md:col-span-4 bg-slate-50 rounded-xl p-4">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-slate-700 text-sm font-medium">Cover Image</span>
-                <Label
-                  htmlFor="coverPhoto"
-                  className="cursor-pointer text-sky-600 text-xs py-1.5 px-3 bg-sky-50 hover:bg-sky-100 rounded-full border border-sky-200 transition-colors"
-                >
-                  Upload Cover
-                </Label>
+                <div className="flex items-center gap-2">
+                  {coverPhotoPreview && (
+                    <button
+                      onClick={handleEditExistingCover}
+                      className="text-slate-600 text-xs py-1.5 px-3 bg-white hover:bg-slate-100 rounded-full border border-slate-200 transition-colors flex items-center gap-1.5"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      Adjust
+                    </button>
+                  )}
+                  <Label
+                    htmlFor="coverPhoto"
+                    className="cursor-pointer text-sky-600 text-xs py-1.5 px-3 bg-sky-50 hover:bg-sky-100 rounded-full border border-sky-200 transition-colors"
+                  >
+                    Upload Cover
+                  </Label>
+                </div>
                 <Input
                   id="coverPhoto"
                   type="file"
@@ -319,20 +361,34 @@ export default function EditProfilePage() {
                   className="hidden"
                 />
               </div>
-              <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-white">
+              <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-white relative group">
                 {coverPhotoPreview ? (
-                  <img 
-                    src={coverPhotoPreview} 
-                    alt="Cover" 
-                    className="w-full h-full object-cover rounded-lg"
-                  />
+                  <>
+                    <img 
+                      src={coverPhotoPreview} 
+                      alt="Cover" 
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    {/* Hover overlay for editing */}
+                    <div 
+                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
+                      onClick={handleEditExistingCover}
+                    >
+                      <div className="text-white text-sm font-medium flex items-center gap-2">
+                        <Pencil className="w-4 h-4" />
+                        Click to adjust
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center text-slate-400">
                     <ImagePlus className="w-8 h-8 mb-2" />
                     <span className="text-xs">No cover image</span>
+                    <span className="text-xs mt-1">Upload an image to customize</span>
                   </div>
                 )}
               </div>
+              <p className="text-xs text-slate-500 mt-2">Recommended: 1200x675px (16:9 ratio). You can adjust the position after uploading.</p>
             </div>
             
             {/* User Avatar Section */}
@@ -447,6 +503,16 @@ export default function EditProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Cover Image Editor Modal */}
+      {showCoverEditor && tempCoverImage && (
+        <CoverImageEditor
+          imageUrl={tempCoverImage}
+          onSave={handleCoverEditorSave}
+          onCancel={handleCoverEditorCancel}
+          aspectRatio={16 / 9}
+        />
+      )}
     </div>
   );
 }
