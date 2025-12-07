@@ -48,6 +48,7 @@ export default function ProfilePage() {
     (currentUserAddress && searchParams.get('address')?.toLowerCase() === currentUserAddress.toLowerCase());
   
   const [isLoading, setIsLoading] = useState(true);
+  const [activityLoaded, setActivityLoaded] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -174,10 +175,11 @@ export default function ProfilePage() {
           });
         }
 
-        // Load user's posts and comments from blockchain for activity
+        // Load user's posts and comments from blockchain for activity (only once)
         const ethereum = (window as any).ethereum;
-        if (ethereum) {
+        if (ethereum && !activityLoaded) {
           try {
+            setActivityLoaded(true); // Mark as loading to prevent re-runs
             const browserProvider = new BrowserProvider(ethereum);
             const contract = new Contract(forumAddress, forumABI, browserProvider);
             
@@ -191,8 +193,37 @@ export default function ProfilePage() {
               postCount: myPosts.length
             }));
             
-            // Cache for community names
+            // Cache for community names and content
             const communityCache: Record<string, string> = {};
+            const contentCache: Record<string, string> = {};
+            
+            // IPFS gateways to try (with CORS support)
+            const ipfsGateways = [
+              'https://cloudflare-ipfs.com/ipfs/',
+              'https://ipfs.io/ipfs/',
+              'https://dweb.link/ipfs/'
+            ];
+            
+            // Helper to fetch from IPFS with fallback gateways
+            const fetchFromIPFS = async (cid: string): Promise<string | null> => {
+              if (contentCache[cid]) return contentCache[cid];
+              
+              for (const gateway of ipfsGateways) {
+                try {
+                  const response = await fetch(`${gateway}${cid}`, { 
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                  });
+                  if (response.ok) {
+                    const text = await response.text();
+                    contentCache[cid] = text;
+                    return text;
+                  }
+                } catch {
+                  continue; // Try next gateway
+                }
+              }
+              return null;
+            };
             
             // Helper to get community name
             const getCommunityName = async (communityId: number): Promise<string> => {
@@ -201,11 +232,18 @@ export default function ProfilePage() {
               
               try {
                 const community = await contract.getCommunity(communityId);
-                // Community contentCID contains JSON with name
                 if (community.contentCID) {
-                  const response = await fetch(`https://gateway.pinata.cloud/ipfs/${community.contentCID}`);
-                  const data = await response.json();
-                  communityCache[cacheKey] = data.name || `Community #${communityId}`;
+                  const text = await fetchFromIPFS(community.contentCID);
+                  if (text) {
+                    try {
+                      const data = JSON.parse(text);
+                      communityCache[cacheKey] = data.name || `Community #${communityId}`;
+                    } catch {
+                      communityCache[cacheKey] = `Community #${communityId}`;
+                    }
+                  } else {
+                    communityCache[cacheKey] = `Community #${communityId}`;
+                  }
                 } else {
                   communityCache[cacheKey] = `Community #${communityId}`;
                 }
@@ -217,14 +255,27 @@ export default function ProfilePage() {
             
             // Helper to get post content from IPFS
             const getPostContent = async (contentCID: string): Promise<string> => {
+              if (!contentCID) return '';
+              
               try {
-                const response = await fetch(`https://gateway.pinata.cloud/ipfs/${contentCID}`);
-                const text = await response.text();
+                const text = await fetchFromIPFS(contentCID);
+                if (!text) return '';
+                
+                // Try to parse as JSON first (some posts store content in JSON format)
+                let content = text;
+                try {
+                  const json = JSON.parse(text);
+                  content = json.content || json.body || json.text || json.description || text;
+                } catch {
+                  content = text;
+                }
+                
                 // Strip HTML tags for preview
-                const stripped = text.replace(/<[^>]*>/g, '').trim();
+                const stripped = content.replace(/<[^>]*>/g, '').trim();
                 return stripped.length > 100 ? stripped.substring(0, 100) + '...' : stripped;
-              } catch {
-                return 'Post content';
+              } catch (e) {
+                console.log('Error fetching post content:', e);
+                return '';
               }
             };
             
@@ -246,23 +297,28 @@ export default function ProfilePage() {
               });
             }
             
-            // Find user's comments across all posts
-            for (const post of allPosts.slice(0, 20)) { // Check first 20 posts for comments
+            // Find user's comments - only check posts with comments to reduce requests
+            const postsWithComments = allPosts
+              .filter((p: any) => Number(p.commentCount) > 0)
+              .slice(0, 10); // Limit to 10 posts
+            
+            for (const post of postsWithComments) {
               try {
                 const comments = await contract.getComments(Number(post.id));
                 const myComments = comments.filter((c: any) => 
                   c.author.toLowerCase() === targetAddress.toLowerCase() && c.isActive
                 );
                 
-                for (const comment of myComments) {
+                for (const comment of myComments.slice(0, 3)) { // Max 3 comments per post
                   const communityName = await getCommunityName(Number(post.communityId));
-                  const content = comment.content.length > 100 
-                    ? comment.content.substring(0, 100) + '...' 
-                    : comment.content;
+                  const content = comment.content.replace(/<[^>]*>/g, '').trim();
+                  const truncated = content.length > 100 
+                    ? content.substring(0, 100) + '...' 
+                    : content;
                   
                   activities.push({
                     type: 'comment',
-                    content: content,
+                    content: truncated,
                     communityName: communityName,
                     timestamp: Number(comment.timestamp) * 1000,
                     postId: Number(post.id)
@@ -288,7 +344,13 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [targetAddress, isConnected, isOwnProfile, router, profileService]);
+  }, [targetAddress, isConnected, isOwnProfile, router, profileService, activityLoaded]);
+
+  // Reset activity loaded state when target address changes
+  useEffect(() => {
+    setActivityLoaded(false);
+    setRecentActivity([]);
+  }, [targetAddress]);
 
   // Create a blinking cursor effect
   useEffect(() => {
