@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -30,6 +31,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const [followLoading, setFollowLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   
   // Reset image error when profile changes
   useEffect(() => {
@@ -135,8 +138,19 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   };
 
+  const updateMenuPosition = useCallback(() => {
+    if (avatarRef.current) {
+      const rect = avatarRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX
+      });
+    }
+  }, []);
+
   const handleAvatarClick = () => {
     if (!isCurrentUser && currentUserAddress) {
+      updateMenuPosition();
       setShowMenu(!showMenu);
     }
   };
@@ -150,6 +164,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <div className={`flex items-center gap-2 ${className} relative`} ref={menuRef}>
       <div 
+        ref={avatarRef}
         className={`${sizeClasses[size]} rounded-full overflow-hidden border border-[var(--matrix-green)] flex items-center justify-center bg-black ${!isCurrentUser && currentUserAddress ? 'cursor-pointer hover:border-[var(--matrix-green)]/80' : ''}`}
         onClick={handleAvatarClick}
       >
@@ -168,9 +183,18 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         )}
       </div>
       
-      {/* User Menu - only for other users */}
-      {showMenu && !isCurrentUser && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-white border border-slate-200 rounded-lg shadow-lg min-w-[160px] overflow-hidden">
+      {/* User Menu - rendered via portal to avoid overflow issues */}
+      {showMenu && !isCurrentUser && typeof document !== 'undefined' && createPortal(
+        <div 
+          ref={menuRef}
+          style={{ 
+            position: 'absolute',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            zIndex: 9999
+          }}
+          className="bg-white border border-slate-200 rounded-lg shadow-lg min-w-[160px] overflow-hidden"
+        >
           {/* View Profile Button */}
           <button
             onClick={() => {
@@ -208,7 +232,8 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
               </>
             )}
           </button>
-        </div>
+        </div>,
+        document.body
       )}
       
       {showNickname && (
