@@ -131,11 +131,6 @@ function Landing() {
                             <div className="absolute inset-0 bg-gradient-to-br from-sky-50/0 to-indigo-50/0 group-hover:from-sky-50/50 group-hover:to-indigo-50/30 transition-all duration-500 rounded-[2rem]" />
                             
                             <div className="relative z-10">
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-100 to-indigo-100 border border-sky-200/50 mb-6">
-                                    <Globe className="w-4 h-4 text-sky-600" />
-                                    <span className="text-xs font-semibold text-sky-700 tracking-wide uppercase">Web3 Forum</span>
-                                </div>
-                                
                                 <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
                                     The Decentralized and Immutable Forum
                                 </h2>
