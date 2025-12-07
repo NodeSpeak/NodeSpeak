@@ -776,6 +776,63 @@ export const IntegratedView = ({
         setTopicError("");
     };
 
+    // Quick add topic with prompt - generates transaction directly
+    const handleQuickAddTopic = async (communityId: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to add a topic");
+            return;
+        }
+
+        const topicName = window.prompt("Enter the name for the new topic:");
+        if (!topicName || !topicName.trim()) {
+            return; // User cancelled or entered empty string
+        }
+
+        try {
+            setIsSubmittingTopic(true);
+
+            const signer = await walletProvider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            const tx = await contract.addTopicToCommunity(communityId, topicName.trim());
+            console.log("Add topic transaction submitted:", tx.hash);
+
+            const receipt = await tx.wait();
+            console.log("Add topic transaction confirmed:", receipt);
+
+            // Update localCommunities
+            setLocalCommunities(prevCommunities => {
+                return prevCommunities.map(community => {
+                    if (community.id === communityId) {
+                        return {
+                            ...community,
+                            topics: [...community.topics, topicName.trim()],
+                            topicCount: community.topicCount + 1
+                        };
+                    }
+                    return community;
+                });
+            });
+
+            // Refresh communities from contract
+            if (refreshCommunities) {
+                await refreshCommunities();
+            }
+
+            alert(`Topic "${topicName.trim()}" added successfully!`);
+        } catch (error: any) {
+            console.error("Error adding topic:", error);
+            if (error.message?.includes("Only the community creator")) {
+                alert("Only the community creator can add new topics.");
+            } else if (error.message?.includes("user rejected")) {
+                // User cancelled transaction, no alert needed
+            } else {
+                alert(`Failed to add topic: ${error.message || "Unknown error"}`);
+            }
+        } finally {
+            setIsSubmittingTopic(false);
+        }
+    };
 
     // Community related functions
     const handleCommunityClick = (community: Community) => {
@@ -1479,6 +1536,17 @@ export const IntegratedView = ({
                             {topic}
                         </button>
                     ))}
+
+                    {/* New Topic button - only visible to community creator */}
+                    {selectedCommunityId && localCommunities.find(c => c.id === selectedCommunityId)?.isCreator && (
+                        <button
+                            onClick={() => handleQuickAddTopic(selectedCommunityId)}
+                            disabled={isSubmittingTopic}
+                            className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSubmittingTopic ? "Adding..." : "+ New Topic"}
+                        </button>
+                    )}
                 </div>
 
                 {/* Community info */}
