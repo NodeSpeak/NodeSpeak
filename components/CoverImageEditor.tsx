@@ -8,14 +8,17 @@ interface CoverImageEditorProps {
   onSave: (croppedImageBlob: Blob) => void;
   onCancel: () => void;
   aspectRatio?: number; // width / height
+  title?: string; // Custom title for the editor
 }
 
 export const CoverImageEditor: React.FC<CoverImageEditorProps> = ({
   imageUrl,
   onSave,
   onCancel,
-  aspectRatio = 16 / 9
+  aspectRatio = 16 / 9,
+  title
 }) => {
+  const isSquare = aspectRatio === 1;
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   
@@ -148,8 +151,8 @@ export const CoverImageEditor: React.FC<CoverImageEditorProps> = ({
     if (!ctx) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const outputWidth = 1200; // High quality output
-    const outputHeight = outputWidth / aspectRatio;
+    const outputWidth = aspectRatio === 1 ? 400 : 1200; // Logo: 400x400, Cover: 1200x675
+    const outputHeight = aspectRatio === 1 ? 400 : outputWidth / aspectRatio;
     
     canvas.width = outputWidth;
     canvas.height = outputHeight;
@@ -184,12 +187,21 @@ export const CoverImageEditor: React.FC<CoverImageEditorProps> = ({
     }, 'image/jpeg', 0.9);
   };
 
+  // Determine the title based on aspect ratio or custom title
+  const editorTitle = title || (isSquare ? 'Adjust Logo' : 'Adjust Cover Image');
+  const outputSize = isSquare ? 400 : 1200; // Logo: 400x400, Cover: 1200x675
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden my-auto">
+      <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden my-auto ${isSquare ? 'max-w-md w-full' : 'max-w-2xl w-full'}`}>
         {/* Header */}
         <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900">Adjust Cover Image</h3>
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">{editorTitle}</h3>
+            <p className="text-xs text-slate-500">
+              {isSquare ? 'Output: 400×400px (square)' : 'Output: 1200×675px (16:9)'}
+            </p>
+          </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <Move className="w-3 h-3" />
             <span>Drag to reposition</span>
@@ -198,42 +210,116 @@ export const CoverImageEditor: React.FC<CoverImageEditorProps> = ({
 
         {/* Editor Area */}
         <div className="p-4">
-          {/* Main editing container */}
-          <div 
-            ref={containerRef}
-            className="relative w-full bg-slate-900 rounded-lg overflow-hidden cursor-move"
-            style={{ aspectRatio: `${aspectRatio}`, maxHeight: '280px' }}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onWheel={handleWheel}
-          >
-            <img
-              ref={imageRef}
-              src={imageUrl}
-              alt="Cover"
-              className="absolute select-none"
-              style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transformOrigin: 'top left',
-                maxWidth: 'none'
-              }}
-              onLoad={handleImageLoad}
-              draggable={false}
-            />
-            
-            {/* Overlay grid for alignment help */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="border border-white/10" />
-                ))}
+          <div className={`flex ${isSquare ? 'flex-col items-center gap-4' : 'flex-col'}`}>
+            {/* Main editing container */}
+            <div 
+              ref={containerRef}
+              className={`relative bg-slate-900 rounded-lg overflow-hidden cursor-move ${isSquare ? 'w-64 h-64' : 'w-full'}`}
+              style={isSquare ? {} : { aspectRatio: `${aspectRatio}`, maxHeight: '280px' }}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              onWheel={handleWheel}
+            >
+              <img
+                ref={imageRef}
+                src={imageUrl}
+                alt={isSquare ? 'Logo' : 'Cover'}
+                className="absolute select-none"
+                style={{
+                  transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                  transformOrigin: 'top left',
+                  maxWidth: 'none'
+                }}
+                onLoad={handleImageLoad}
+                draggable={false}
+              />
+              
+              {/* Overlay grid for alignment help */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="w-full h-full grid grid-cols-3 grid-rows-3">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/10" />
+                  ))}
+                </div>
+              </div>
+
+              {/* Center crosshair */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className={`border-2 border-white/30 ${isSquare ? 'w-12 h-12 rounded-xl' : 'w-8 h-8 rounded-full'}`} />
               </div>
             </div>
 
-            {/* Center crosshair */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-8 h-8 border-2 border-white/30 rounded-full" />
-            </div>
+            {/* Preview for square/logo */}
+            {isSquare && (
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs font-medium text-slate-600">Preview</p>
+                <div className="flex items-center gap-4">
+                  {/* Large preview */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div 
+                      className="w-16 h-16 rounded-xl bg-slate-200 overflow-hidden border-2 border-slate-300 shadow-sm"
+                    >
+                      <div className="w-full h-full relative overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="absolute select-none"
+                          style={{
+                            transform: `translate(${position.x * (64/256)}px, ${position.y * (64/256)}px) scale(${scale * (64/256)})`,
+                            transformOrigin: 'top left',
+                            maxWidth: 'none'
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400">64px</span>
+                  </div>
+                  {/* Medium preview */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div 
+                      className="w-10 h-10 rounded-lg bg-slate-200 overflow-hidden border-2 border-slate-300 shadow-sm"
+                    >
+                      <div className="w-full h-full relative overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="absolute select-none"
+                          style={{
+                            transform: `translate(${position.x * (40/256)}px, ${position.y * (40/256)}px) scale(${scale * (40/256)})`,
+                            transformOrigin: 'top left',
+                            maxWidth: 'none'
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400">40px</span>
+                  </div>
+                  {/* Small preview */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div 
+                      className="w-6 h-6 rounded-md bg-slate-200 overflow-hidden border border-slate-300 shadow-sm"
+                    >
+                      <div className="w-full h-full relative overflow-hidden">
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="absolute select-none"
+                          style={{
+                            transform: `translate(${position.x * (24/256)}px, ${position.y * (24/256)}px) scale(${scale * (24/256)})`,
+                            transformOrigin: 'top left',
+                            maxWidth: 'none'
+                          }}
+                          draggable={false}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400">24px</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Zoom Controls */}

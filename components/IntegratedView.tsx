@@ -16,6 +16,7 @@ import Italic from '@tiptap/extension-italic';
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import { UserAvatar } from "@/components/UserAvatar";
+import { CoverImageEditor } from "@/components/CoverImageEditor";
 
 // Types
 interface Community {
@@ -240,6 +241,18 @@ export const IntegratedView = ({
     const [postSelectedTopic, setPostSelectedTopic] = useState<string>("");
 
     const topicInputRef = useRef<HTMLInputElement>(null);
+
+    // Community cover editor states
+    const [showCommunityCoverEditor, setShowCommunityCoverEditor] = useState(false);
+    const [tempCommunityCoverImage, setTempCommunityCoverImage] = useState<string>("");
+    const [communityCoverFile, setCommunityCoverFile] = useState<File | null>(null);
+    const [communityCoverPreview, setCommunityCoverPreview] = useState<string>("");
+
+    // Community logo editor states
+    const [showCommunityLogoEditor, setShowCommunityLogoEditor] = useState(false);
+    const [tempCommunityLogoImage, setTempCommunityLogoImage] = useState<string>("");
+    const [communityLogoFile, setCommunityLogoFile] = useState<File | null>(null);
+    const [communityLogoPreview, setCommunityLogoPreview] = useState<string>("");
 
     // Update local communities when prop changes
     useEffect(() => {
@@ -1253,22 +1266,106 @@ export const IntegratedView = ({
                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col">
                         <label className="text-slate-600 font-medium mb-2 text-sm">Logo</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
-                            id="community-photo"
-                        />
+                        {communityLogoPreview ? (
+                            <div className="relative group w-20 h-20">
+                                <img 
+                                    src={communityLogoPreview} 
+                                    alt="Logo preview" 
+                                    className="w-20 h-20 object-cover rounded-xl border border-slate-200"
+                                />
+                                <div 
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    onClick={() => {
+                                        setTempCommunityLogoImage(communityLogoPreview);
+                                        setShowCommunityLogoEditor(true);
+                                    }}
+                                >
+                                    <span className="text-white text-xs font-medium">Adjust</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCommunityLogoPreview("");
+                                        setCommunityLogoFile(null);
+                                    }}
+                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ) : (
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                id="community-photo"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        const file = e.target.files[0];
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                            if (ev.target?.result) {
+                                                setTempCommunityLogoImage(ev.target.result as string);
+                                                setShowCommunityLogoEditor(true);
+                                            }
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
 
                     <div className="flex flex-col">
                         <label className="text-slate-600 font-medium mb-2 text-sm">Cover Image</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
-                            id="community-cover"
-                        />
+                        {communityCoverPreview ? (
+                            <div className="relative group">
+                                <img 
+                                    src={communityCoverPreview} 
+                                    alt="Cover preview" 
+                                    className="w-full h-20 object-cover rounded-xl border border-slate-200"
+                                />
+                                <div 
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    onClick={() => {
+                                        setTempCommunityCoverImage(communityCoverPreview);
+                                        setShowCommunityCoverEditor(true);
+                                    }}
+                                >
+                                    <span className="text-white text-xs font-medium">Click to adjust</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setCommunityCoverPreview("");
+                                        setCommunityCoverFile(null);
+                                    }}
+                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        ) : (
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                id="community-cover"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        const file = e.target.files[0];
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                            if (ev.target?.result) {
+                                                setTempCommunityCoverImage(ev.target.result as string);
+                                                setShowCommunityCoverEditor(true);
+                                            }
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -1278,18 +1375,22 @@ export const IntegratedView = ({
                         const nameElement = document.getElementById('community-name') as HTMLInputElement;
                         const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
                         const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
-                        const photoElement = document.getElementById('community-photo') as HTMLInputElement;
-                        const coverElement = document.getElementById('community-cover') as HTMLInputElement;
 
                         const name = nameElement?.value || "";
                         const description = descriptionElement?.value || "";
                         const topicString = topicsElement?.value || "";
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
-                        const photo = photoElement?.files?.[0];
-                        const cover = coverElement?.files?.[0];
+                        // Use the edited files from state
+                        const photo = communityLogoFile || undefined;
+                        const cover = communityCoverFile || undefined;
 
                         if (name && description && topicsArray.length > 0) {
                             handleCreateCommunity(name, description, topicsArray, photo, cover);
+                            // Reset state after submission
+                            setCommunityCoverFile(null);
+                            setCommunityCoverPreview("");
+                            setCommunityLogoFile(null);
+                            setCommunityLogoPreview("");
                         } else {
                             alert("Please fill in all fields");
                         }
@@ -1850,6 +1951,46 @@ export const IntegratedView = ({
                 renderCommunitiesList()
             ) : (
                 renderPostsList()
+            )}
+
+            {/* Community Cover Image Editor Modal */}
+            {showCommunityCoverEditor && tempCommunityCoverImage && (
+                <CoverImageEditor
+                    imageUrl={tempCommunityCoverImage}
+                    onSave={(croppedBlob) => {
+                        const file = new File([croppedBlob], 'community-cover.jpg', { type: 'image/jpeg' });
+                        setCommunityCoverFile(file);
+                        const url = URL.createObjectURL(croppedBlob);
+                        setCommunityCoverPreview(url);
+                        setShowCommunityCoverEditor(false);
+                        setTempCommunityCoverImage("");
+                    }}
+                    onCancel={() => {
+                        setShowCommunityCoverEditor(false);
+                        setTempCommunityCoverImage("");
+                    }}
+                    aspectRatio={16 / 9}
+                />
+            )}
+
+            {/* Community Logo Image Editor Modal */}
+            {showCommunityLogoEditor && tempCommunityLogoImage && (
+                <CoverImageEditor
+                    imageUrl={tempCommunityLogoImage}
+                    onSave={(croppedBlob) => {
+                        const file = new File([croppedBlob], 'community-logo.jpg', { type: 'image/jpeg' });
+                        setCommunityLogoFile(file);
+                        const url = URL.createObjectURL(croppedBlob);
+                        setCommunityLogoPreview(url);
+                        setShowCommunityLogoEditor(false);
+                        setTempCommunityLogoImage("");
+                    }}
+                    onCancel={() => {
+                        setShowCommunityLogoEditor(false);
+                        setTempCommunityLogoImage("");
+                    }}
+                    aspectRatio={1}
+                />
             )}
         </div>
     );
