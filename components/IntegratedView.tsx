@@ -989,50 +989,7 @@ export const IntegratedView = ({
         return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
     };
 
-    // Function to like a comment
-    const likeComment = async (commentId: string) => {
-        if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to like comments");
-            return;
-        }
-
-        if (likingComment[commentId]) return;
-
-        try {
-            setLikingComment(prev => ({
-                ...prev,
-                [commentId]: true
-            }));
-
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            // Assuming the contract has a likeComment function that takes the comment ID
-            const tx = await contract.likeComment(commentId);
-            await tx.wait();
-
-            // Update the comments with the new like count
-            await fetchCommentsForPost(comments[commentId]?.[0]?.postId);
-
-            console.log(`Comment ${commentId} liked successfully. Comments refreshed.`);
-        } catch (error) {
-            console.error("Error liking comment:", error);
-            if (error instanceof Error && error.toString().includes("already liked")) {
-                alert("You have already liked this comment.");
-            } else {
-                alert("Failed to like comment. Make sure your wallet is connected and you have enough gas.");
-            }
-        } finally {
-            setLikingComment(prev => ({
-                ...prev,
-                [commentId]: false
-            }));
-        }
-    };
-
-
     const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
-    const [likingComment, setLikingComment] = useState<Record<string, boolean>>({});
 
     // Render Create Post Form
     const renderCreatePostForm = () => (
@@ -1675,19 +1632,7 @@ export const IntegratedView = ({
                                                         </div>
                                                         <p className="text-slate-700 text-sm mt-1">{comment.content}</p>
                                                         
-                                                        {/* Comment actions */}
-                                                        <div className="flex mt-2 space-x-4 text-xs">
-                                                            <button
-                                                                onClick={() => likeComment(comment.id)}
-                                                                className="flex items-center space-x-1 text-slate-500 hover:text-rose-500 transition-colors"
-                                                                disabled={likingComment[comment.id]}
-                                                            >
-                                                                <span className={`${likingComment[comment.id] ? 'animate-pulse' : ''}`}>
-                                                                    {likingComment[comment.id] ? '💗' : '❤️'}
-                                                                </span>
-                                                                <span>{comment.likeCount || 0} likes</span>
-                                                            </button>
-                                                        </div>
+                                                        {/* Comment actions - like functionality not available in contract */}
                                                     </div>
                                                 </div>
                                             </div>
