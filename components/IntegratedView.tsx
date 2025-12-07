@@ -220,6 +220,7 @@ export const IntegratedView = ({
     const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
     const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
     const [likingPost, setLikingPost] = useState<Record<string, boolean>>({});
+    const [userLikedPosts, setUserLikedPosts] = useState<Record<string, boolean>>({});
 
     // Communities states
     const [newTopic, setNewTopic] = useState("");
@@ -312,6 +313,53 @@ export const IntegratedView = ({
         }
     }, [isCreatingPost]);
 
+    // Check which posts the current user has liked
+    useEffect(() => {
+        const checkUserLikes = async () => {
+            if (!isConnected || !walletProvider || !posts.length) return;
+            
+            try {
+                const signer = await walletProvider.getSigner();
+                const userAddress = await signer.getAddress();
+                
+                // ABI for postLikes mapping (public mapping generates getter)
+                const postManagerABI = [
+                    {
+                        "inputs": [
+                            { "internalType": "uint32", "name": "", "type": "uint32" },
+                            { "internalType": "address", "name": "", "type": "address" }
+                        ],
+                        "name": "postLikes",
+                        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
+                
+                // Get postManager address from main contract
+                const mainContract = new Contract(forumAddress, forumABI, walletProvider);
+                const postManagerAddress = await mainContract.postManager();
+                const postManager = new Contract(postManagerAddress, postManagerABI, walletProvider);
+                
+                // Check likes for all visible posts
+                const likeStatus: Record<string, boolean> = {};
+                for (const post of posts) {
+                    try {
+                        const hasLiked = await postManager.postLikes(post.id, userAddress);
+                        likeStatus[post.id] = hasLiked;
+                    } catch (e) {
+                        likeStatus[post.id] = false;
+                    }
+                }
+                
+                setUserLikedPosts(likeStatus);
+            } catch (error) {
+                console.error("Error checking user likes:", error);
+            }
+        };
+        
+        checkUserLikes();
+    }, [isConnected, walletProvider, posts, forumAddress, forumABI]);
 
     // CreatePost functions
     const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -922,13 +970,19 @@ export const IntegratedView = ({
         }
     };
 
-    const likePost = async (postId: string) => {
+    const handleLikePost = async (postId: string) => {
         if (!isConnected || !walletProvider) {
             alert("Please connect your wallet to like posts");
             return;
         }
 
         if (likingPost[postId]) return;
+
+        // Check if user already liked this post
+        if (userLikedPosts[postId]) {
+            alert("You have already liked this post. Unlike functionality is not available in the current contract.");
+            return;
+        }
 
         try {
             setLikingPost(prev => ({
@@ -941,6 +995,12 @@ export const IntegratedView = ({
 
             const tx = await contract.likePost(postId);
             await tx.wait();
+
+            // Update local like status immediately
+            setUserLikedPosts(prev => ({
+                ...prev,
+                [postId]: true
+            }));
 
             // Usar la función adecuada para refrescar los posts
             if (selectedCommunityId && fetchPostsForCommunity) {
@@ -956,6 +1016,11 @@ export const IntegratedView = ({
             console.error("Error liking post:", error);
             if (error instanceof Error && error.toString().includes("already liked")) {
                 alert("You have already liked this post.");
+                // Update local state to reflect this
+                setUserLikedPosts(prev => ({
+                    ...prev,
+                    [postId]: true
+                }));
             } else {
                 alert("Failed to like post. Make sure your wallet is connected and you have enough gas.");
             }
@@ -1555,12 +1620,17 @@ export const IntegratedView = ({
 
                         <div className="flex items-center mt-5 pt-4 border-t border-slate-100 gap-4 text-sm text-slate-400">
                             <button
-                                onClick={() => likePost(post.id)}
-                                className="flex items-center gap-1.5 hover:text-rose-500 transition-colors"
+                                onClick={() => handleLikePost(post.id)}
+                                className={`flex items-center gap-1.5 transition-colors ${
+                                    userLikedPosts[post.id] 
+                                        ? 'text-rose-500 cursor-default' 
+                                        : 'hover:text-rose-500'
+                                }`}
                                 disabled={likingPost[post.id]}
+                                title={userLikedPosts[post.id] ? 'You liked this post (unlike not available)' : 'Like this post'}
                             >
                                 <span className={`${likingPost[post.id] ? 'animate-pulse' : ''}`}>
-                                    {likingPost[post.id] ? '💗' : '❤️'}
+                                    {likingPost[post.id] ? '💗' : userLikedPosts[post.id] ? '❤️' : '🤍'}
                                 </span>
                                 <span>{post.likeCount}</span>
                             </button>
