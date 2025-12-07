@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { getCompleteProfile, shortenAddress } from '@/lib/profileUtils';
+import { BrowserProvider, Contract } from 'ethers';
+import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 
 export interface UserProfile {
   address: string;
@@ -9,6 +11,7 @@ export interface UserProfile {
   profilePicture: string;
   coverPhoto: string;
   bio: string;
+  exists: boolean;
 }
 
 export const useUserProfile = (address: string | undefined) => {
@@ -24,6 +27,19 @@ export const useUserProfile = (address: string | undefined) => {
       }
 
       try {
+        // Check if profile exists on-chain
+        let profileExists = false;
+        try {
+          const ethereum = (window as any).ethereum;
+          if (ethereum) {
+            const provider = new BrowserProvider(ethereum);
+            const contract = new Contract(forumAddress, forumABI, provider);
+            profileExists = await contract.hasProfile(address);
+          }
+        } catch (e) {
+          console.log('Could not check profile existence on-chain');
+        }
+
         // Fetch complete profile from IPFS or localStorage
         const profileData = await getCompleteProfile(address);
         
@@ -40,14 +56,15 @@ export const useUserProfile = (address: string | undefined) => {
           };
           
           const profilePictureUrl = buildIpfsUrl(profileData.profilePicture);
-          console.log(`[useUserProfile] Address: ${address}, profileCID: ${profileData.profilePicture}, URL: ${profilePictureUrl}`);
+          console.log(`[useUserProfile] Address: ${address}, profileCID: ${profileData.profilePicture}, URL: ${profilePictureUrl}, exists: ${profileExists}`);
           
           setProfile({
             address,
             nickname: profileData.nickname || shortenAddress(address),
             profilePicture: profilePictureUrl,
             coverPhoto: buildIpfsUrl(profileData.coverPhoto),
-            bio: profileData.bio || ''
+            bio: profileData.bio || '',
+            exists: profileExists
           });
         } else {
           console.log(`[useUserProfile] No profile data found for: ${address}`);
@@ -57,7 +74,8 @@ export const useUserProfile = (address: string | undefined) => {
             nickname: shortenAddress(address),
             profilePicture: '',
             coverPhoto: '',
-            bio: ''
+            bio: '',
+            exists: profileExists
           });
         }
       } catch (error) {
@@ -67,7 +85,8 @@ export const useUserProfile = (address: string | undefined) => {
           nickname: shortenAddress(address),
           profilePicture: '',
           coverPhoto: '',
-          bio: ''
+          bio: '',
+          exists: false
         });
       } finally {
         setLoading(false);

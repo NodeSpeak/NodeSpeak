@@ -9,34 +9,6 @@ import { User, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 
-// ABI for ForumProfileManager (only the functions we need)
-const profileManagerABI = [
-  {
-    "inputs": [{ "internalType": "address", "name": "userToFollow", "type": "address" }],
-    "name": "followUser",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [{ "internalType": "address", "name": "userToUnfollow", "type": "address" }],
-    "name": "unfollowUser",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "name": "isFollowing",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
-
 interface UserAvatarProps {
   address: string;
   size?: 'sm' | 'md' | 'lg';
@@ -89,14 +61,10 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         if (!ethereum) return;
         
         const provider = new BrowserProvider(ethereum);
+        const contract = new Contract(forumAddress, forumABI, provider);
         
-        // Get profileManager address from main contract
-        const mainContract = new Contract(forumAddress, forumABI, provider);
-        const profileManagerAddress = await mainContract.profileManager();
-        
-        // Call profileManager directly for isFollowing check
-        const profileManager = new Contract(profileManagerAddress, profileManagerABI, provider);
-        const following = await profileManager.isFollowing(currentUserAddress, address);
+        // Use isFollowing from main contract (follower, followed)
+        const following = await contract.isFollowing(currentUserAddress, address);
         setIsFollowing(following);
       } catch (error) {
         console.error('Error checking follow status:', error);
@@ -121,33 +89,46 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const handleFollow = async () => {
     if (!currentUserAddress || !address) return;
     
+    // Check if target user has a profile (required by contract)
+    if (!profile?.exists) {
+      alert('This user has not created a profile yet. You can only follow users with an active profile.');
+      setShowMenu(false);
+      return;
+    }
+    
     setFollowLoading(true);
     try {
       const ethereum = (window as any).ethereum;
-      if (!ethereum) return;
+      if (!ethereum) {
+        alert('Please connect your wallet');
+        return;
+      }
       
       const provider = new BrowserProvider(ethereum);
       const signer = await provider.getSigner();
-      
-      // Get profileManager address from main contract
-      const mainContract = new Contract(forumAddress, forumABI, provider);
-      const profileManagerAddress = await mainContract.profileManager();
-      
-      // Call profileManager directly - this allows following ANY address
-      // even if they don't have a profile created
-      const profileManager = new Contract(profileManagerAddress, profileManagerABI, signer);
+      const contract = new Contract(forumAddress, forumABI, signer);
       
       if (isFollowing) {
-        const tx = await profileManager.unfollowUser(address);
+        // Unfollow user
+        const tx = await contract.unfollowUser(address);
         await tx.wait();
         setIsFollowing(false);
       } else {
-        const tx = await profileManager.followUser(address);
+        // Follow user
+        const tx = await contract.followUser(address);
         await tx.wait();
         setIsFollowing(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error following/unfollowing user:', error);
+      // Show user-friendly error
+      if (error.reason) {
+        alert(`Transaction failed: ${error.reason}`);
+      } else if (error.message?.includes('user rejected')) {
+        // User cancelled, no alert needed
+      } else {
+        alert('Transaction failed. Please try again.');
+      }
     } finally {
       setFollowLoading(false);
       setShowMenu(false);
@@ -204,11 +185,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           {/* Follow/Unfollow Button */}
           <button
             onClick={handleFollow}
-            disabled={followLoading}
+            disabled={followLoading || !profile?.exists}
+            title={!profile?.exists ? 'This user has not created a profile yet' : ''}
             className="w-full px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {followLoading ? (
               <span className="animate-pulse text-slate-500">Loading...</span>
+            ) : !profile?.exists ? (
+              <>
+                <UserPlus className="w-4 h-4 text-slate-400" />
+                <span className="text-slate-400">No profile</span>
+              </>
             ) : isFollowing ? (
               <>
                 <UserCheck className="w-4 h-4 text-red-500" />
