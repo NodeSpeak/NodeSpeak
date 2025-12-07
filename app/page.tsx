@@ -175,7 +175,7 @@ function Landing() {
                                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center mb-3 group-hover/card:from-emerald-200 group-hover/card:to-emerald-100 transition-colors">
                                             <Shield className="w-5 h-5 text-emerald-600" />
                                         </div>
-                                        <p className="font-semibold text-slate-900 mb-1.5">Admin Mode</p>
+                                        <p className="font-semibold text-slate-900 mb-1.5">Admin Mode (In progress)</p>
                                         <p className="text-slate-500 text-sm leading-relaxed">
                                             Moderate, curate, and protect spaces in one interface.
                                         </p>
