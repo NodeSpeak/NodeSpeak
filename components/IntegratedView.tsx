@@ -1614,6 +1614,7 @@ export const IntegratedView = ({
                                     ) : comments[post.id]?.length > 0 ? (
                                         comments[post.id]
                                             .filter(comment => !isUserHidden(comment.author))
+                                            .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                                             .map((comment) => (
                                             <div key={comment.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50">
                                                 <div className="flex items-start mb-2">
