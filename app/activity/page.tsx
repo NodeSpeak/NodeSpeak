@@ -1,5 +1,6 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useState, useEffect, useMemo } from "react";
 import DOMPurify from 'dompurify';
 import { ethers, Contract } from "ethers";
@@ -379,9 +380,11 @@ export default function ActivityPage() {
                                                     
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-4">
-                                                            <span className="text-xs text-slate-500">
-                                                                by <span className="font-medium text-slate-700">{truncateAddress(post.author)}</span>
-                                                            </span>
+                                                            <UserAvatar 
+                                                                address={post.author} 
+                                                                size="sm" 
+                                                                showNickname={true}
+                                                            />
                                                             {post.topic && (
                                                                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                                                                     {post.topic}
