@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
@@ -56,7 +56,7 @@ export default function ProfilePage() {
     (currentUserAddress && searchParams.get('address')?.toLowerCase() === currentUserAddress.toLowerCase());
   
   const [isLoading, setIsLoading] = useState(true);
-  const [activityLoaded, setActivityLoaded] = useState(false);
+  const activityLoadedRef = useRef(false);
   const [profileExists, setProfileExists] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -166,6 +166,23 @@ export default function ProfilePage() {
         // Get profile from blockchain/IPFS
         const profile = await profileService.getProfile(targetAddress);
         
+        // Always get post count from blockchain
+        let postCount = 0;
+        let myPosts: any[] = [];
+        let allPosts: any[] = [];
+        const ethereum = (window as any).ethereum;
+        
+        if (ethereum) {
+          const browserProvider = new BrowserProvider(ethereum);
+          const contract = new Contract(forumAddress, forumABI, browserProvider);
+          
+          allPosts = await contract.getActivePosts();
+          myPosts = allPosts.filter((post: any) => 
+            post.author.toLowerCase() === targetAddress.toLowerCase()
+          );
+          postCount = myPosts.length;
+        }
+        
         if (profile) {
           setProfileExists(profile.exists);
           setProfileData({
@@ -177,30 +194,19 @@ export default function ProfilePage() {
             likesGiven: profile.likesGiven || 0,
             followers: profile.followers || 0,
             following: profile.following || 0,
-            postCount: 0,
+            postCount: postCount,
             memberSince: profile.createdAt 
               ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) 
               : "Recently joined"
           });
         }
 
-        // Load user's posts and comments from blockchain for activity (only once)
-        const ethereum = (window as any).ethereum;
-        if (ethereum && !activityLoaded) {
+        // Load user's activity (comments, etc.) - only once and if we have posts
+        if (ethereum && allPosts.length > 0 && !activityLoadedRef.current) {
+          activityLoadedRef.current = true; // Mark activity as loaded to prevent re-runs
           try {
-            setActivityLoaded(true); // Mark as loading to prevent re-runs
             const browserProvider = new BrowserProvider(ethereum);
             const contract = new Contract(forumAddress, forumABI, browserProvider);
-            
-            const allPosts = await contract.getActivePosts();
-            const myPosts = allPosts.filter((post: any) => 
-              post.author.toLowerCase() === targetAddress.toLowerCase()
-            );
-            
-            setProfileData(prev => ({
-              ...prev,
-              postCount: myPosts.length
-            }));
             
             // Cache for community names and content
             const communityCache: Record<string, string> = {};
@@ -405,12 +411,14 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [targetAddress, isConnected, isOwnProfile, router, profileService, activityLoaded]);
+  }, [targetAddress, isConnected, isOwnProfile, router, profileService]);
 
-  // Reset activity loaded state when target address changes
+  // Reset loaded state when target address changes
   useEffect(() => {
-    setActivityLoaded(false);
+    // Reset activity ref when address changes
+    activityLoadedRef.current = false;
     setRecentActivity([]);
+    setUserCommunities([]);
   }, [targetAddress]);
 
   // Create a blinking cursor effect
