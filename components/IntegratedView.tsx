@@ -1306,57 +1306,59 @@ export const IntegratedView = ({
 
     // Render Create Community Form
     const renderCreateCommunityForm = () => (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-6 text-slate-900">New Community</h2>
-            <form className="space-y-5">
-                <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Community Name</label>
-                    <input
-                        type="text"
-                        placeholder="Enter community name"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                        id="community-name"
-                    />
+        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+            <h2 className="text-base font-semibold mb-3 text-slate-900">New Community</h2>
+            <form className="space-y-3">
+                {/* Name and Topics in a row on larger screens */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Name</label>
+                        <input
+                            type="text"
+                            placeholder="Community name"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                            id="community-name"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Topics</label>
+                        <input
+                            type="text"
+                            placeholder="General, Tech, Blockchain"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                            id="community-topics"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Description</label>
+                    <label className="text-slate-600 font-medium mb-1 text-xs">Description</label>
                     <textarea
                         placeholder="What is this community about?"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl h-28 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg h-16 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none"
                         id="community-description"
                     />
                 </div>
 
-                <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Topics</label>
-                    <input
-                        type="text"
-                        placeholder="General, Technology, Blockchain"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                        id="community-topics"
-                    />
-                    <p className="text-xs text-slate-400 mt-1.5">Comma separated, at least one required</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                {/* Logo and Cover side by side */}
+                <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col">
-                        <label className="text-slate-600 font-medium mb-2 text-sm">Logo</label>
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Logo</label>
                         {communityLogoPreview ? (
-                            <div className="relative group w-20 h-20">
+                            <div className="relative group w-14 h-14">
                                 <img 
                                     src={communityLogoPreview} 
                                     alt="Logo preview" 
-                                    className="w-20 h-20 object-cover rounded-xl border border-slate-200"
+                                    className="w-14 h-14 object-cover rounded-lg border border-slate-200"
                                 />
                                 <div 
-                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
                                     onClick={() => {
                                         setTempCommunityLogoImage(communityLogoPreview);
                                         setShowCommunityLogoEditor(true);
                                     }}
                                 >
-                                    <span className="text-white text-xs font-medium">Adjust</span>
+                                    <span className="text-white text-[10px] font-medium">Edit</span>
                                 </div>
                                 <button
                                     type="button"
@@ -1364,7 +1366,7 @@ export const IntegratedView = ({
                                         setCommunityLogoPreview("");
                                         setCommunityLogoFile(null);
                                     }}
-                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600"
                                 >
                                     ×
                                 </button>
@@ -1373,7 +1375,7 @@ export const IntegratedView = ({
                             <input
                                 type="file"
                                 accept="image/*"
-                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-1.5 rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-xs"
                                 id="community-photo"
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
@@ -1393,22 +1395,22 @@ export const IntegratedView = ({
                     </div>
 
                     <div className="flex flex-col">
-                        <label className="text-slate-600 font-medium mb-2 text-sm">Cover Image</label>
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Cover</label>
                         {communityCoverPreview ? (
                             <div className="relative group">
                                 <img 
                                     src={communityCoverPreview} 
                                     alt="Cover preview" 
-                                    className="w-full h-20 object-cover rounded-xl border border-slate-200"
+                                    className="w-full h-14 object-cover rounded-lg border border-slate-200"
                                 />
                                 <div 
-                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
                                     onClick={() => {
                                         setTempCommunityCoverImage(communityCoverPreview);
                                         setShowCommunityCoverEditor(true);
                                     }}
                                 >
-                                    <span className="text-white text-xs font-medium">Click to adjust</span>
+                                    <span className="text-white text-[10px] font-medium">Edit</span>
                                 </div>
                                 <button
                                     type="button"
@@ -1416,7 +1418,7 @@ export const IntegratedView = ({
                                         setCommunityCoverPreview("");
                                         setCommunityCoverFile(null);
                                     }}
-                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600"
                                 >
                                     ×
                                 </button>
@@ -1425,7 +1427,7 @@ export const IntegratedView = ({
                             <input
                                 type="file"
                                 accept="image/*"
-                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-1.5 rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-xs"
                                 id="community-cover"
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
@@ -1456,13 +1458,11 @@ export const IntegratedView = ({
                         const description = descriptionElement?.value || "";
                         const topicString = topicsElement?.value || "";
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
-                        // Use the edited files from state
                         const photo = communityLogoFile || undefined;
                         const cover = communityCoverFile || undefined;
 
                         if (name && description && topicsArray.length > 0) {
                             handleCreateCommunity(name, description, topicsArray, photo, cover);
-                            // Reset state after submission
                             setCommunityCoverFile(null);
                             setCommunityCoverPreview("");
                             setCommunityLogoFile(null);
@@ -1471,13 +1471,11 @@ export const IntegratedView = ({
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl py-3 font-medium shadow-md shadow-indigo-200 transition-all"
+                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg py-2 text-sm font-medium shadow-sm shadow-indigo-200 transition-all mt-1"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
-                        <div className="flex items-center justify-center">
-                            <span className="animate-pulse">Creating...</span>
-                        </div>
+                        <span className="animate-pulse">Creating...</span>
                     ) : "Create Community"}
                 </Button>
             </form>
