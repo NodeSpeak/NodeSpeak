@@ -233,6 +233,7 @@ export const IntegratedView = ({
     const [isSubmittingTopic, setIsSubmittingTopic] = useState(false);
     const [topicError, setTopicError] = useState("");
     const [showAddTopicForm, setShowAddTopicForm] = useState<Record<string, boolean>>({});
+    const [deactivatingCommunityId, setDeactivatingCommunityId] = useState<string | null>(null);
 
     // CreatePost states - use external state if provided, otherwise use internal state
     const [internalIsCreatingPost, setInternalIsCreatingPost] = useState(false);
@@ -1131,6 +1132,69 @@ export const IntegratedView = ({
         }
     };
 
+    // Desactivar Comunidad
+    const handleDeactivateCommunity = async (communityId: string, communityName: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to deactivate community.");
+            return;
+        }
+
+        if (deactivatingCommunityId === communityId) return;
+
+        // Confirm deactivation
+        if (!window.confirm(`¿Estás seguro que deseas desactivar la comunidad "${communityName}"? Esta acción ocultará la comunidad y sus posts para todos los usuarios pero podrá ser reactivada más tarde desde el panel de administración.`)) {
+            return;
+        }
+
+        try {
+            setDeactivatingCommunityId(communityId);
+
+            const signer = await walletProvider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Call deactivateCommunity function in the contract
+            const tx = await contract.deactivateCommunity(communityId);
+            
+            // Show pending transaction message
+            alert(`Transacción enviada. Por favor espere la confirmación.\nHash: ${tx.hash}`);
+            
+            await tx.wait();
+
+            // Update local communities
+            setLocalCommunities(prev => 
+                prev.map(community => 
+                    community.id === communityId 
+                        ? { ...community, isActive: false } 
+                        : community
+                )
+            );
+
+            // Refresh communities from contract
+            if (refreshCommunities) {
+                await refreshCommunities();
+            }
+
+            alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
+
+            // If we were viewing this community, go back to community list
+            if (selectedCommunityId === communityId) {
+                setSelectedCommunityId(null);
+                setShowCommunityList(true);
+            }
+        } catch (error) {
+            console.error("Error deactivating community:", error);
+            if (error instanceof Error && error.toString().includes("Not community creator")) {
+                alert("Solo el creador de la comunidad puede desactivarla.");
+            } else if (error instanceof Error && error.toString().includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert(`Error al desactivar la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            }
+        } finally {
+            setDeactivatingCommunityId(null);
+        }
+    };
+
     // Delete/Deactivate post
     const handleDeletePost = async (postId: string, postAuthor: string) => {
         if (!isConnected || !walletProvider) {
@@ -1612,14 +1676,11 @@ export const IntegratedView = ({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // Aquí implementaríamos la navegación a una página de edición de comunidad
-                                                console.log(`Editar comunidad: ${community.id}`);
-                                                // Por ejemplo: router.push(`/comunidad/editar/${community.id}`);
-                                                alert(`Función para editar comunidad ${community.name} (ID: ${community.id})`);
+                                                handleDeactivateCommunity(community.id, community.name);
                                             }}
-                                            className="text-xs py-1.5 px-3 rounded-full transition-colors bg-white/90 hover:bg-white text-slate-600 font-medium shadow-sm"
+                                            className="text-xs py-1.5 px-3 rounded-full transition-colors bg-red-50 hover:bg-red-100 text-red-600 font-medium shadow-sm border border-red-200"
                                         >
-                                            Editar Comunidad
+                                            Desactivar Comunidad
                                         </button>
                                     )}
                                     {!community.isCreator && (

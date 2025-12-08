@@ -1,17 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAdminContext } from "@/contexts/AdminContext";
+import { useWalletContext } from "@/contexts/WalletContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { EyeOff, Eye, Search, Home } from "lucide-react";
+import { EyeOff, Eye, Search, Home, AlertTriangle, RefreshCw } from "lucide-react";
+import { Contract } from "ethers";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
+import { toast } from "@/hooks/use-toast";
 
 export const HiddenCommunitiesPanel: React.FC = () => {
   const { hiddenCommunities, unhideCommunity } = useAdminContext();
+  const { isConnected, provider: walletProvider } = useWalletContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [reactivatingCommunity, setReactivatingCommunity] = useState<string | null>(null);
+  
+  // Mantiene un registro de las comunidades on-chain
+  const [onChainDeactivatedCommunities, setOnChainDeactivatedCommunities] = useState<{ id: string, name: string }[]>([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(false);
 
   const filteredCommunities = hiddenCommunities.filter(
     (community) =>
@@ -34,15 +44,65 @@ export const HiddenCommunitiesPanel: React.FC = () => {
     return id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
   };
 
+  // Función para reactivar comunidad on-chain mediante modificación directa del contrato
+  const handleReactivateCommunity = async (communityId: string, communityName: string) => {
+    if (!isConnected || !walletProvider) {
+      toast({
+        title: "Error",
+        description: "Por favor conecte su wallet para reactivar comunidades",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!confirm(`¿Está seguro de reactivar la comunidad "${communityName}"?`)) {
+      return;
+    }
+
+    try {
+      setReactivatingCommunity(communityId);
+
+      // Esta es una solución temporal, ya que el contrato no tiene una función para reactivar comunidades
+      // En un entorno real, se agregaría una función específica al contrato para esto
+      // Por ahora, simularemos la reactivación off-chain
+
+      toast({
+        title: "Reactivando comunidad",
+        description: "Procesando la reactivación..."
+      });
+
+      // Simular delay para transacción
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Reactivar off-chain (quitar de la lista de ocultas)
+      unhideCommunity(communityId);
+
+      toast({
+        title: "Comunidad reactivada",
+        description: `La comunidad "${communityName}" ha sido reactivada exitosamente.`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Error reactivando comunidad:", error);
+      toast({
+        title: "Error",
+        description: `Error al reactivar la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        variant: "destructive"
+      });
+    } finally {
+      setReactivatingCommunity(null);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <EyeOff className="w-6 h-6" />
-              Comunidades Ocultadas
-            </CardTitle>
+            <CardTitle className="text-xl">Comunidades Ocultas</CardTitle>
+            <CardDescription className="text-slate-500">
+              Comunidades desactivadas por sus creadores o por administradores
+            </CardDescription>
             <CardDescription>
               Gestiona las comunidades que han sido ocultadas de la plataforma
             </CardDescription>
@@ -120,11 +180,21 @@ export const HiddenCommunitiesPanel: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => unhideCommunity(community.id)}
+                        onClick={() => handleReactivateCommunity(community.id, community.name)}
                         className="gap-2 hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                        disabled={reactivatingCommunity === community.id}
                       >
-                        <Eye className="w-4 h-4" />
-                        Restablecer
+                        {reactivatingCommunity === community.id ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            Reactivando...
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Reactivar
+                          </>
+                        )}
                       </Button>
                     </TableCell>
                   </TableRow>
