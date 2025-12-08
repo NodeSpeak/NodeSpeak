@@ -261,6 +261,13 @@ export const IntegratedView = ({
         setLocalCommunities(communities);
     }, [communities]);
 
+    // Sync internal selectedCommunityId with external prop
+    useEffect(() => {
+        if (externalSelectedCommunityId !== undefined && externalSelectedCommunityId !== selectedCommunityId) {
+            setSelectedCommunityId(externalSelectedCommunityId);
+        }
+    }, [externalSelectedCommunityId]);
+
     useEffect(() => {
         // Solo ejecutar si existe un ID de comunidad seleccionada y ha cambiado
         if (selectedCommunityId) {
