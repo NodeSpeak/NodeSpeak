@@ -255,8 +255,22 @@ export default function Home() {
             
             setCommunities(parsedCommunities);
 
-            // If no community is selected and communities are available, select the first one
+            // Check if there's a community ID in the URL params
+            const communityFromUrl = searchParams.get('community');
+            
+            // If no community is selected and communities are available
             if (!selectedCommunityId && parsedCommunities.length > 0) {
+                // Prioritize community from URL if it exists and is valid
+                if (communityFromUrl) {
+                    const urlCommunity = parsedCommunities.find(c => c.id === communityFromUrl);
+                    if (urlCommunity) {
+                        setSelectedCommunityId(urlCommunity.id);
+                        fetchPostsForCommunity(urlCommunity.id);
+                        setShowCommunityList(false); // Hide community list to show posts
+                        return;
+                    }
+                }
+                // Otherwise select the first community
                 setSelectedCommunityId(parsedCommunities[0].id);
                 fetchPostsForCommunity(parsedCommunities[0].id);
             }

@@ -667,8 +667,9 @@ export default function ProfilePage() {
             {userCommunities.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {userCommunities.map((community) => (
-                  <div 
-                    key={community.id} 
+                  <Link 
+                    key={community.id}
+                    href={`/foro?community=${community.id}`}
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
@@ -706,7 +707,7 @@ export default function ProfilePage() {
                       <p className="text-sm font-medium text-slate-900 truncate">{community.name}</p>
                       <p className="text-xs text-slate-500">{community.memberCount} members</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
