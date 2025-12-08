@@ -4,11 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
-import { HiddenUsersPanel, HiddenCommunitiesPanel } from "@/components/admin";
+import { HiddenUsersPanel, HiddenCommunitiesPanel, UserDeactivatedCommunitiesPanel } from "@/components/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, ArrowLeft, Users, Home, Settings, EyeOff } from "lucide-react";
+import { Shield, ArrowLeft, Users, Home, Settings, EyeOff, User } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -168,6 +168,13 @@ export default function AdminPage() {
               Comunidades Ocultadas
             </TabsTrigger>
             <TabsTrigger
+              value="my-deactivated-communities"
+              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              <User className="w-4 h-4" />
+              Mis Comunidades
+            </TabsTrigger>
+            <TabsTrigger
               value="settings"
               className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
             >
@@ -182,6 +189,10 @@ export default function AdminPage() {
 
           <TabsContent value="hidden-communities" className="space-y-6">
             <HiddenCommunitiesPanel />
+          </TabsContent>
+
+          <TabsContent value="my-deactivated-communities" className="space-y-6">
+            <UserDeactivatedCommunitiesPanel />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">

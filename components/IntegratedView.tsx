@@ -204,7 +204,7 @@ export const IntegratedView = ({
     setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
     const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
-    const { isUserHidden, isCommunityHidden, isAdmin } = useAdminContext();
+    const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -1168,6 +1168,12 @@ export const IntegratedView = ({
                         : community
                 )
             );
+            
+            // También ocultar la comunidad en el AdminContext para que aparezca en el panel de control
+            // Agregamos el address del usuario como parte del reason para poder filtrar por él más tarde
+            const userAddress = await signer.getAddress();
+            const reason = `Desactivada por el creador: ${userAddress.toLowerCase()}`;
+            hideCommunity(communityId, communityName, reason);
 
             // Refresh communities from contract
             if (refreshCommunities) {
@@ -1175,7 +1181,7 @@ export const IntegratedView = ({
             }
 
             alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
-
+            
             // If we were viewing this community, go back to community list
             if (selectedCommunityId === communityId) {
                 setSelectedCommunityId(null);
