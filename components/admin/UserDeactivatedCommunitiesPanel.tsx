@@ -8,26 +8,67 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { EyeOff, Eye, Search, Home, AlertTriangle, RefreshCw } from "lucide-react";
+import { Search, Home, RefreshCw, Undo2 } from "lucide-react";
 import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { toast } from "@/hooks/use-toast";
 
-export const HiddenCommunitiesPanel: React.FC = () => {
+export const UserDeactivatedCommunitiesPanel: React.FC = () => {
   const { hiddenCommunities, unhideCommunity } = useAdminContext();
-  const { isConnected, provider: walletProvider } = useWalletContext();
+  const { isConnected, provider: walletProvider, address } = useWalletContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [reactivatingCommunity, setReactivatingCommunity] = useState<string | null>(null);
   
-  // Mantiene un registro de las comunidades on-chain
-  const [onChainDeactivatedCommunities, setOnChainDeactivatedCommunities] = useState<{ id: string, name: string }[]>([]);
-  const [loadingCommunities, setLoadingCommunities] = useState(false);
+  // Estado para almacenar comunidades desactivadas por el usuario actual
+  const [userDeactivatedCommunities, setUserDeactivatedCommunities] = useState<{
+    id: string;
+    name: string;
+    hiddenAt: number;
+    reason?: string;
+  }[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredCommunities = hiddenCommunities.filter(
+  // Filtrar comunidades por término de búsqueda
+  const filteredCommunities = userDeactivatedCommunities.filter(
     (community) =>
       community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       community.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Obtener comunidades desactivadas por el usuario actual
+  useEffect(() => {
+    const fetchUserDeactivatedCommunities = async () => {
+      if (!isConnected || !address) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // En un escenario real, aquí obtendríamos las comunidades desactivadas por el usuario
+        // desde el contrato o la base de datos
+        
+        // Por ahora, simulamos el filtrado de comunidades desactivadas por el usuario actual
+        // asumiendo que el reason contendría la dirección del usuario que la desactivó
+        const userCommunities = hiddenCommunities.filter(
+          (community) => community.reason?.includes(`${address.toLowerCase()}`) || false
+        );
+        
+        setUserDeactivatedCommunities(userCommunities);
+      } catch (error) {
+        console.error("Error fetching user's deactivated communities:", error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las comunidades desactivadas",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserDeactivatedCommunities();
+  }, [hiddenCommunities, isConnected, address]);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString("es-ES", {
@@ -44,7 +85,7 @@ export const HiddenCommunitiesPanel: React.FC = () => {
     return id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
   };
 
-  // Función para reactivar comunidad on-chain mediante modificación directa del contrato
+  // Función para reactivar comunidad
   const handleReactivateCommunity = async (communityId: string, communityName: string) => {
     if (!isConnected || !walletProvider) {
       toast({
@@ -55,27 +96,34 @@ export const HiddenCommunitiesPanel: React.FC = () => {
       return;
     }
 
-    if (!confirm(`¿Está seguro de reactivar la comunidad "${communityName}"?`)) {
+    if (!confirm(`¿Estás seguro de reactivar la comunidad "${communityName}"?`)) {
       return;
     }
 
     try {
       setReactivatingCommunity(communityId);
 
-      // Esta es una solución temporal, ya que el contrato no tiene una función para reactivar comunidades
-      // En un entorno real, se agregaría una función específica al contrato para esto
-      // Por ahora, simularemos la reactivación off-chain
-
       toast({
         title: "Reactivando comunidad",
         description: "Procesando la reactivación..."
       });
 
+      const signer = await walletProvider.getSigner();
+      const contract = new Contract(forumAddress, forumABI, signer);
+
+      // En un escenario real, llamaríamos a una función en el contrato para reactivar
+      // Como no existe tal función, simplemente simularemos la reactivación
+      
       // Simular delay para transacción
       await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Reactivar off-chain (quitar de la lista de ocultas)
+      
+      // Remover de la lista de comunidades ocultas
       unhideCommunity(communityId);
+      
+      // Actualizar estado local
+      setUserDeactivatedCommunities(prev => 
+        prev.filter(community => community.id !== communityId)
+      );
 
       toast({
         title: "Comunidad reactivada",
@@ -99,24 +147,25 @@ export const HiddenCommunitiesPanel: React.FC = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl">Comunidades Ocultas</CardTitle>
+            <CardTitle className="text-xl">Mis Comunidades Desactivadas</CardTitle>
             <CardDescription className="text-slate-500">
-              Comunidades desactivadas por sus creadores o por administradores
+              Comunidades que has desactivado como creador
             </CardDescription>
             <CardDescription>
-              Gestiona las comunidades que han sido ocultadas de la plataforma
+              Gestiona tus comunidades desactivadas y reactívalas cuando lo desees
             </CardDescription>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            {hiddenCommunities.length}{" "}
-            {hiddenCommunities.length === 1 ? "comunidad" : "comunidades"}
+            {userDeactivatedCommunities.length}{" "}
+            {userDeactivatedCommunities.length === 1 ? "comunidad" : "comunidades"}
           </Badge>
         </div>
       </CardHeader>
+
       <CardContent>
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <Input
               type="text"
               placeholder="Buscar por nombre de comunidad o ID..."
@@ -127,13 +176,20 @@ export const HiddenCommunitiesPanel: React.FC = () => {
           </div>
         </div>
 
-        {filteredCommunities.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
+          </div>
+        ) : filteredCommunities.length === 0 ? (
           <div className="text-center py-12">
             <Home className="w-16 h-16 mx-auto text-slate-300 mb-4" />
             <p className="text-slate-500 text-lg">
               {searchTerm
                 ? "No se encontraron comunidades con ese criterio"
-                : "No hay comunidades ocultadas"}
+                : "No has desactivado ninguna comunidad"}
+            </p>
+            <p className="text-slate-400 text-sm mt-2">
+              Las comunidades que desactives aparecerán aquí para que puedas reactivarlas
             </p>
           </div>
         ) : (
@@ -143,8 +199,7 @@ export const HiddenCommunitiesPanel: React.FC = () => {
                 <TableRow className="bg-slate-50">
                   <TableHead className="font-semibold">Nombre</TableHead>
                   <TableHead className="font-semibold">ID</TableHead>
-                  <TableHead className="font-semibold">Fecha de Ocultamiento</TableHead>
-                  <TableHead className="font-semibold">Motivo</TableHead>
+                  <TableHead className="font-semibold">Fecha de Desactivación</TableHead>
                   <TableHead className="text-right font-semibold">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -167,15 +222,6 @@ export const HiddenCommunitiesPanel: React.FC = () => {
                     <TableCell className="text-slate-600">
                       {formatDate(community.hiddenAt)}
                     </TableCell>
-                    <TableCell>
-                      {community.reason ? (
-                        <span className="text-sm text-slate-600">{community.reason}</span>
-                      ) : (
-                        <span className="text-sm text-slate-400 italic">
-                          Sin motivo especificado
-                        </span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="outline"
@@ -191,7 +237,7 @@ export const HiddenCommunitiesPanel: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <Eye className="w-4 h-4" />
+                            <Undo2 className="w-4 h-4" />
                             Reactivar
                           </>
                         )}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
-import { ImagePlus, Send } from "lucide-react";
+import { ImagePlus, Send, Trash2, MoreVertical } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import axios from "axios";
@@ -50,6 +50,7 @@ interface Post {
 
 interface Comment {
     id: string;
+    index: number; // 1-based index for contract calls
     postId: string;
     author: string;
     content: string;
@@ -202,8 +203,8 @@ export const IntegratedView = ({
     showCommunityList: externalShowCommunityList,
     setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
-    const { isConnected, provider: walletProvider } = useWalletContext();
-    const { isUserHidden, isCommunityHidden } = useAdminContext();
+    const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
+    const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -222,12 +223,17 @@ export const IntegratedView = ({
     const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
     const [likingPost, setLikingPost] = useState<Record<string, boolean>>({});
     const [userLikedPosts, setUserLikedPosts] = useState<Record<string, boolean>>({});
+    const [deletingPost, setDeletingPost] = useState<Record<string, boolean>>({});
+    const [showPostMenu, setShowPostMenu] = useState<Record<string, boolean>>({});
+    const [deletingComment, setDeletingComment] = useState<Record<string, boolean>>({});
+    const [showCommentMenu, setShowCommentMenu] = useState<Record<string, boolean>>({});
 
     // Communities states
     const [newTopic, setNewTopic] = useState("");
     const [isSubmittingTopic, setIsSubmittingTopic] = useState(false);
     const [topicError, setTopicError] = useState("");
     const [showAddTopicForm, setShowAddTopicForm] = useState<Record<string, boolean>>({});
+    const [deactivatingCommunityId, setDeactivatingCommunityId] = useState<string | null>(null);
 
     // CreatePost states - use external state if provided, otherwise use internal state
     const [internalIsCreatingPost, setInternalIsCreatingPost] = useState(false);
@@ -258,6 +264,13 @@ export const IntegratedView = ({
     useEffect(() => {
         setLocalCommunities(communities);
     }, [communities]);
+
+    // Sync internal selectedCommunityId with external prop
+    useEffect(() => {
+        if (externalSelectedCommunityId !== undefined && externalSelectedCommunityId !== selectedCommunityId) {
+            setSelectedCommunityId(externalSelectedCommunityId);
+        }
+    }, [externalSelectedCommunityId]);
 
     useEffect(() => {
         // Solo ejecutar si existe un ID de comunidad seleccionada y ha cambiado
@@ -290,6 +303,22 @@ export const IntegratedView = ({
                 });
         }
     }, [hasLoaded, fetchPostsFromContract, selectedCommunityId]);
+
+    // Close post/comment menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('[data-post-menu]')) {
+                setShowPostMenu({});
+            }
+            if (!target.closest('[data-comment-menu]')) {
+                setShowCommentMenu({});
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     // Actualizar los tópicos disponibles cuando cambia la comunidad seleccionada para CreatePost
     useEffect(() => {
@@ -947,17 +976,18 @@ export const IntegratedView = ({
 
             console.log(`Received ${commentsFromContract.length} comments from contract for post ${postId}`);
 
-            // Filtrar solo comentarios activos y parsear datos
+            // Parsear datos y agregar índice ANTES de filtrar (el contrato usa índice basado en 1)
             const parsedComments = commentsFromContract
-                .filter((comment: any) => comment.isActive)
-                .map((comment: any) => ({
+                .map((comment: any, index: number) => ({
                     id: comment.id.toString(),
+                    index: index + 1, // 1-based index for contract calls (position in original array)
                     postId: postId,
                     author: comment.author,
                     content: comment.content,
                     timestamp: parseInt(comment.timestamp.toString(), 10),
                     isActive: comment.isActive
-                }));
+                }))
+                .filter((comment: any) => comment.isActive);
 
             // Ordenar por más recientes primero
             parsedComments.sort((a: Comment, b: Comment) => b.timestamp - a.timestamp);
@@ -1102,6 +1132,202 @@ export const IntegratedView = ({
         }
     };
 
+    // Desactivar Comunidad
+    const handleDeactivateCommunity = async (communityId: string, communityName: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to deactivate community.");
+            return;
+        }
+
+        if (deactivatingCommunityId === communityId) return;
+
+        // Confirm deactivation
+        if (!window.confirm(`¿Estás seguro que deseas desactivar la comunidad "${communityName}"? Esta acción ocultará la comunidad y sus posts para todos los usuarios pero podrá ser reactivada más tarde desde el panel de administración.`)) {
+            return;
+        }
+
+        try {
+            setDeactivatingCommunityId(communityId);
+
+            const signer = await walletProvider.getSigner();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Call deactivateCommunity function in the contract
+            const tx = await contract.deactivateCommunity(communityId);
+            
+            // Show pending transaction message
+            alert(`Transacción enviada. Por favor espere la confirmación.\nHash: ${tx.hash}`);
+            
+            await tx.wait();
+
+            // Update local communities
+            setLocalCommunities(prev => 
+                prev.map(community => 
+                    community.id === communityId 
+                        ? { ...community, isActive: false } 
+                        : community
+                )
+            );
+            
+            // También ocultar la comunidad en el AdminContext para que aparezca en el panel de control
+            // Agregamos el address del usuario como parte del reason para poder filtrar por él más tarde
+            const userAddress = await signer.getAddress();
+            const reason = `Desactivada por el creador: ${userAddress.toLowerCase()}`;
+            hideCommunity(communityId, communityName, reason);
+
+            // Refresh communities from contract
+            if (refreshCommunities) {
+                await refreshCommunities();
+            }
+
+            alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
+            
+            // If we were viewing this community, go back to community list
+            if (selectedCommunityId === communityId) {
+                setSelectedCommunityId(null);
+                setShowCommunityList(true);
+            }
+        } catch (error) {
+            console.error("Error deactivating community:", error);
+            if (error instanceof Error && error.toString().includes("Not community creator")) {
+                alert("Solo el creador de la comunidad puede desactivarla.");
+            } else if (error instanceof Error && error.toString().includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert(`Error al desactivar la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            }
+        } finally {
+            setDeactivatingCommunityId(null);
+        }
+    };
+
+    // Delete/Deactivate post
+    const handleDeletePost = async (postId: string, postAuthor: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to delete posts.");
+            return;
+        }
+
+        // Close menu
+        setShowPostMenu(prev => ({ ...prev, [postId]: false }));
+
+        // Confirm deletion
+        if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            setDeletingPost(prev => ({ ...prev, [postId]: true }));
+
+            const signer = await walletProvider.getSigner();
+            const userAddress = await signer.getAddress();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Only the post author can delete their post
+            if (postAuthor.toLowerCase() !== userAddress.toLowerCase()) {
+                alert("Only the post author can delete this post.");
+                return;
+            }
+
+            const tx = await contract.deactivatePost(postId);
+            await tx.wait();
+
+            // Refresh posts
+            if (selectedCommunityId && fetchPostsForCommunity) {
+                await fetchPostsForCommunity(selectedCommunityId);
+            } else {
+                await fetchPostsFromContract();
+            }
+
+            console.log(`Post ${postId} deleted successfully.`);
+        } catch (error: any) {
+            console.error("Error deleting post:", error);
+            if (error.message?.includes("Only the post author")) {
+                alert("Only the post author can delete this post.");
+            } else if (error.message?.includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert("Failed to delete post. Please try again.");
+            }
+        } finally {
+            setDeletingPost(prev => ({ ...prev, [postId]: false }));
+        }
+    };
+
+    // Toggle post options menu
+    const togglePostMenu = (postId: string) => {
+        setShowPostMenu(prev => ({
+            ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}), // Close all other menus
+            [postId]: !prev[postId]
+        }));
+    };
+
+    // Delete/Deactivate comment
+    const handleDeleteComment = async (comment: Comment) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to delete comments.");
+            return;
+        }
+
+        // Close menu
+        setShowCommentMenu(prev => ({ ...prev, [comment.id]: false }));
+
+        // Confirm deletion
+        if (!window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            setDeletingComment(prev => ({ ...prev, [comment.id]: true }));
+
+            const signer = await walletProvider.getSigner();
+            const userAddress = await signer.getAddress();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Only the comment author can delete their comment
+            if (comment.author.toLowerCase() !== userAddress.toLowerCase()) {
+                alert("Only the comment author can delete this comment.");
+                return;
+            }
+
+            // Use the 1-based index for the contract call
+            const numericPostId = parseInt(comment.postId, 10);
+            const commentIndex = comment.index; // Already 1-based
+            
+            console.log(`Deleting comment - postId: ${numericPostId}, commentIndex: ${commentIndex}`);
+
+            const tx = await contract.deactivateComment(numericPostId, commentIndex);
+            await tx.wait();
+
+            // Refresh comments for this post
+            setComments(prev => ({
+                ...prev,
+                [comment.postId]: prev[comment.postId]?.filter(c => c.id !== comment.id) || []
+            }));
+
+            console.log(`Comment ${comment.id} deleted successfully.`);
+        } catch (error: any) {
+            console.error("Error deleting comment:", error);
+            if (error.message?.includes("Not comment owner")) {
+                alert("Only the comment author can delete this comment.");
+            } else if (error.message?.includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert("Failed to delete comment. Please try again.");
+            }
+        } finally {
+            setDeletingComment(prev => ({ ...prev, [comment.id]: false }));
+        }
+    };
+
+    // Toggle comment options menu
+    const toggleCommentMenu = (commentId: string) => {
+        setShowCommentMenu(prev => ({
+            ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}), // Close all other menus
+            [commentId]: !prev[commentId]
+        }));
+    };
+
     // Helper functions
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000);
@@ -1230,57 +1456,59 @@ export const IntegratedView = ({
 
     // Render Create Community Form
     const renderCreateCommunityForm = () => (
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-6 text-slate-900">New Community</h2>
-            <form className="space-y-5">
-                <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Community Name</label>
-                    <input
-                        type="text"
-                        placeholder="Enter community name"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                        id="community-name"
-                    />
+        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
+            <h2 className="text-base font-semibold mb-3 text-slate-900">New Community</h2>
+            <form className="space-y-3">
+                {/* Name and Topics in a row on larger screens */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Name</label>
+                        <input
+                            type="text"
+                            placeholder="Community name"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                            id="community-name"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Topics</label>
+                        <input
+                            type="text"
+                            placeholder="General, Tech, Blockchain"
+                            className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
+                            id="community-topics"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Description</label>
+                    <label className="text-slate-600 font-medium mb-1 text-xs">Description</label>
                     <textarea
                         placeholder="What is this community about?"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl h-28 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none"
+                        className="bg-slate-50 border border-slate-200 text-slate-900 px-3 py-2 rounded-lg h-16 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 resize-none"
                         id="community-description"
                     />
                 </div>
 
-                <div className="flex flex-col">
-                    <label className="text-slate-600 font-medium mb-2 text-sm">Topics</label>
-                    <input
-                        type="text"
-                        placeholder="General, Technology, Blockchain"
-                        className="bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                        id="community-topics"
-                    />
-                    <p className="text-xs text-slate-400 mt-1.5">Comma separated, at least one required</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                {/* Logo and Cover side by side */}
+                <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col">
-                        <label className="text-slate-600 font-medium mb-2 text-sm">Logo</label>
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Logo</label>
                         {communityLogoPreview ? (
-                            <div className="relative group w-20 h-20">
+                            <div className="relative group w-14 h-14">
                                 <img 
                                     src={communityLogoPreview} 
                                     alt="Logo preview" 
-                                    className="w-20 h-20 object-cover rounded-xl border border-slate-200"
+                                    className="w-14 h-14 object-cover rounded-lg border border-slate-200"
                                 />
                                 <div 
-                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
                                     onClick={() => {
                                         setTempCommunityLogoImage(communityLogoPreview);
                                         setShowCommunityLogoEditor(true);
                                     }}
                                 >
-                                    <span className="text-white text-xs font-medium">Adjust</span>
+                                    <span className="text-white text-[10px] font-medium">Edit</span>
                                 </div>
                                 <button
                                     type="button"
@@ -1288,7 +1516,7 @@ export const IntegratedView = ({
                                         setCommunityLogoPreview("");
                                         setCommunityLogoFile(null);
                                     }}
-                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600"
                                 >
                                     ×
                                 </button>
@@ -1297,7 +1525,7 @@ export const IntegratedView = ({
                             <input
                                 type="file"
                                 accept="image/*"
-                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-1.5 rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-xs"
                                 id="community-photo"
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
@@ -1317,22 +1545,22 @@ export const IntegratedView = ({
                     </div>
 
                     <div className="flex flex-col">
-                        <label className="text-slate-600 font-medium mb-2 text-sm">Cover Image</label>
+                        <label className="text-slate-600 font-medium mb-1 text-xs">Cover</label>
                         {communityCoverPreview ? (
                             <div className="relative group">
                                 <img 
                                     src={communityCoverPreview} 
                                     alt="Cover preview" 
-                                    className="w-full h-20 object-cover rounded-xl border border-slate-200"
+                                    className="w-full h-14 object-cover rounded-lg border border-slate-200"
                                 />
                                 <div 
-                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
                                     onClick={() => {
                                         setTempCommunityCoverImage(communityCoverPreview);
                                         setShowCommunityCoverEditor(true);
                                     }}
                                 >
-                                    <span className="text-white text-xs font-medium">Click to adjust</span>
+                                    <span className="text-white text-[10px] font-medium">Edit</span>
                                 </div>
                                 <button
                                     type="button"
@@ -1340,7 +1568,7 @@ export const IntegratedView = ({
                                         setCommunityCoverPreview("");
                                         setCommunityCoverFile(null);
                                     }}
-                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                                    className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600"
                                 >
                                     ×
                                 </button>
@@ -1349,7 +1577,7 @@ export const IntegratedView = ({
                             <input
                                 type="file"
                                 accept="image/*"
-                                className="bg-slate-50 border border-slate-200 text-slate-900 p-2.5 rounded-xl file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-sm"
+                                className="bg-slate-50 border border-slate-200 text-slate-900 p-1.5 rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 text-xs"
                                 id="community-cover"
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
@@ -1380,13 +1608,11 @@ export const IntegratedView = ({
                         const description = descriptionElement?.value || "";
                         const topicString = topicsElement?.value || "";
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
-                        // Use the edited files from state
                         const photo = communityLogoFile || undefined;
                         const cover = communityCoverFile || undefined;
 
                         if (name && description && topicsArray.length > 0) {
                             handleCreateCommunity(name, description, topicsArray, photo, cover);
-                            // Reset state after submission
                             setCommunityCoverFile(null);
                             setCommunityCoverPreview("");
                             setCommunityLogoFile(null);
@@ -1395,13 +1621,11 @@ export const IntegratedView = ({
                             alert("Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl py-3 font-medium shadow-md shadow-indigo-200 transition-all"
+                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg py-2 text-sm font-medium shadow-sm shadow-indigo-200 transition-all mt-1"
                     disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
-                        <div className="flex items-center justify-center">
-                            <span className="animate-pulse">Creating...</span>
-                        </div>
+                        <span className="animate-pulse">Creating...</span>
                     ) : "Create Community"}
                 </Button>
             </form>
@@ -1458,14 +1682,11 @@ export const IntegratedView = ({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                // Aquí implementaríamos la navegación a una página de edición de comunidad
-                                                console.log(`Editar comunidad: ${community.id}`);
-                                                // Por ejemplo: router.push(`/comunidad/editar/${community.id}`);
-                                                alert(`Función para editar comunidad ${community.name} (ID: ${community.id})`);
+                                                handleDeactivateCommunity(community.id, community.name);
                                             }}
-                                            className="text-xs py-1.5 px-3 rounded-full transition-colors bg-white/90 hover:bg-white text-slate-600 font-medium shadow-sm"
+                                            className="text-xs py-1.5 px-3 rounded-full transition-colors bg-red-50 hover:bg-red-100 text-red-600 font-medium shadow-sm border border-red-200"
                                         >
-                                            Editar Comunidad
+                                            Desactivar Comunidad
                                         </button>
                                     )}
                                     {!community.isCreator && (
@@ -1770,6 +1991,36 @@ export const IntegratedView = ({
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* Post options menu - only visible to post author */}
+                            {post.author && currentUserAddress && 
+                             post.author.toLowerCase() === currentUserAddress.toLowerCase() && (
+                                <div className="relative" data-post-menu>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            togglePostMenu(post.id);
+                                        }}
+                                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+                                        title="Post options"
+                                    >
+                                        <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {showPostMenu[post.id] && (
+                                        <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-10 min-w-[140px]">
+                                            <button
+                                                onClick={() => handleDeletePost(post.id, post.author || '')}
+                                                disabled={deletingPost[post.id]}
+                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                {deletingPost[post.id] ? 'Deleting...' : 'Delete Post'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Post content */}
@@ -1856,7 +2107,7 @@ export const IntegratedView = ({
                                             .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                                             .map((comment) => (
                                             <div key={comment.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50">
-                                                <div className="flex items-start mb-2">
+                                                <div className="flex items-start">
                                                     <div className="mr-3 flex-shrink-0">
                                                         <UserAvatar 
                                                             address={comment.author || ''} 
@@ -1865,14 +2116,41 @@ export const IntegratedView = ({
                                                         />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="flex justify-end items-center">
+                                                        <div className="flex justify-between items-center">
                                                             <span className="text-slate-400 text-xs">
                                                                 {formatDate(comment.timestamp)}
                                                             </span>
+                                                            {/* Comment options menu - only for author */}
+                                                            {comment.author && currentUserAddress && 
+                                                             comment.author.toLowerCase() === currentUserAddress.toLowerCase() && (
+                                                                <div className="relative" data-comment-menu>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleCommentMenu(comment.id);
+                                                                        }}
+                                                                        className="p-1 rounded-lg hover:bg-slate-200 transition-colors text-slate-400 hover:text-slate-600"
+                                                                        title="Comment options"
+                                                                    >
+                                                                        <MoreVertical className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    
+                                                                    {showCommentMenu[comment.id] && (
+                                                                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10 min-w-[120px]">
+                                                                            <button
+                                                                                onClick={() => handleDeleteComment(comment)}
+                                                                                disabled={deletingComment[comment.id]}
+                                                                                className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                                {deletingComment[comment.id] ? "Deleting..." : "Delete"}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <p className="text-slate-700 text-sm mt-1">{comment.content}</p>
-                                                        
-                                                        {/* Comment actions - like functionality not available in contract */}
                                                     </div>
                                                 </div>
                                             </div>

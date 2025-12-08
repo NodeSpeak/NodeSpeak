@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
@@ -56,7 +56,7 @@ export default function ProfilePage() {
     (currentUserAddress && searchParams.get('address')?.toLowerCase() === currentUserAddress.toLowerCase());
   
   const [isLoading, setIsLoading] = useState(true);
-  const [activityLoaded, setActivityLoaded] = useState(false);
+  const activityLoadedRef = useRef(false);
   const [profileExists, setProfileExists] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -166,6 +166,23 @@ export default function ProfilePage() {
         // Get profile from blockchain/IPFS
         const profile = await profileService.getProfile(targetAddress);
         
+        // Always get post count from blockchain
+        let postCount = 0;
+        let myPosts: any[] = [];
+        let allPosts: any[] = [];
+        const ethereum = (window as any).ethereum;
+        
+        if (ethereum) {
+          const browserProvider = new BrowserProvider(ethereum);
+          const contract = new Contract(forumAddress, forumABI, browserProvider);
+          
+          allPosts = await contract.getActivePosts();
+          myPosts = allPosts.filter((post: any) => 
+            post.author.toLowerCase() === targetAddress.toLowerCase()
+          );
+          postCount = myPosts.length;
+        }
+        
         if (profile) {
           setProfileExists(profile.exists);
           setProfileData({
@@ -177,30 +194,19 @@ export default function ProfilePage() {
             likesGiven: profile.likesGiven || 0,
             followers: profile.followers || 0,
             following: profile.following || 0,
-            postCount: 0,
+            postCount: postCount,
             memberSince: profile.createdAt 
               ? new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) 
               : "Recently joined"
           });
         }
 
-        // Load user's posts and comments from blockchain for activity (only once)
-        const ethereum = (window as any).ethereum;
-        if (ethereum && !activityLoaded) {
+        // Load user's activity (comments, etc.) - only once and if we have posts
+        if (ethereum && allPosts.length > 0 && !activityLoadedRef.current) {
+          activityLoadedRef.current = true; // Mark activity as loaded to prevent re-runs
           try {
-            setActivityLoaded(true); // Mark as loading to prevent re-runs
             const browserProvider = new BrowserProvider(ethereum);
             const contract = new Contract(forumAddress, forumABI, browserProvider);
-            
-            const allPosts = await contract.getActivePosts();
-            const myPosts = allPosts.filter((post: any) => 
-              post.author.toLowerCase() === targetAddress.toLowerCase()
-            );
-            
-            setProfileData(prev => ({
-              ...prev,
-              postCount: myPosts.length
-            }));
             
             // Cache for community names and content
             const communityCache: Record<string, string> = {};
@@ -405,12 +411,14 @@ export default function ProfilePage() {
     };
 
     loadData();
-  }, [targetAddress, isConnected, isOwnProfile, router, profileService, activityLoaded]);
+  }, [targetAddress, isConnected, isOwnProfile, router, profileService]);
 
-  // Reset activity loaded state when target address changes
+  // Reset loaded state when target address changes
   useEffect(() => {
-    setActivityLoaded(false);
+    // Reset activity ref when address changes
+    activityLoadedRef.current = false;
     setRecentActivity([]);
+    setUserCommunities([]);
   }, [targetAddress]);
 
   // Create a blinking cursor effect
@@ -447,20 +455,6 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Cover Photo */}
-        {profileData.coverPhoto && (
-          <div className="mb-6 rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-            <div className="w-full h-48 relative">
-              <img 
-                src={profileData.coverPhoto} 
-                alt="Cover" 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-white/50 to-transparent"></div>
-            </div>
-          </div>
-        )}
-
         {/* Banner if no profile exists */}
         {!profileExists && isOwnProfile && (
           <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-5">
@@ -490,63 +484,47 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Profile Header */}
-        <div className="mb-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900 mb-4">User Profile</h1>
+        {/* Profile Header with Cover Photo Background */}
+        <div className="mb-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+          {/* Cover Photo as Full Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100">
+            {profileData.coverPhoto && (
+              <img 
+                src={profileData.coverPhoto} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/30"></div>
+          </div>
           
-          {/* User Info Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Avatar Section */}
-            <div className="rounded-2xl overflow-hidden border-2 border-slate-200 flex items-center justify-center bg-slate-50">
-              {profileData.profilePicture ? (
-                <img 
-                  src={profileData.profilePicture} 
-                  alt={displayName} 
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-28 w-28 flex items-center justify-center">
-                  <User className="h-14 w-14 text-slate-400" />
-                </div>
-              )}
-            </div>
-            
-            {/* User Details */}
-            <div className="md:col-span-3 bg-slate-50 rounded-xl p-5">
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex">
-                  <span className="text-slate-500 w-32 text-sm">Nickname</span>
-                  <span className="text-slate-900 font-medium">{displayName}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-slate-500 w-32 text-sm">Address</span>
-                  <span className="text-slate-700 font-mono text-sm">{fullAddress}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-slate-500 w-32 text-sm">Status</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Active</span>
-                </div>
-                <div className="flex">
-                  <span className="text-slate-500 w-32 text-sm">Member since</span>
-                  <span className="text-slate-700">{profileData.memberSince}</span>
-                </div>
-                <div className="flex">
-                  <span className="text-slate-500 w-32 text-sm">Posts</span>
-                  <span className="text-slate-900 font-medium">{profileData.postCount}</span>
-                </div>
-                <div className="mt-2 border-t border-slate-200 pt-3">
-                  <span className="text-slate-500 text-sm">Bio</span>
-                  <p className="text-slate-700 mt-1">{profileData.bio}</p>
+          {/* Profile Content - Overlaid on cover */}
+          <div className="relative p-6 pt-8">
+            {/* User Info Section */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Avatar Section */}
+              <div className="flex justify-center md:justify-start">
+                <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-slate-50">
+                  {profileData.profilePicture ? (
+                    <img 
+                      src={profileData.profilePicture} 
+                      alt={displayName} 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <User className="h-14 w-14 text-slate-400" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* Action buttons */}
-          <div className="flex justify-between mt-6 pt-4 border-t border-slate-200">
+            
+            {/* Action buttons */}
+            <div className="flex justify-between mt-6 pt-4 border-t border-white/20">
             <Button 
               onClick={() => router.push('/foro')}
-              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-4 text-sm"
+              className="bg-white/90 backdrop-blur-sm border border-white/50 text-slate-700 hover:bg-white rounded-full px-4 text-sm shadow-lg"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Forum
@@ -556,7 +534,7 @@ export default function ProfilePage() {
               {isOwnProfile ? (
                 <Button 
                   onClick={() => router.push('/profile/edit')}
-                  className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-4 text-sm"
+                  className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-4 text-sm shadow-lg"
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Profile
@@ -566,7 +544,7 @@ export default function ProfilePage() {
                   onClick={handleFollow}
                   disabled={followLoading || !profileExists}
                   title={!profileExists ? 'This user has not created a profile yet' : ''}
-                  className={`rounded-full px-4 text-sm ${isFollowing 
+                  className={`rounded-full px-4 text-sm shadow-lg ${isFollowing 
                     ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
                     : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -590,7 +568,7 @@ export default function ProfilePage() {
               {isAdmin && isOwnProfile && (
                 <Button 
                   onClick={() => router.push('/admin')}
-                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm"
+                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm shadow-lg"
                 >
                   <Shield className="h-4 w-4 mr-2" />
                   Moderación
@@ -615,12 +593,43 @@ export default function ProfilePage() {
                       router.push('/foro');
                     }
                   }}
-                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm"
+                  className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm shadow-lg"
                 >
                   <EyeOff className="h-4 w-4 mr-2" />
                   Ocultar Usuario
                 </Button>
               )}
+            </div>
+          </div>
+          </div>
+        </div>
+
+        {/* User Details - Outside main card */}
+        <div className="mt-4 mb-6 bg-white/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Nickname</span>
+              <span className="text-slate-900 font-medium">{displayName}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Address</span>
+              <span className="text-slate-700 font-mono text-sm">{fullAddress}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Status</span>
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Active</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Member since</span>
+              <span className="text-slate-700">{profileData.memberSince}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Posts</span>
+              <span className="text-slate-900 font-medium">{profileData.postCount}</span>
+            </div>
+            <div className="mt-2 border-t border-slate-200 pt-3">
+              <span className="text-slate-500 text-sm">Bio</span>
+              <p className="text-slate-700 mt-1">{profileData.bio}</p>
             </div>
           </div>
         </div>
@@ -658,8 +667,9 @@ export default function ProfilePage() {
             {userCommunities.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {userCommunities.map((community) => (
-                  <div 
-                    key={community.id} 
+                  <Link 
+                    key={community.id}
+                    href={`/foro?community=${community.id}`}
                     className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
@@ -697,7 +707,7 @@ export default function ProfilePage() {
                       <p className="text-sm font-medium text-slate-900 truncate">{community.name}</p>
                       <p className="text-xs text-slate-500">{community.memberCount} members</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

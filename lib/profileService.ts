@@ -364,6 +364,14 @@ export const useProfileService = () => {
 
       } catch (estimateError: any) {
         console.error(">>> Gas estimation or transaction error:", estimateError);
+        
+        // Check for cooldown error
+        const errorMessage = estimateError.message || estimateError.reason || '';
+        if (errorMessage.toLowerCase().includes('cooldown')) {
+          onStatusChange?.('failed', 'Profile update cooldown active. Please wait a few minutes before updating your profile again.');
+          throw new Error('Profile update cooldown active. Please wait a few minutes before updating your profile again.');
+        }
+        
         onStatusChange?.('failed', estimateError.message || 'Transaction failed');
         throw estimateError;
       }
@@ -372,7 +380,14 @@ export const useProfileService = () => {
 
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      onStatusChange?.('failed', error.message || 'Error updating profile');
+      
+      // Check for cooldown error in outer catch as well
+      const errorMessage = error.message || error.reason || '';
+      if (errorMessage.toLowerCase().includes('cooldown')) {
+        onStatusChange?.('failed', 'Profile update cooldown active. Please wait a few minutes before updating your profile again.');
+      } else {
+        onStatusChange?.('failed', error.message || 'Error updating profile');
+      }
       return false;
     }
   }, [address, provider]);

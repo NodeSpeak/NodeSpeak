@@ -8,16 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, User, Save, Upload, ImagePlus, Pencil } from "lucide-react";
+import { ArrowLeft, User, Save, Upload, ImagePlus, Pencil, UserX, AlertTriangle } from "lucide-react";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { toast } from "@/hooks/use-toast";
+import { useAdminContext } from "@/contexts/AdminContext";
+import { Contract } from "ethers";
+import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
 export default function EditProfilePage() {
   const router = useRouter();
-  const { address, ensName, isConnected } = useWalletContext();
+  const { address, ensName, isConnected, provider, disconnect } = useWalletContext();
   const profileService = useProfileService();
+  const { hideUser, isUserHidden } = useAdminContext();
   
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [nickname, setNickname] = useState("");
@@ -223,6 +229,76 @@ export default function EditProfilePage() {
     }
   };
 
+  // Handle profile deactivation - generates on-chain transaction
+  const handleDeactivateProfile = async () => {
+    if (!address || !provider) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet to deactivate your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsDeactivating(true);
+    try {
+      // Get signer for transaction
+      const signer = await provider.getSigner();
+      const contract = new Contract(forumAddress, forumABI, signer);
+      
+      toast({
+        title: "⏳ Deactivating Profile",
+        description: "Please confirm the transaction in your wallet...",
+      });
+      
+      // Call updateProfile with "[DEACTIVATED]" nickname and empty CIDs to mark as deactivated
+      const tx = await contract.updateProfile(
+        "[DEACTIVATED]",  // nickname - marks profile as deactivated
+        "",               // profileCID - clear profile picture
+        "",               // coverCID - clear cover photo  
+        ""                // bioCID - clear bio
+      );
+      
+      toast({
+        title: "⏳ Processing",
+        description: "Waiting for transaction confirmation...",
+      });
+      
+      await tx.wait();
+      
+      // Also hide user off-chain for immediate effect
+      hideUser(address, "User deactivated their own profile");
+      
+      toast({
+        title: "✅ Profile Deactivated",
+        description: "Your profile has been deactivated. Your posts and comments will no longer be visible to others.",
+      });
+      
+      setShowDeactivateModal(false);
+      
+      // Disconnect wallet and redirect to home
+      disconnect();
+      router.push('/');
+    } catch (error: any) {
+      console.error("Error deactivating profile:", error);
+      
+      if (error.message?.includes("user rejected")) {
+        toast({
+          title: "Transaction Cancelled",
+          description: "You cancelled the transaction.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to deactivate profile. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   const handleSave = async () => {
     console.log("=== STARTING PROFILE SAVE ===");
     console.log("Nickname:", nickname);
@@ -326,70 +402,54 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-6 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h1 className="text-xl font-semibold text-slate-900 mb-6">Edit Profile</h1>
+        {/* Profile Card Preview - Same style as /profile */}
+        <div className="mb-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+          {/* Cover Photo as Full Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100">
+            {coverPhotoPreview && (
+              <img 
+                src={coverPhotoPreview} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/30"></div>
+          </div>
           
-          {/* User profile layout */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            {/* Cover Photo Section */}
-            <div className="md:col-span-4 bg-slate-50 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-slate-700 text-sm font-medium">Cover Image</span>
-                <div className="flex items-center gap-2">
-                  {coverPhotoPreview && (
-                    <button
-                      onClick={handleEditExistingCover}
-                      className="text-slate-600 text-xs py-1.5 px-3 bg-white hover:bg-slate-100 rounded-full border border-slate-200 transition-colors flex items-center gap-1.5"
-                    >
-                      <Pencil className="w-3 h-3" />
-                      Adjust
-                    </button>
-                  )}
-                  <Label
-                    htmlFor="coverPhoto"
-                    className="cursor-pointer text-sky-600 text-xs py-1.5 px-3 bg-sky-50 hover:bg-sky-100 rounded-full border border-sky-200 transition-colors"
-                  >
-                    Upload Cover
-                  </Label>
-                </div>
-                <Input
-                  id="coverPhoto"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverPhotoChange}
-                  className="hidden"
-                />
-              </div>
-              <div className="w-full h-36 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-white relative group">
-                {coverPhotoPreview ? (
-                  <>
-                    <img 
-                      src={coverPhotoPreview} 
-                      alt="Cover" 
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    {/* Hover overlay for editing */}
-                    <div 
-                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-lg"
-                      onClick={handleEditExistingCover}
-                    >
-                      <div className="text-white text-sm font-medium flex items-center gap-2">
-                        <Pencil className="w-4 h-4" />
-                        Click to adjust
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center text-slate-400">
-                    <ImagePlus className="w-8 h-8 mb-2" />
-                    <span className="text-xs">No cover image</span>
-                    <span className="text-xs mt-1">Upload an image to customize</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 mt-2">Recommended: 1200x675px (16:9 ratio). You can adjust the position after uploading.</p>
+          {/* Cover Edit Controls - Floating on top right */}
+          <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+            {coverPhotoPreview && (
+              <button
+                onClick={handleEditExistingCover}
+                className="text-white text-xs py-1.5 px-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-colors flex items-center gap-1.5"
+              >
+                <Pencil className="w-3 h-3" />
+                Adjust
+              </button>
+            )}
+            <Label
+              htmlFor="coverPhoto"
+              className="cursor-pointer text-white text-xs py-1.5 px-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full border border-white/20 transition-colors"
+            >
+              {coverPhotoPreview ? "Change Cover" : "Upload Cover"}
+            </Label>
+            <Input
+              id="coverPhoto"
+              type="file"
+              accept="image/*"
+              onChange={handleCoverPhotoChange}
+              className="hidden"
+            />
+          </div>
+          
+          {/* Profile Content - Overlaid on cover */}
+          <div className="relative p-6 pt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-xl font-semibold text-slate-900 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full">Edit Profile</h1>
             </div>
+            
+            {/* User profile layout */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             
             {/* User Avatar Section */}
             <div className="bg-slate-50 rounded-xl p-5">
@@ -481,9 +541,9 @@ export default function EditProfilePage() {
               </div>
             </div>
           </div>
-          
-          {/* Action buttons */}
-          <div className="flex justify-between pt-4 border-t border-slate-200">
+            
+            {/* Action buttons */}
+            <div className="flex justify-between pt-4 mt-4 border-t border-slate-200/50">
             <Button 
               onClick={() => router.push('/profile')}
               className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5 text-sm"
@@ -492,15 +552,26 @@ export default function EditProfilePage() {
               Back to Profile
             </Button>
             
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5 text-sm disabled:opacity-50"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Profile"}
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => setShowDeactivateModal(true)}
+                className="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-full px-5 text-sm"
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                Deactivate Profile
+              </Button>
+              
+              <Button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-5 text-sm disabled:opacity-50"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save Profile"}
+              </Button>
+            </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -512,6 +583,46 @@ export default function EditProfilePage() {
           onCancel={handleCoverEditorCancel}
           aspectRatio={16 / 9}
         />
+      )}
+
+      {/* Deactivate Profile Confirmation Modal */}
+      {showDeactivateModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Deactivate Profile</h3>
+                <p className="text-sm text-slate-500">This action can be reversed later</p>
+              </div>
+            </div>
+            
+            <p className="text-slate-600 text-sm mb-4">
+              Are you sure you want to deactivate your profile? Your posts and comments will be hidden from other users.
+            </p>
+            <p className="text-amber-600 text-xs mb-6 bg-amber-50 p-3 rounded-lg border border-amber-200">
+              ⚠️ <strong>Note:</strong> After deactivating, you must wait a few minutes before you can reactivate your profile due to the blockchain cooldown period.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <Button
+                onClick={() => setShowDeactivateModal(false)}
+                className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-full px-5 text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeactivateProfile}
+                disabled={isDeactivating}
+                className="bg-red-600 text-white hover:bg-red-700 rounded-full px-5 text-sm disabled:opacity-50"
+              >
+                {isDeactivating ? "Deactivating..." : "Yes, Deactivate"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
