@@ -360,12 +360,6 @@ export default function ActivityPage() {
                             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <Link
-                                href="/foro"
-                                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium text-sm transition-colors"
-                            >
-                                Communities
-                            </Link>
                             <ThemeToggle />
                             {isConnected ? (
                                 <WalletConnect />
@@ -432,7 +426,10 @@ export default function ActivityPage() {
                                 {/* Community Header */}
                                 <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-slate-50/80 dark:from-slate-700/50 to-transparent">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
+                                        <Link 
+                                            href={`/foro?community=${community.id}`}
+                                            className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+                                        >
                                             {community.photo ? (
                                                 <img 
                                                     src={`${BACKUP_GATEWAY}${community.photo}`}
@@ -457,7 +454,7 @@ export default function ActivityPage() {
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                         {isConnected ? (
                                             community.isMember ? (
                                                 <Link
