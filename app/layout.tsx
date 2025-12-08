@@ -36,7 +36,7 @@ export default function RootLayout({
                 <link rel="manifest" href="/site.webmanifest" />
             </head>
             <body>
-                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="nodespeak-theme">
                     <WalletProvider>
                         <AdminProvider>
                             <CommunitySettingsProvider>

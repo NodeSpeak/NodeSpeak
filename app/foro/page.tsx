@@ -1,5 +1,6 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
@@ -653,14 +654,15 @@ const handleCreateCommunity = async (
     }, [searchParams, communities]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
                         <a href="/" className="block">
-                            <h1 className="text-2xl font-semibold text-slate-900 hover:text-indigo-600 transition-colors">Node Speak v3.3</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Node Speak v3.3</h1>
                         </a>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <ThemeToggle />
                             <WalletConnect />
                         </div>
                     </div>
@@ -668,7 +670,7 @@ const handleCreateCommunity = async (
                         <div className="mt-4">
                             <button
                                 onClick={() => setShowCommunityList(true)}
-                                className="text-slate-500 text-sm px-4 py-2 rounded-lg hover:bg-white/50 transition-colors inline-flex items-center gap-2"
+                                className="text-slate-500 dark:text-slate-400 text-sm px-4 py-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors inline-flex items-center gap-2"
                             >
                                 ← Communities
                             </button>
@@ -681,7 +683,7 @@ const handleCreateCommunity = async (
                         {/* Loading indicator */}
                         {isLoading && (
                             <div className="text-center p-6">
-                                <p className="text-slate-500 animate-pulse">Loading...</p>
+                                <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading...</p>
                             </div>
                         )}
 
