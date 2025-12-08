@@ -518,36 +518,6 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-              
-              {/* User Details */}
-              <div className="md:col-span-3 bg-white/30 backdrop-blur-md rounded-xl p-5 shadow-sm border border-white/40">
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="flex">
-                    <span className="text-slate-500 w-32 text-sm">Nickname</span>
-                    <span className="text-slate-900 font-medium">{displayName}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-slate-500 w-32 text-sm">Address</span>
-                    <span className="text-slate-700 font-mono text-sm">{fullAddress}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-slate-500 w-32 text-sm">Status</span>
-                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Active</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-slate-500 w-32 text-sm">Member since</span>
-                    <span className="text-slate-700">{profileData.memberSince}</span>
-                  </div>
-                  <div className="flex">
-                    <span className="text-slate-500 w-32 text-sm">Posts</span>
-                    <span className="text-slate-900 font-medium">{profileData.postCount}</span>
-                  </div>
-                  <div className="mt-2 border-t border-slate-200 pt-3">
-                    <span className="text-slate-500 text-sm">Bio</span>
-                    <p className="text-slate-700 mt-1">{profileData.bio}</p>
-                  </div>
-                </div>
-              </div>
             </div>
             
             {/* Action buttons */}
@@ -631,6 +601,36 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
+          </div>
+        </div>
+
+        {/* User Details - Outside main card */}
+        <div className="mt-4 mb-6 bg-white/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Nickname</span>
+              <span className="text-slate-900 font-medium">{displayName}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Address</span>
+              <span className="text-slate-700 font-mono text-sm">{fullAddress}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Status</span>
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Active</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Member since</span>
+              <span className="text-slate-700">{profileData.memberSince}</span>
+            </div>
+            <div className="flex">
+              <span className="text-slate-500 w-32 text-sm">Posts</span>
+              <span className="text-slate-900 font-medium">{profileData.postCount}</span>
+            </div>
+            <div className="mt-2 border-t border-slate-200 pt-3">
+              <span className="text-slate-500 text-sm">Bio</span>
+              <p className="text-slate-700 mt-1">{profileData.bio}</p>
+            </div>
           </div>
         </div>
         

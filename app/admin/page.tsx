@@ -4,11 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
-import { HiddenUsersPanel, HiddenCommunitiesPanel, UserDeactivatedCommunitiesPanel } from "@/components/admin";
+import { HiddenUsersPanel, UserCommunitiesPanel } from "@/components/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, ArrowLeft, Users, Home, Settings, EyeOff, User } from "lucide-react";
+import { Shield, ArrowLeft, Users, Home, EyeOff, Construction } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -88,9 +88,15 @@ export default function AdminPage() {
                   <Shield className="w-6 h-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">
-                    Panel de Administración
-                  </h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-slate-900">
+                      Panel de Administración
+                    </h1>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
+                      <Construction className="w-3 h-3" />
+                      En construcción
+                    </span>
+                  </div>
                   <p className="text-sm text-slate-500">
                     NodeSpeak - Centro de Moderación
                   </p>
@@ -161,25 +167,11 @@ export default function AdminPage() {
               Usuarios Ocultados
             </TabsTrigger>
             <TabsTrigger
-              value="hidden-communities"
+              value="my-communities"
               className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
             >
               <Home className="w-4 h-4" />
-              Comunidades Ocultadas
-            </TabsTrigger>
-            <TabsTrigger
-              value="my-deactivated-communities"
-              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
-            >
-              <User className="w-4 h-4" />
               Mis Comunidades
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
-            >
-              <Settings className="w-4 h-4" />
-              Configuración
             </TabsTrigger>
           </TabsList>
 
@@ -187,50 +179,8 @@ export default function AdminPage() {
             <HiddenUsersPanel />
           </TabsContent>
 
-          <TabsContent value="hidden-communities" className="space-y-6">
-            <HiddenCommunitiesPanel />
-          </TabsContent>
-
-          <TabsContent value="my-deactivated-communities" className="space-y-6">
-            <UserDeactivatedCommunitiesPanel />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuración del Panel</CardTitle>
-                <CardDescription>
-                  Ajusta las configuraciones del panel de administración
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                    <h3 className="font-semibold text-slate-900 mb-2">
-                      Direcciones de Administrador
-                    </h3>
-                    <p className="text-sm text-slate-600 mb-3">
-                      Para agregar o modificar administradores, edita el archivo:
-                    </p>
-                    <code className="text-xs bg-slate-900 text-green-400 px-3 py-2 rounded block">
-                      /contexts/AdminContext.tsx
-                    </code>
-                  </div>
-
-                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <h3 className="font-semibold text-blue-900 mb-2">
-                      Información
-                    </h3>
-                    <ul className="space-y-2 text-sm text-blue-800">
-                      <li>• Los datos de elementos ocultados se almacenan localmente</li>
-                      <li>• Los cambios son inmediatos y persisten entre sesiones</li>
-                      <li>• Solo los administradores pueden acceder a este panel</li>
-                      <li>• Las acciones de moderación no modifican los datos en blockchain</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="my-communities" className="space-y-6">
+            <UserCommunitiesPanel />
           </TabsContent>
         </Tabs>
 
