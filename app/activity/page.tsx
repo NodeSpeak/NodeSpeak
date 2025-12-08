@@ -424,7 +424,10 @@ export default function ActivityPage() {
                                 {/* Community Header */}
                                 <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-transparent">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
+                                        <Link 
+                                            href={`/foro?community=${community.id}`}
+                                            className="flex items-center gap-4"
+                                        >
                                             {community.photo ? (
                                                 <img 
                                                     src={`${BACKUP_GATEWAY}${community.photo}`}
@@ -449,7 +452,7 @@ export default function ActivityPage() {
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                         {isConnected ? (
                                             community.isMember ? (
                                                 <Link
