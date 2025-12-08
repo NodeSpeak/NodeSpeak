@@ -9,6 +9,7 @@ import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Public RPC for Arbitrum One - allows reading without wallet connection
 const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
@@ -48,6 +49,7 @@ interface Community {
 
 export default function ActivityPage() {
     const { isConnected, provider, address, connect } = useWalletContext();
+    const router = useRouter();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
@@ -269,6 +271,22 @@ export default function ActivityPage() {
         }
     };
 
+    // Handle navigation to forum ensuring wallet connection first
+    const handleGoToForo = async () => {
+        if (!isConnected) {
+            setIsConnecting(true);
+            try {
+                await connect();
+            } catch (error) {
+                console.error("Error connecting before navigating to foro:", error);
+                setIsConnecting(false);
+                return;
+            }
+            setIsConnecting(false);
+        }
+        router.push('/foro');
+    };
+
     // Join a community
     const handleJoinCommunity = async (communityId: string) => {
         if (!provider || !isConnected) {
@@ -341,12 +359,13 @@ export default function ActivityPage() {
                             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <Link 
-                                href="/foro"
+                            <button
+                                type="button"
+                                onClick={handleGoToForo}
                                 className="text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
                             >
                                 Communities
-                            </Link>
+                            </button>
                             {isConnected ? (
                                 <WalletConnect />
                             ) : (
@@ -391,13 +410,14 @@ export default function ActivityPage() {
                         </div>
                         <h3 className="text-xl font-semibold text-slate-900 mb-2">No activity yet</h3>
                         <p className="text-slate-500 mb-6">Be the first to create a post in a community!</p>
-                        <Link 
-                            href="/foro"
+                        <button
+                            type="button"
+                            onClick={handleGoToForo}
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg hover:shadow-xl transition-all"
                         >
                             Browse Communities
                             <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        </button>
                     </div>
                 )}
 
