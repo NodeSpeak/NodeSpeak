@@ -1,10 +1,12 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { IntegratedView } from '@/components/IntegratedView';
@@ -22,6 +24,7 @@ const communityDataCache = new Map();
 
 export default function Home() {
     const { isConnected, provider } = useWalletContext();
+    const { setCommunityType } = useCommunitySettings();
     const searchParams = useSearchParams();
     const [creatingCommunity, setCreatingCommunity] = useState(false);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
@@ -503,11 +506,12 @@ export default function Home() {
 
     // Create a new community
 const handleCreateCommunity = async (
-    name: string, 
-    description: string, 
+    name: string,
+    description: string,
     communityTopics: string[],
     photo?: File,
-    coverImage?: File
+    coverImage?: File,
+    isClosed: boolean = false
 ) => {
     if (!provider) {
         alert("No Ethereum provider connected.");
@@ -574,12 +578,35 @@ const handleCreateCommunity = async (
             
             await tx.wait();
 
-            // Update communities
+            // Get the new community ID from events or by fetching updated communities
+            // For now, we'll get the latest community count and assume it's the new one
+            const userAddress = await signer.getAddress();
+
+            // Fetch communities to get the new community ID
             await fetchCommunities();
+
+            // Get the latest community (the one just created)
+            // The contract auto-increments community IDs, so the last one is the newest
+            const communitiesData = await contract.getActiveCommunities();
+            if (communitiesData.length > 0) {
+                // Find the community created by this user (most recent one)
+                const userCommunities = communitiesData.filter(
+                    (c: any) => c.creator.toLowerCase() === userAddress.toLowerCase()
+                );
+                if (userCommunities.length > 0) {
+                    // Get the highest ID community created by this user
+                    const latestCommunity = userCommunities.reduce((max: any, c: any) =>
+                        Number(c.id) > Number(max.id) ? c : max
+                    );
+                    // Save community type to localStorage
+                    setCommunityType(latestCommunity.id.toString(), isClosed, userAddress);
+                }
+            }
+
             setIsCreatingCommunity(false);
-            
+
             // Show success message
-            alert('Community created successfully!');
+            alert(`Community created successfully! ${isClosed ? '(Closed community)' : '(Open community)'}`);
         } catch (error: any) {
             console.error("Transaction failed:", error);
             alert(`Failed to create community. ${error.message || ''}`);
@@ -627,14 +654,15 @@ const handleCreateCommunity = async (
     }, [searchParams, communities]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
                         <a href="/" className="block">
-                            <h1 className="text-2xl font-semibold text-slate-900 hover:text-indigo-600 transition-colors">Node Speak v3.3</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Node Speak v3.3</h1>
                         </a>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <ThemeToggle />
                             <WalletConnect />
                         </div>
                     </div>
@@ -642,7 +670,7 @@ const handleCreateCommunity = async (
                         <div className="mt-4">
                             <button
                                 onClick={() => setShowCommunityList(true)}
-                                className="text-slate-500 text-sm px-4 py-2 rounded-lg hover:bg-white/50 transition-colors inline-flex items-center gap-2"
+                                className="text-slate-500 dark:text-slate-400 text-sm px-4 py-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors inline-flex items-center gap-2"
                             >
                                 ← Communities
                             </button>
@@ -655,7 +683,7 @@ const handleCreateCommunity = async (
                         {/* Loading indicator */}
                         {isLoading && (
                             <div className="text-center p-6">
-                                <p className="text-slate-500 animate-pulse">Loading...</p>
+                                <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading...</p>
                             </div>
                         )}
 

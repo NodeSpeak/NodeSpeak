@@ -9,6 +9,8 @@ import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // Public RPC for Arbitrum One - allows reading without wallet connection
 const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
@@ -48,6 +50,7 @@ interface Community {
 
 export default function ActivityPage() {
     const { isConnected, provider, address, connect } = useWalletContext();
+    const router = useRouter();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
@@ -269,6 +272,22 @@ export default function ActivityPage() {
         }
     };
 
+    // Handle navigation to forum ensuring wallet connection first
+    const handleGoToForo = async () => {
+        if (!isConnected) {
+            setIsConnecting(true);
+            try {
+                await connect();
+            } catch (error) {
+                console.error("Error connecting before navigating to foro:", error);
+                setIsConnecting(false);
+                return;
+            }
+            setIsConnecting(false);
+        }
+        router.push('/foro');
+    };
+
     // Join a community
     const handleJoinCommunity = async (communityId: string) => {
         if (!provider || !isConnected) {
@@ -329,31 +348,26 @@ export default function ActivityPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+        <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 transition-colors duration-300">
             <div className="max-w-6xl mx-auto px-6 py-8">
                 {/* Header with Connect button on the right */}
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
                         <Link href="/" className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-200">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-200 dark:shadow-sky-900/50">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
-                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
+                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <Link 
-                                href="/foro"
-                                className="text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
-                            >
-                                Communities
-                            </Link>
+                            <ThemeToggle />
                             {isConnected ? (
                                 <WalletConnect />
                             ) : (
                                 <button
                                     onClick={() => handleConnect()}
                                     disabled={isConnecting}
-                                    className="inline-flex items-center justify-center rounded-full bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200 transition-colors text-xs font-medium px-5 py-2 h-auto shadow-sm disabled:opacity-70"
+                                    className="inline-flex items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-200 dark:hover:bg-sky-800/50 transition-colors text-xs font-medium px-5 py-2 h-auto shadow-sm disabled:opacity-70"
                                 >
                                     {isConnecting ? "Connecting..." : "Connect"}
                                 </button>
@@ -365,39 +379,40 @@ export default function ActivityPage() {
                 {/* Page Title */}
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 flex items-center justify-center">
-                            <TrendingUp className="w-5 h-5 text-violet-600" />
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/50 dark:to-violet-800/30 flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Recent Activity</h2>
+                        <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
                     </div>
-                    <p className="text-slate-500 ml-13">Latest posts from all communities</p>
+                    <p className="text-slate-500 dark:text-slate-400 ml-13">Latest posts from all communities</p>
                 </div>
 
                 {/* Loading State */}
                 {isLoading && (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
-                            <div className="w-12 h-12 rounded-full border-4 border-sky-200 border-t-sky-500 animate-spin mx-auto mb-4"></div>
-                            <p className="text-slate-500">Loading activity...</p>
+                            <div className="w-12 h-12 rounded-full border-4 border-sky-200 dark:border-sky-800 border-t-sky-500 animate-spin mx-auto mb-4"></div>
+                            <p className="text-slate-500 dark:text-slate-400">Loading activity...</p>
                         </div>
                     </div>
                 )}
 
                 {/* Communities with Posts */}
                 {!isLoading && communities.length === 0 && (
-                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 p-12 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/60 dark:border-slate-700 p-12 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
                             <MessageSquare className="w-8 h-8 text-slate-400" />
                         </div>
-                        <h3 className="text-xl font-semibold text-slate-900 mb-2">No activity yet</h3>
-                        <p className="text-slate-500 mb-6">Be the first to create a post in a community!</p>
-                        <Link 
-                            href="/foro"
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">No activity yet</h3>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">Be the first to create a post in a community!</p>
+                        <button
+                            type="button"
+                            onClick={handleGoToForo}
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg hover:shadow-xl transition-all"
                         >
                             Browse Communities
                             <ArrowRight className="w-4 h-4" />
-                        </Link>
+                        </button>
                     </div>
                 )}
 
@@ -406,12 +421,15 @@ export default function ActivityPage() {
                         {communities.map((community) => (
                             <div 
                                 key={community.id}
-                                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/40 border border-white/60 overflow-hidden"
+                                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 border border-white/60 dark:border-slate-700 overflow-hidden"
                             >
                                 {/* Community Header */}
-                                <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-transparent">
+                                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-slate-50/80 dark:from-slate-700/50 to-transparent">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
+                                        <Link 
+                                            href={`/foro?community=${community.id}`}
+                                            className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+                                        >
                                             {community.photo ? (
                                                 <img 
                                                     src={`${BACKUP_GATEWAY}${community.photo}`}
@@ -419,13 +437,13 @@ export default function ActivityPage() {
                                                     className="w-12 h-12 rounded-xl object-cover shadow-md"
                                                 />
                                             ) : (
-                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 flex items-center justify-center shadow-md">
-                                                    <Users className="w-6 h-6 text-sky-600" />
+                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/50 dark:to-indigo-900/50 flex items-center justify-center shadow-md">
+                                                    <Users className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                                                 </div>
                                             )}
                                             <div>
-                                                <h3 className="font-semibold text-slate-900 text-lg">{community.name}</h3>
-                                                <div className="flex items-center gap-4 text-sm text-slate-500">
+                                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-lg">{community.name}</h3>
+                                                <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                                     <span className="flex items-center gap-1">
                                                         <Users className="w-3.5 h-3.5" />
                                                         {community.memberCount} members
@@ -436,7 +454,7 @@ export default function ActivityPage() {
                                                     </span>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                         {isConnected ? (
                                             community.isMember ? (
                                                 <Link
@@ -472,11 +490,11 @@ export default function ActivityPage() {
                                 </div>
 
                                 {/* Posts */}
-                                <div className="divide-y divide-slate-100">
+                                <div className="divide-y divide-slate-100 dark:divide-slate-700">
                                     {community.posts.map((post) => (
                                         <div 
                                             key={post.id}
-                                            className="px-6 py-5 hover:bg-slate-50/50 transition-colors"
+                                            className="px-6 py-5 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
                                         >
                                             <div className="flex gap-4">
                                                 {/* Post Image (if exists) */}
@@ -493,10 +511,10 @@ export default function ActivityPage() {
                                                 {/* Post Content */}
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between gap-4 mb-2">
-                                                        <p className="text-sm text-slate-600 line-clamp-2 flex-1">
+                                                        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 flex-1">
                                                             {stripHtmlAndTruncate(post.content)}
                                                         </p>
-                                                        <span className="flex-shrink-0 text-xs text-slate-400 flex items-center gap-1">
+                                                        <span className="flex-shrink-0 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
                                                             <Clock className="w-3 h-3" />
                                                             {formatRelativeTime(post.timestamp)}
                                                         </span>
@@ -510,12 +528,12 @@ export default function ActivityPage() {
                                                                 showNickname={true}
                                                             />
                                                             {post.topic && (
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                                     {post.topic}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="flex items-center gap-4 text-xs text-slate-400">
+                                                        <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
                                                             <span className="flex items-center gap-1">
                                                                 <Heart className="w-3.5 h-3.5" />
                                                                 {post.likeCount}

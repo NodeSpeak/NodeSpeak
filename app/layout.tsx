@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { WalletProvider } from '@/contexts/WalletContext';
 import { AdminProvider } from '@/contexts/AdminContext';
+import { CommunitySettingsProvider } from '@/contexts/CommunitySettingsContext';
 
 export const metadata: Metadata = {
     title: 'Node Speak',
@@ -35,11 +36,13 @@ export default function RootLayout({
                 <link rel="manifest" href="/site.webmanifest" />
             </head>
             <body>
-                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+                <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="nodespeak-theme">
                     <WalletProvider>
                         <AdminProvider>
-                            {children}
-                            <Toaster />
+                            <CommunitySettingsProvider>
+                                {children}
+                                <Toaster />
+                            </CommunitySettingsProvider>
                         </AdminProvider>
                     </WalletProvider>
                 </ThemeProvider>

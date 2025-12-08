@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ArrowLeft, Users, Home, EyeOff, Construction } from "lucide-react";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -27,10 +28,10 @@ export default function AdminPage() {
   // Show loading while checking connection
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center transition-colors duration-300">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto mb-4"></div>
-          <p className="text-slate-600">Verificando conexión...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 dark:border-slate-100 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Verificando conexión...</p>
         </div>
       </div>
     );
@@ -39,7 +40,7 @@ export default function AdminPage() {
   // Show access denied if not admin
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 transition-colors duration-300">
         <Card className="max-w-md w-full border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-red-800 flex items-center gap-2">
@@ -77,42 +78,43 @@ export default function AdminPage() {
 
   // Admin dashboard
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                <div className="bg-slate-900 text-white p-2 rounded-lg">
+                <div className="bg-slate-900 dark:bg-slate-700 text-white p-2 rounded-lg">
                   <Shield className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-slate-900">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                       Panel de Administración
                     </h1>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full border border-amber-200 dark:border-amber-800">
                       <Construction className="w-3 h-3" />
                       En construcción
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     NodeSpeak - Centro de Moderación
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <Link href="/foro">
                 <Button variant="outline" size="sm" className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   Volver al Foro
                 </Button>
               </Link>
-              <div className="bg-slate-100 px-4 py-2 rounded-lg">
-                <p className="text-xs text-slate-500 mb-1">Administrador conectado</p>
-                <p className="text-sm font-medium text-slate-900">
+              <div className="bg-slate-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Administrador conectado</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                   {ensName || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
                 </p>
               </div>
@@ -125,31 +127,31 @@ export default function AdminPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
+          <Card className="dark:bg-slate-800 dark:border-slate-700">
             <CardHeader className="pb-3">
-              <CardDescription>Usuarios Ocultados</CardDescription>
-              <CardTitle className="text-3xl flex items-center gap-2">
-                <Users className="w-6 h-6 text-slate-500" />
+              <CardDescription className="dark:text-slate-400">Usuarios Ocultados</CardDescription>
+              <CardTitle className="text-3xl flex items-center gap-2 dark:text-slate-100">
+                <Users className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                 {hiddenUsers.length}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Usuarios actualmente ocultos en la plataforma
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="dark:bg-slate-800 dark:border-slate-700">
             <CardHeader className="pb-3">
-              <CardDescription>Comunidades Ocultadas</CardDescription>
-              <CardTitle className="text-3xl flex items-center gap-2">
-                <Home className="w-6 h-6 text-slate-500" />
+              <CardDescription className="dark:text-slate-400">Comunidades Ocultadas</CardDescription>
+              <CardTitle className="text-3xl flex items-center gap-2 dark:text-slate-100">
+                <Home className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                 {hiddenCommunities.length}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Comunidades actualmente ocultas en la plataforma
               </p>
             </CardContent>
@@ -158,17 +160,17 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-white border border-slate-200 p-1">
+          <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1">
             <TabsTrigger
               value="hidden-users"
-              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="gap-2 data-[state=active]:bg-slate-900 dark:data-[state=active]:bg-slate-600 data-[state=active]:text-white dark:text-slate-300"
             >
               <Users className="w-4 h-4" />
               Usuarios Ocultados
             </TabsTrigger>
             <TabsTrigger
               value="my-communities"
-              className="gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="gap-2 data-[state=active]:bg-slate-900 dark:data-[state=active]:bg-slate-600 data-[state=active]:text-white dark:text-slate-300"
             >
               <Home className="w-4 h-4" />
               Mis Comunidades
@@ -185,15 +187,15 @@ export default function AdminPage() {
         </Tabs>
 
         {/* Info Card */}
-        <Card className="mt-8 bg-slate-50">
+        <Card className="mt-8 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
               <EyeOff className="w-5 h-5" />
               Sobre la Ocultación de Contenido
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-slate-600 space-y-4">
+            <div className="text-sm text-slate-600 dark:text-slate-400 space-y-4">
               <p>
                 Al ocultar un usuario o comunidad, este contenido dejará de ser visible para los usuarios
                 de la plataforma, pero los datos seguirán existiendo en la blockchain.
