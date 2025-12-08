@@ -359,13 +359,12 @@ export default function ActivityPage() {
                             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <button
-                                type="button"
-                                onClick={handleGoToForo}
+                            <Link
+                                href="/foro"
                                 className="text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
                             >
                                 Communities
-                            </button>
+                            </Link>
                             {isConnected ? (
                                 <WalletConnect />
                             ) : (

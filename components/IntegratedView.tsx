@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
-import { ImagePlus, Send, Trash2, MoreVertical } from "lucide-react";
+import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
+import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import axios from "axios";
@@ -17,6 +18,7 @@ import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import { UserAvatar } from "@/components/UserAvatar";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
+import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
 
 // Types
 interface Community {
@@ -73,7 +75,7 @@ interface IntegratedViewProps {
     provider: any;
     isCreatingCommunity: boolean;
     setIsCreatingCommunity: (value: boolean) => void;
-    handleCreateCommunity: (name: string, description: string, topics: string[], photo?: File, cover?: File) => Promise<void>;
+    handleCreateCommunity: (name: string, description: string, topics: string[], photo?: File, cover?: File, isClosed?: boolean) => Promise<void>;
     handleJoinCommunity: (communityId: string) => Promise<void>;
     handleLeaveCommunity: (communityId: string) => Promise<void>;
     isLoading: boolean;
@@ -205,6 +207,7 @@ export const IntegratedView = ({
 }: IntegratedViewProps) => {
     const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
     const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
+    const { isCommunityOpen, canViewContent, requestMembership, hasPendingRequest, getPendingRequests } = useCommunitySettings();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -652,32 +655,42 @@ export const IntegratedView = ({
         const visiblePosts = posts.filter(post => {
             // Si el autor está oculto, filtrar el post
             if (post.author && isUserHidden(post.author)) return false;
-            
+
             // Si la comunidad está oculta, filtrar el post
             if (isCommunityHidden(post.communityId)) return false;
-            
+
             return true;
         });
 
-        // Si hay una comunidad seleccionada específicamente, mostrar solo sus posts
+        // Si hay una comunidad seleccionada específicamente
         if (selectedCommunityId) {
+            const community = localCommunities.find(c => c.id === selectedCommunityId);
+            const isMember = community?.isMember || community?.isCreator;
+
+            // Verificar si puede ver contenido (comunidades abiertas o es miembro)
+            if (!canViewContent(selectedCommunityId, currentUserAddress || '', isMember || false)) {
+                return []; // Comunidad cerrada, no mostrar posts
+            }
+
             return visiblePosts.filter(post =>
                 post.communityId === selectedCommunityId &&
                 (selectedTopic ? post.topic === selectedTopic : true)
             );
         }
 
-        // Si no hay comunidad seleccionada, mostrar posts de comunidades donde el usuario es miembro
-        const userCommunities = localCommunities
-            .filter(c => (c.isMember || c.isCreator) && !isCommunityHidden(c.id))
-            .map(c => c.id);
-
+        // Si no hay comunidad seleccionada, mostrar posts de comunidades visibles
+        // Comunidades abiertas: visibles para todos
+        // Comunidades cerradas: solo para miembros
         return visiblePosts.filter((post) => {
-            const matchesCommunity = userCommunities.includes(post.communityId);
+            const community = localCommunities.find(c => c.id === post.communityId);
+            const isMember = community?.isMember || community?.isCreator;
+
+            // Usar canViewContent para determinar visibilidad
+            const canView = canViewContent(post.communityId, currentUserAddress || '', isMember || false);
             const matchesTopic = selectedTopic ? post.topic === selectedTopic : true;
-            return matchesCommunity && matchesTopic;
+            return canView && matchesTopic && !isCommunityHidden(post.communityId);
         });
-    }, [posts, selectedCommunityId, selectedTopic, localCommunities, isUserHidden, isCommunityHidden]);
+    }, [posts, selectedCommunityId, selectedTopic, localCommunities, isUserHidden, isCommunityHidden, canViewContent, currentUserAddress]);
 
     // Get all available topics from current posts 
     const availableTopics = useMemo(() => {
@@ -1597,12 +1610,47 @@ export const IntegratedView = ({
                     </div>
                 </div>
 
+                {/* Community Type Selector */}
+                <div className="flex flex-col">
+                    <label className="text-slate-600 font-medium mb-1 text-xs">Community Type</label>
+                    <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50">
+                            <input
+                                type="radio"
+                                name="community-type"
+                                value="open"
+                                defaultChecked
+                                className="accent-indigo-600 w-3.5 h-3.5"
+                            />
+                            <Unlock className="w-4 h-4 text-green-500" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-slate-700">Open</span>
+                                <span className="text-[10px] text-slate-400">Anyone can view content</span>
+                            </div>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50">
+                            <input
+                                type="radio"
+                                name="community-type"
+                                value="closed"
+                                className="accent-indigo-600 w-3.5 h-3.5"
+                            />
+                            <Lock className="w-4 h-4 text-amber-500" />
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-slate-700">Closed</span>
+                                <span className="text-[10px] text-slate-400">Members only</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <Button
                     type="button"
                     onClick={() => {
                         const nameElement = document.getElementById('community-name') as HTMLInputElement;
                         const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
                         const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
+                        const communityTypeInput = document.querySelector('input[name="community-type"]:checked') as HTMLInputElement;
 
                         const name = nameElement?.value || "";
                         const description = descriptionElement?.value || "";
@@ -1610,9 +1658,10 @@ export const IntegratedView = ({
                         const topicsArray = topicString.split(',').map(t => t.trim()).filter(t => t);
                         const photo = communityLogoFile || undefined;
                         const cover = communityCoverFile || undefined;
+                        const isClosed = communityTypeInput?.value === 'closed';
 
                         if (name && description && topicsArray.length > 0) {
-                            handleCreateCommunity(name, description, topicsArray, photo, cover);
+                            handleCreateCommunity(name, description, topicsArray, photo, cover, isClosed);
                             setCommunityCoverFile(null);
                             setCommunityCoverPreview("");
                             setCommunityLogoFile(null);
@@ -1676,6 +1725,16 @@ export const IntegratedView = ({
                                     <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-slate-100 to-slate-50"></div>
                                 )}
                                 
+                                {/* Closed community badge on top-left */}
+                                {!isCommunityOpen(community.id) && (
+                                    <div className="absolute top-4 left-4">
+                                        <span className="bg-amber-100/90 backdrop-blur-sm text-amber-700 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-sm border border-amber-200/50">
+                                            <Lock className="w-3 h-3" />
+                                            Closed
+                                        </span>
+                                    </div>
+                                )}
+
                                 {/* Actions on top-right of banner */}
                                 <div className="absolute top-4 right-4 flex items-center gap-2">
                                     {community.isCreator && (
@@ -1695,6 +1754,12 @@ export const IntegratedView = ({
                                                 e.stopPropagation();
                                                 if (community.isMember) {
                                                     handleLeaveCommunity(community.id);
+                                                } else if (!isCommunityOpen(community.id)) {
+                                                    // Comunidad cerrada: solicitar acceso
+                                                    if (currentUserAddress && !hasPendingRequest(community.id, currentUserAddress)) {
+                                                        requestMembership(community.id, currentUserAddress);
+                                                        alert('Membership request sent! The community creator will review it.');
+                                                    }
                                                 } else {
                                                     handleJoinCommunity(community.id);
                                                 }
@@ -1703,13 +1768,22 @@ export const IntegratedView = ({
                                                 ? "bg-slate-200 text-slate-500"
                                                 : community.isMember
                                                     ? "bg-white/90 hover:bg-white text-slate-600"
-                                                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                                    : !isCommunityOpen(community.id)
+                                                        ? hasPendingRequest(community.id, currentUserAddress || '')
+                                                            ? "bg-amber-100 text-amber-700"
+                                                            : "bg-amber-500 hover:bg-amber-600 text-white"
+                                                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
                                                 }`}
-                                            disabled={joiningCommunityId === community.id || leavingCommunityId === community.id}
+                                            disabled={joiningCommunityId === community.id || leavingCommunityId === community.id || (!!currentUserAddress && hasPendingRequest(community.id, currentUserAddress))}
                                         >
-                                            {joiningCommunityId === community.id ? "Joining..." 
-                                                : leavingCommunityId === community.id ? "Leaving..." 
-                                                : community.isMember ? "Leave" : "Join"}
+                                            {joiningCommunityId === community.id ? "Joining..."
+                                                : leavingCommunityId === community.id ? "Leaving..."
+                                                : community.isMember ? "Leave"
+                                                : !isCommunityOpen(community.id)
+                                                    ? hasPendingRequest(community.id, currentUserAddress || '')
+                                                        ? "Pending..."
+                                                        : "Request Access"
+                                                    : "Join"}
                                         </button>
                                     )}
                                 </div>
@@ -1951,7 +2025,71 @@ export const IntegratedView = ({
                     })()}
                 </div>
             )}
-            {filteredPosts.length === 0 ? (
+            {/* Closed community access denied view */}
+            {selectedCommunityId && (() => {
+                const community = localCommunities.find(c => c.id === selectedCommunityId);
+                const isMember = community?.isMember || community?.isCreator;
+                if (!isCommunityOpen(selectedCommunityId) && !isMember) {
+                    return (
+                        <div className="p-8 text-center bg-white/90 backdrop-blur-sm rounded-2xl border border-amber-200 shadow-sm">
+                            <Lock className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+                            <p className="text-slate-700 mb-2 font-medium">This is a closed community</p>
+                            <p className="text-slate-500 text-sm mb-4">
+                                Request access to view posts and participate in discussions.
+                            </p>
+                            {currentUserAddress && !hasPendingRequest(selectedCommunityId, currentUserAddress) ? (
+                                <button
+                                    onClick={() => {
+                                        requestMembership(selectedCommunityId, currentUserAddress);
+                                        alert('Membership request sent! The community creator will review it.');
+                                    }}
+                                    className="bg-amber-500 text-white px-6 py-2 rounded-xl hover:bg-amber-600 transition-colors inline-flex items-center gap-2"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    Request Access
+                                </button>
+                            ) : currentUserAddress && hasPendingRequest(selectedCommunityId, currentUserAddress) ? (
+                                <span className="bg-amber-100 text-amber-700 px-6 py-2 rounded-xl inline-flex items-center gap-2">
+                                    <UserPlus className="w-4 h-4" />
+                                    Request Pending...
+                                </span>
+                            ) : null}
+                        </div>
+                    );
+                }
+                return null;
+            })()}
+
+            {/* Membership requests panel for community creators */}
+            {selectedCommunityId && (() => {
+                const community = localCommunities.find(c => c.id === selectedCommunityId);
+                if (community?.isCreator && !isCommunityOpen(selectedCommunityId)) {
+                    return (
+                        <MembershipRequestsPanel
+                            communityId={selectedCommunityId}
+                            isCreator={true}
+                            onApprove={async (requesterAddress) => {
+                                // Note: This would need the contract to support adding members
+                                // For now, we just approve in localStorage
+                                // The user would need to join manually after approval
+                                alert(`Approved! User ${requesterAddress.slice(0, 6)}...${requesterAddress.slice(-4)} can now join the community.`);
+                            }}
+                            currentUserAddress={currentUserAddress || undefined}
+                        />
+                    );
+                }
+                return null;
+            })()}
+
+            {filteredPosts.length === 0 && (() => {
+                // Don't show "no posts" if it's a closed community they can't access
+                const community = localCommunities.find(c => c.id === selectedCommunityId);
+                const isMember = community?.isMember || community?.isCreator;
+                if (selectedCommunityId && !isCommunityOpen(selectedCommunityId) && !isMember) {
+                    return null;
+                }
+                return true;
+            })() ? (
                 <div className="p-8 text-center bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm">
                     <p className="text-slate-700 mb-2 font-medium">No posts found with the current filters.</p>
                     <p className="text-slate-500 text-sm">
@@ -1962,7 +2100,7 @@ export const IntegratedView = ({
                                 : "None of your communities have posts yet."}
                     </p>
                 </div>
-            ) : (
+            ) : filteredPosts.length > 0 ? (
                 filteredPosts.map((post) => (
                     <div
                         key={post.id}
@@ -2163,7 +2301,7 @@ export const IntegratedView = ({
                         )}
                     </div>
                 ))
-            )}
+            ) : null}
         </div>
     );
 

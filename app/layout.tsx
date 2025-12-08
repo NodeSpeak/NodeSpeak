@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { WalletProvider } from '@/contexts/WalletContext';
 import { AdminProvider } from '@/contexts/AdminContext';
+import { CommunitySettingsProvider } from '@/contexts/CommunitySettingsContext';
 
 export const metadata: Metadata = {
     title: 'Node Speak',
@@ -38,8 +39,10 @@ export default function RootLayout({
                 <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
                     <WalletProvider>
                         <AdminProvider>
-                            {children}
-                            <Toaster />
+                            <CommunitySettingsProvider>
+                                {children}
+                                <Toaster />
+                            </CommunitySettingsProvider>
                         </AdminProvider>
                     </WalletProvider>
                 </ThemeProvider>
