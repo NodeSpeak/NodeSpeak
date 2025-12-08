@@ -1,14 +1,17 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
 import { UserAvatar } from '@/components/UserAvatar';
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import DOMPurify from 'dompurify';
-import { ethers, Contract } from "ethers";
+import { Contract, JsonRpcProvider } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
-import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp } from "lucide-react";
+import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import Link from 'next/link';
+
+// Public RPC for Arbitrum One - allows reading without wallet connection
+const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
 
 const PINATA_GATEWAY = "https://ipfs.io/ipfs/";
 const BACKUP_GATEWAY = "https://ipfs.io/ipfs/";
@@ -44,10 +47,17 @@ interface Community {
 }
 
 export default function ActivityPage() {
-    const { isConnected, provider } = useWalletContext();
+    const { isConnected, provider, address, connect } = useWalletContext();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [pendingJoinCommunityId, setPendingJoinCommunityId] = useState<string | null>(null);
+
+    // Create a public provider for reading data without wallet
+    const getReadProvider = () => {
+        return new JsonRpcProvider(ARBITRUM_RPC);
+    };
 
     // Helper function to fetch IPFS content
     const fetchFromIPFS = async (cid: string) => {
@@ -103,13 +113,13 @@ export default function ActivityPage() {
         return textContent.slice(0, maxLength) + '...';
     };
 
-    // Fetch all activity
+    // Fetch all activity - works without wallet connection
     const fetchActivity = async () => {
-        if (!provider) return;
-
         try {
             setIsLoading(true);
-            const contract = new Contract(forumAddress, forumABI, provider);
+            // Use public provider for reading, wallet provider for membership checks
+            const readProvider = getReadProvider();
+            const contract = new Contract(forumAddress, forumABI, readProvider);
             const communitiesFromContract = await contract.getActiveCommunities();
 
             const communitiesWithPosts: Community[] = [];
@@ -148,10 +158,10 @@ export default function ActivityPage() {
                     const count = await contract.getCommunityMemberCount(id);
                     memberCount = parseInt(count.toString(), 10);
                     
-                    // Check if user is a member
-                    const signer = await provider.getSigner();
-                    const userAddress = await signer.getAddress();
-                    isMember = await contract.isMember(id, userAddress);
+                    // Check if user is a member (only if connected)
+                    if (isConnected && address) {
+                        isMember = await contract.isMember(id, address);
+                    }
                 } catch (err) {
                     console.error(`Error getting member count for community ${id}:`, err);
                 }
@@ -231,15 +241,38 @@ export default function ActivityPage() {
     };
 
     useEffect(() => {
-        if (isConnected && provider) {
-            fetchActivity();
+        // Fetch activity on mount - no wallet required
+        fetchActivity();
+    }, [isConnected, address]); // Re-fetch when connection status changes to update membership
+
+    // Effect to join community after wallet connection
+    useEffect(() => {
+        if (isConnected && provider && pendingJoinCommunityId) {
+            handleJoinCommunity(pendingJoinCommunityId);
+            setPendingJoinCommunityId(null);
         }
-    }, [isConnected, provider]);
+    }, [isConnected, provider, pendingJoinCommunityId]);
+
+    // Handle wallet connection (optionally with pending community to join)
+    const handleConnect = async (communityIdToJoin?: string) => {
+        if (communityIdToJoin) {
+            setPendingJoinCommunityId(communityIdToJoin);
+        }
+        setIsConnecting(true);
+        try {
+            await connect();
+        } catch (error) {
+            console.error("Error connecting:", error);
+            setPendingJoinCommunityId(null);
+        } finally {
+            setIsConnecting(false);
+        }
+    };
 
     // Join a community
     const handleJoinCommunity = async (communityId: string) => {
-        if (!provider) {
-            alert("No Ethereum provider connected.");
+        if (!provider || !isConnected) {
+            alert("Please connect your wallet first.");
             return;
         }
 
@@ -295,21 +328,10 @@ export default function ActivityPage() {
         }
     };
 
-    if (!isConnected) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-slate-600 mb-4">Please connect your wallet to view activity</p>
-                    <WalletConnect />
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
             <div className="max-w-6xl mx-auto px-6 py-8">
-                {/* Header */}
+                {/* Header with Connect button on the right */}
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
                         <Link href="/" className="flex items-center gap-3">
@@ -319,13 +341,26 @@ export default function ActivityPage() {
                             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
-                            <Link 
-                                href="/foro"
-                                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                            >
-                                Communities
-                            </Link>
-                            <WalletConnect />
+                            {isConnected ? (
+                                <>
+                                    <Link 
+                                        href="/foro"
+                                        className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                                    >
+                                        Communities
+                                    </Link>
+                                    <WalletConnect />
+                                </>
+                            ) : (
+                                <button
+                                    onClick={() => handleConnect()}
+                                    disabled={isConnecting}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium text-sm shadow-lg shadow-sky-200 hover:shadow-xl hover:shadow-sky-300/50 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-70"
+                                >
+                                    <Wallet className="w-4 h-4" />
+                                    {isConnecting ? "Connecting..." : "Connect"}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -405,25 +440,35 @@ export default function ActivityPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        {community.isMember ? (
-                                            <Link
-                                                href={`/foro?community=${community.id}`}
-                                                className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
-                                            >
-                                                View all
-                                                <ArrowRight className="w-4 h-4" />
-                                            </Link>
+                                        {isConnected ? (
+                                            community.isMember ? (
+                                                <Link
+                                                    href={`/foro?community=${community.id}`}
+                                                    className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
+                                                >
+                                                    View all
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </Link>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleJoinCommunity(community.id)}
+                                                    disabled={joiningCommunityId === community.id}
+                                                    className={`text-sm font-medium px-4 py-1.5 rounded-full transition-all ${
+                                                        joiningCommunityId === community.id
+                                                            ? "bg-slate-200 text-slate-500"
+                                                            : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                                    }`}
+                                                >
+                                                    {joiningCommunityId === community.id ? "Joining..." : "Join"}
+                                                </button>
+                                            )
                                         ) : (
                                             <button
-                                                onClick={() => handleJoinCommunity(community.id)}
-                                                disabled={joiningCommunityId === community.id}
-                                                className={`text-sm font-medium px-4 py-1.5 rounded-full transition-all ${
-                                                    joiningCommunityId === community.id
-                                                        ? "bg-slate-200 text-slate-500"
-                                                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                                                }`}
+                                                onClick={() => handleConnect(community.id)}
+                                                disabled={isConnecting}
+                                                className="text-sm font-medium px-4 py-1.5 rounded-full transition-all bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-70"
                                             >
-                                                {joiningCommunityId === community.id ? "Joining..." : "Join"}
+                                                {isConnecting && pendingJoinCommunityId === community.id ? "Connecting..." : "Join"}
                                             </button>
                                         )}
                                     </div>
