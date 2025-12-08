@@ -341,23 +341,20 @@ export default function ActivityPage() {
                             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">Node Speak v3.3</h1>
                         </Link>
                         <div className="flex items-center gap-4">
+                            <Link 
+                                href="/foro"
+                                className="text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors"
+                            >
+                                Communities
+                            </Link>
                             {isConnected ? (
-                                <>
-                                    <Link 
-                                        href="/foro"
-                                        className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
-                                    >
-                                        Communities
-                                    </Link>
-                                    <WalletConnect />
-                                </>
+                                <WalletConnect />
                             ) : (
                                 <button
                                     onClick={() => handleConnect()}
                                     disabled={isConnecting}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-medium text-sm shadow-lg shadow-sky-200 hover:shadow-xl hover:shadow-sky-300/50 transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-70"
+                                    className="inline-flex items-center justify-center rounded-full bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200 transition-colors text-xs font-medium px-5 py-2 h-auto shadow-sm disabled:opacity-70"
                                 >
-                                    <Wallet className="w-4 h-4" />
                                     {isConnecting ? "Connecting..." : "Connect"}
                                 </button>
                             )}
