@@ -8,6 +8,7 @@ import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
@@ -439,9 +440,9 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] flex items-center justify-center">
-        <div className="flex flex-col items-center bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200">
-          <p className="text-lg text-slate-700 font-medium">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700">
+          <p className="text-lg text-slate-700 dark:text-slate-200 font-medium">Loading profile...</p>
           <div className="mt-4 flex space-x-2">
             <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse"></div>
             <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-150"></div>
@@ -453,21 +454,31 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff]">
+    <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Back to forum link */}
+        <div className="mb-6">
+          <Link 
+            href="/foro" 
+            className="inline-flex items-center text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Forum
+          </Link>
+        </div>
         {/* Banner if no profile exists */}
         {!profileExists && isOwnProfile && (
-          <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-5">
+          <div className="mb-6 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-amber-700 font-semibold">⚠️ Profile not found on blockchain</p>
-                <p className="text-amber-600 text-sm mt-1">
+                <p className="text-amber-700 dark:text-amber-300 font-semibold">⚠️ Profile not found on blockchain</p>
+                <p className="text-amber-600 dark:text-amber-400 text-sm mt-1">
                   Create your on-chain profile to personalize your NodeSpeak experience.
                 </p>
               </div>
               <Button 
                 onClick={() => router.push('/profile/edit')}
-                className="bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 rounded-full px-4"
+                className="bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 rounded-full px-4 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 dark:text-amber-200 dark:border-amber-700"
               >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Create Profile
@@ -477,17 +488,17 @@ export default function ProfilePage() {
         )}
         
         {!profileExists && !isOwnProfile && (
-          <div className="mb-6 rounded-2xl bg-sky-50 border border-sky-200 p-5">
-            <p className="text-sky-700">
+          <div className="mb-6 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-5">
+            <p className="text-sky-700 dark:text-sky-300">
               This user hasn't created a profile yet. You can still follow them.
             </p>
           </div>
         )}
 
         {/* Profile Header with Cover Photo Background */}
-        <div className="mb-6 rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
+        <div className="mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative">
           {/* Cover Photo as Full Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100">
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-slate-800 dark:to-slate-700">
             {profileData.coverPhoto && (
               <img 
                 src={profileData.coverPhoto} 
@@ -495,7 +506,7 @@ export default function ProfilePage() {
                 className="w-full h-full object-cover"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/30"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/30 dark:via-slate-900/10 dark:to-slate-900/40"></div>
           </div>
           
           {/* Profile Content - Overlaid on cover */}
@@ -504,7 +515,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* Avatar Section */}
               <div className="flex justify-center md:justify-start">
-                <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-slate-50">
+                <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl bg-slate-50 dark:bg-slate-700">
                   {profileData.profilePicture ? (
                     <img 
                       src={profileData.profilePicture} 
@@ -513,7 +524,7 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
-                      <User className="h-14 w-14 text-slate-400" />
+                      <User className="h-14 w-14 text-slate-400 dark:text-slate-500" />
                     </div>
                   )}
                 </div>
@@ -521,10 +532,10 @@ export default function ProfilePage() {
             </div>
             
             {/* Action buttons */}
-            <div className="flex justify-between mt-6 pt-4 border-t border-white/20">
+            <div className="flex justify-between mt-6 pt-4 border-t border-white/20 dark:border-slate-700">
             <Button 
               onClick={() => router.push('/foro')}
-              className="bg-white/90 backdrop-blur-sm border border-white/50 text-slate-700 hover:bg-white rounded-full px-4 text-sm shadow-lg"
+              className="bg-white/90 backdrop-blur-sm border border-white/50 text-slate-700 hover:bg-white rounded-full px-4 text-sm shadow-lg dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-600"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Forum
@@ -534,7 +545,7 @@ export default function ProfilePage() {
               {isOwnProfile ? (
                 <Button 
                   onClick={() => router.push('/profile/edit')}
-                  className="bg-slate-900 text-white hover:bg-slate-800 rounded-full px-4 text-sm shadow-lg"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-full px-4 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 dark:border-slate-600"
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Profile
@@ -545,8 +556,8 @@ export default function ProfilePage() {
                   disabled={followLoading || !profileExists}
                   title={!profileExists ? 'This user has not created a profile yet' : ''}
                   className={`rounded-full px-4 text-sm shadow-lg ${isFollowing 
-                    ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' 
-                    : 'bg-slate-900 text-white hover:bg-slate-800'} disabled:opacity-50 disabled:cursor-not-allowed`}
+                    ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-200 dark:border-red-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-400'} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {followLoading ? (
                     <span className="animate-pulse">...</span>
@@ -605,62 +616,62 @@ export default function ProfilePage() {
         </div>
 
         {/* User Details - Outside main card */}
-        <div className="mt-4 mb-6 bg-white/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="mt-4 mb-6 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="grid grid-cols-1 gap-3">
             <div className="flex">
-              <span className="text-slate-500 w-32 text-sm">Nickname</span>
-              <span className="text-slate-900 font-medium">{displayName}</span>
+              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Nickname</span>
+              <span className="text-slate-900 dark:text-slate-100 font-medium">{displayName}</span>
             </div>
             <div className="flex">
-              <span className="text-slate-500 w-32 text-sm">Address</span>
-              <span className="text-slate-700 font-mono text-sm">{fullAddress}</span>
+              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Address</span>
+              <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">{fullAddress}</span>
             </div>
             <div className="flex">
-              <span className="text-slate-500 w-32 text-sm">Status</span>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Active</span>
+              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Status</span>
+              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">Active</span>
             </div>
             <div className="flex">
-              <span className="text-slate-500 w-32 text-sm">Member since</span>
-              <span className="text-slate-700">{profileData.memberSince}</span>
+              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Member since</span>
+              <span className="text-slate-700 dark:text-slate-300">{profileData.memberSince}</span>
             </div>
             <div className="flex">
-              <span className="text-slate-500 w-32 text-sm">Posts</span>
-              <span className="text-slate-900 font-medium">{profileData.postCount}</span>
+              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Posts</span>
+              <span className="text-slate-900 dark:text-slate-100 font-medium">{profileData.postCount}</span>
             </div>
-            <div className="mt-2 border-t border-slate-200 pt-3">
-              <span className="text-slate-500 text-sm">Bio</span>
-              <p className="text-slate-700 mt-1">{profileData.bio}</p>
+            <div className="mt-2 border-t border-slate-200 dark:border-slate-700 pt-3">
+              <span className="text-slate-500 dark:text-slate-400 text-sm">Bio</span>
+              <p className="text-slate-700 dark:text-slate-300 mt-1">{profileData.bio}</p>
             </div>
           </div>
         </div>
         
         {/* Stats Section - Outside card */}
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-3">Statistics</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Statistics</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 mb-1">Likes Received</p>
-              <p className="text-2xl font-semibold text-slate-900">{profileData.likesReceived}</p>
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Likes Received</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.likesReceived}</p>
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 mb-1">Likes Given</p>
-              <p className="text-2xl font-semibold text-slate-900">{profileData.likesGiven}</p>
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Likes Given</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.likesGiven}</p>
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 mb-1">Followers</p>
-              <p className="text-2xl font-semibold text-slate-900">{profileData.followers}</p>
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Followers</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.followers}</p>
             </div>
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl border border-slate-200 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 mb-1">Following</p>
-              <p className="text-2xl font-semibold text-slate-900">{profileData.following}</p>
+            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Following</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.following}</p>
             </div>
           </div>
         </div>
 
         {/* Communities Section */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">Communities</h2>
+        <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Communities</h2>
           </div>
           
           <div className="p-4">
@@ -670,9 +681,9 @@ export default function ProfilePage() {
                   <Link 
                     key={community.id}
                     href={`/foro?community=${community.id}`}
-                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer"
                   >
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0">
                       {community.photo ? (
                         <img 
                           src={`https://gateway.pinata.cloud/ipfs/${community.photo}`}
@@ -690,7 +701,7 @@ export default function ProfilePage() {
                               const parent = img.parentElement;
                               if (parent && !parent.querySelector('.fallback-initial')) {
                                 const fallback = document.createElement('div');
-                                fallback.className = 'fallback-initial w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium';
+                                fallback.className = 'fallback-initial w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-300 text-sm font-medium';
                                 fallback.textContent = community.name.charAt(0).toUpperCase();
                                 parent.appendChild(fallback);
                               }
@@ -698,65 +709,65 @@ export default function ProfilePage() {
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-300 text-sm font-medium">
                           {community.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{community.name}</p>
-                      <p className="text-xs text-slate-500">{community.memberCount} members</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{community.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{community.memberCount} members</p>
                     </div>
                   </Link>
                 ))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8">
-                <User className="h-10 w-10 text-slate-300 mb-3" />
-                <p className="text-slate-500 text-sm">Not a member of any community yet</p>
+                <User className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
+                <p className="text-slate-500 dark:text-slate-400 text-sm">Not a member of any community yet</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Recent Activity Section */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
+        <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Recent Activity</h2>
           </div>
           
           <div className="min-h-[200px]">
             {recentActivity.length > 0 ? (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-700">
                 {recentActivity.map((activity, index) => (
-                  <div key={index} className="p-4 hover:bg-slate-50 transition-colors">
+                  <div key={index} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-start space-x-3">
-                      <div className="mt-1 p-2 bg-slate-100 rounded-full">
-                        {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-indigo-600" />}
-                        {activity.type === 'comment' && <MessageSquare className="h-4 w-4 text-emerald-600" />}
+                      <div className="mt-1 p-2 bg-slate-100 dark:bg-slate-700 rounded-full">
+                        {activity.type === 'post' && <MessageSquare className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
+                        {activity.type === 'comment' && <MessageSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                             activity.type === 'post' 
-                              ? 'bg-indigo-100 text-indigo-700' 
-                              : 'bg-emerald-100 text-emerald-700'
+                              ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' 
+                              : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
                           }`}>
                             {activity.type === 'post' ? 'Post' : 'Comment'}
                           </span>
-                          <span className="text-slate-500 text-xs">in</span>
-                          <span className="text-slate-700 text-xs font-medium">{activity.communityName}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-xs">in</span>
+                          <span className="text-slate-700 dark:text-slate-300 text-xs font-medium">{activity.communityName}</span>
                           {activity.topic && (
                             <>
-                              <span className="text-slate-400 text-xs">•</span>
-                              <span className="text-slate-500 text-xs">{activity.topic}</span>
+                              <span className="text-slate-400 dark:text-slate-500 text-xs">•</span>
+                              <span className="text-slate-500 dark:text-slate-400 text-xs">{activity.topic}</span>
                             </>
                           )}
                         </div>
-                        <p className="text-slate-700 text-sm mt-1">
+                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1">
                           {activity.content}
                         </p>
-                        <p className="text-slate-400 text-xs mt-2">
+                        <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">
                           {new Date(activity.timestamp).toLocaleString()}
                         </p>
                       </div>
@@ -766,9 +777,9 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12">
-                <MessageSquare className="h-12 w-12 text-slate-300 mb-4" />
-                <p className="text-slate-500">No activity to display yet.</p>
-                <p className="text-slate-400 text-sm mt-2">Start posting to see your activity here!</p>
+                <MessageSquare className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-4" />
+                <p className="text-slate-500 dark:text-slate-400">No activity to display yet.</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">Start posting to see your activity here!</p>
               </div>
             )}
           </div>
