@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
-import { ImagePlus, Send } from "lucide-react";
+import { ImagePlus, Send, Trash2, MoreVertical } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import axios from "axios";
@@ -202,8 +202,8 @@ export const IntegratedView = ({
     showCommunityList: externalShowCommunityList,
     setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
-    const { isConnected, provider: walletProvider } = useWalletContext();
-    const { isUserHidden, isCommunityHidden } = useAdminContext();
+    const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
+    const { isUserHidden, isCommunityHidden, isAdmin } = useAdminContext();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -222,6 +222,8 @@ export const IntegratedView = ({
     const [submittingComment, setSubmittingComment] = useState<Record<string, boolean>>({});
     const [likingPost, setLikingPost] = useState<Record<string, boolean>>({});
     const [userLikedPosts, setUserLikedPosts] = useState<Record<string, boolean>>({});
+    const [deletingPost, setDeletingPost] = useState<Record<string, boolean>>({});
+    const [showPostMenu, setShowPostMenu] = useState<Record<string, boolean>>({});
 
     // Communities states
     const [newTopic, setNewTopic] = useState("");
@@ -290,6 +292,19 @@ export const IntegratedView = ({
                 });
         }
     }, [hasLoaded, fetchPostsFromContract, selectedCommunityId]);
+
+    // Close post menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('[data-post-menu]')) {
+                setShowPostMenu({});
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     // Actualizar los tópicos disponibles cuando cambia la comunidad seleccionada para CreatePost
     useEffect(() => {
@@ -1102,6 +1117,67 @@ export const IntegratedView = ({
         }
     };
 
+    // Delete/Deactivate post
+    const handleDeletePost = async (postId: string, postAuthor: string) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to delete posts.");
+            return;
+        }
+
+        // Close menu
+        setShowPostMenu(prev => ({ ...prev, [postId]: false }));
+
+        // Confirm deletion
+        if (!window.confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            setDeletingPost(prev => ({ ...prev, [postId]: true }));
+
+            const signer = await walletProvider.getSigner();
+            const userAddress = await signer.getAddress();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Only the post author can delete their post
+            if (postAuthor.toLowerCase() !== userAddress.toLowerCase()) {
+                alert("Only the post author can delete this post.");
+                return;
+            }
+
+            const tx = await contract.deactivatePost(postId);
+            await tx.wait();
+
+            // Refresh posts
+            if (selectedCommunityId && fetchPostsForCommunity) {
+                await fetchPostsForCommunity(selectedCommunityId);
+            } else {
+                await fetchPostsFromContract();
+            }
+
+            console.log(`Post ${postId} deleted successfully.`);
+        } catch (error: any) {
+            console.error("Error deleting post:", error);
+            if (error.message?.includes("Only the post author")) {
+                alert("Only the post author can delete this post.");
+            } else if (error.message?.includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert("Failed to delete post. Please try again.");
+            }
+        } finally {
+            setDeletingPost(prev => ({ ...prev, [postId]: false }));
+        }
+    };
+
+    // Toggle post options menu
+    const togglePostMenu = (postId: string) => {
+        setShowPostMenu(prev => ({
+            ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}), // Close all other menus
+            [postId]: !prev[postId]
+        }));
+    };
+
     // Helper functions
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp * 1000);
@@ -1770,6 +1846,36 @@ export const IntegratedView = ({
                                     </div>
                                 </div>
                             </div>
+                            
+                            {/* Post options menu - only visible to post author */}
+                            {post.author && currentUserAddress && 
+                             post.author.toLowerCase() === currentUserAddress.toLowerCase() && (
+                                <div className="relative" data-post-menu>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            togglePostMenu(post.id);
+                                        }}
+                                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+                                        title="Post options"
+                                    >
+                                        <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {showPostMenu[post.id] && (
+                                        <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-10 min-w-[140px]">
+                                            <button
+                                                onClick={() => handleDeletePost(post.id, post.author || '')}
+                                                disabled={deletingPost[post.id]}
+                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors disabled:opacity-50"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                {deletingPost[post.id] ? 'Deleting...' : 'Delete Post'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Post content */}
