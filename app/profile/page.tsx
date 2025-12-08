@@ -520,7 +520,7 @@ export default function ProfilePage() {
               </div>
               
               {/* User Details */}
-              <div className="md:col-span-3 bg-white/60 backdrop-blur-sm rounded-xl p-5 shadow-lg">
+              <div className="md:col-span-3 bg-white/30 backdrop-blur-md rounded-xl p-5 shadow-sm border border-white/40">
                 <div className="grid grid-cols-1 gap-3">
                   <div className="flex">
                     <span className="text-slate-500 w-32 text-sm">Nickname</span>
