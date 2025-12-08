@@ -50,6 +50,7 @@ interface Post {
 
 interface Comment {
     id: string;
+    index: number; // 1-based index for contract calls
     postId: string;
     author: string;
     content: string;
@@ -224,6 +225,8 @@ export const IntegratedView = ({
     const [userLikedPosts, setUserLikedPosts] = useState<Record<string, boolean>>({});
     const [deletingPost, setDeletingPost] = useState<Record<string, boolean>>({});
     const [showPostMenu, setShowPostMenu] = useState<Record<string, boolean>>({});
+    const [deletingComment, setDeletingComment] = useState<Record<string, boolean>>({});
+    const [showCommentMenu, setShowCommentMenu] = useState<Record<string, boolean>>({});
 
     // Communities states
     const [newTopic, setNewTopic] = useState("");
@@ -300,12 +303,15 @@ export const IntegratedView = ({
         }
     }, [hasLoaded, fetchPostsFromContract, selectedCommunityId]);
 
-    // Close post menu when clicking outside
+    // Close post/comment menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
             if (!target.closest('[data-post-menu]')) {
                 setShowPostMenu({});
+            }
+            if (!target.closest('[data-comment-menu]')) {
+                setShowCommentMenu({});
             }
         };
 
@@ -969,17 +975,18 @@ export const IntegratedView = ({
 
             console.log(`Received ${commentsFromContract.length} comments from contract for post ${postId}`);
 
-            // Filtrar solo comentarios activos y parsear datos
+            // Parsear datos y agregar índice ANTES de filtrar (el contrato usa índice basado en 1)
             const parsedComments = commentsFromContract
-                .filter((comment: any) => comment.isActive)
-                .map((comment: any) => ({
+                .map((comment: any, index: number) => ({
                     id: comment.id.toString(),
+                    index: index + 1, // 1-based index for contract calls (position in original array)
                     postId: postId,
                     author: comment.author,
                     content: comment.content,
                     timestamp: parseInt(comment.timestamp.toString(), 10),
                     isActive: comment.isActive
-                }));
+                }))
+                .filter((comment: any) => comment.isActive);
 
             // Ordenar por más recientes primero
             parsedComments.sort((a: Comment, b: Comment) => b.timestamp - a.timestamp);
@@ -1182,6 +1189,72 @@ export const IntegratedView = ({
         setShowPostMenu(prev => ({
             ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}), // Close all other menus
             [postId]: !prev[postId]
+        }));
+    };
+
+    // Delete/Deactivate comment
+    const handleDeleteComment = async (comment: Comment) => {
+        if (!isConnected || !walletProvider) {
+            alert("Please connect your wallet to delete comments.");
+            return;
+        }
+
+        // Close menu
+        setShowCommentMenu(prev => ({ ...prev, [comment.id]: false }));
+
+        // Confirm deletion
+        if (!window.confirm("Are you sure you want to delete this comment? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            setDeletingComment(prev => ({ ...prev, [comment.id]: true }));
+
+            const signer = await walletProvider.getSigner();
+            const userAddress = await signer.getAddress();
+            const contract = new Contract(forumAddress, forumABI, signer);
+
+            // Only the comment author can delete their comment
+            if (comment.author.toLowerCase() !== userAddress.toLowerCase()) {
+                alert("Only the comment author can delete this comment.");
+                return;
+            }
+
+            // Use the 1-based index for the contract call
+            const numericPostId = parseInt(comment.postId, 10);
+            const commentIndex = comment.index; // Already 1-based
+            
+            console.log(`Deleting comment - postId: ${numericPostId}, commentIndex: ${commentIndex}`);
+
+            const tx = await contract.deactivateComment(numericPostId, commentIndex);
+            await tx.wait();
+
+            // Refresh comments for this post
+            setComments(prev => ({
+                ...prev,
+                [comment.postId]: prev[comment.postId]?.filter(c => c.id !== comment.id) || []
+            }));
+
+            console.log(`Comment ${comment.id} deleted successfully.`);
+        } catch (error: any) {
+            console.error("Error deleting comment:", error);
+            if (error.message?.includes("Not comment owner")) {
+                alert("Only the comment author can delete this comment.");
+            } else if (error.message?.includes("user rejected")) {
+                // User cancelled, no alert needed
+            } else {
+                alert("Failed to delete comment. Please try again.");
+            }
+        } finally {
+            setDeletingComment(prev => ({ ...prev, [comment.id]: false }));
+        }
+    };
+
+    // Toggle comment options menu
+    const toggleCommentMenu = (commentId: string) => {
+        setShowCommentMenu(prev => ({
+            ...Object.keys(prev).reduce((acc, key) => ({ ...acc, [key]: false }), {}), // Close all other menus
+            [commentId]: !prev[commentId]
         }));
     };
 
@@ -1967,7 +2040,7 @@ export const IntegratedView = ({
                                             .sort((a, b) => Number(a.timestamp) - Number(b.timestamp))
                                             .map((comment) => (
                                             <div key={comment.id} className="border border-slate-100 rounded-xl p-4 bg-slate-50">
-                                                <div className="flex items-start mb-2">
+                                                <div className="flex items-start">
                                                     <div className="mr-3 flex-shrink-0">
                                                         <UserAvatar 
                                                             address={comment.author || ''} 
@@ -1976,14 +2049,41 @@ export const IntegratedView = ({
                                                         />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <div className="flex justify-end items-center">
+                                                        <div className="flex justify-between items-center">
                                                             <span className="text-slate-400 text-xs">
                                                                 {formatDate(comment.timestamp)}
                                                             </span>
+                                                            {/* Comment options menu - only for author */}
+                                                            {comment.author && currentUserAddress && 
+                                                             comment.author.toLowerCase() === currentUserAddress.toLowerCase() && (
+                                                                <div className="relative" data-comment-menu>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleCommentMenu(comment.id);
+                                                                        }}
+                                                                        className="p-1 rounded-lg hover:bg-slate-200 transition-colors text-slate-400 hover:text-slate-600"
+                                                                        title="Comment options"
+                                                                    >
+                                                                        <MoreVertical className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    
+                                                                    {showCommentMenu[comment.id] && (
+                                                                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10 min-w-[120px]">
+                                                                            <button
+                                                                                onClick={() => handleDeleteComment(comment)}
+                                                                                disabled={deletingComment[comment.id]}
+                                                                                className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                                {deletingComment[comment.id] ? "Deleting..." : "Delete"}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <p className="text-slate-700 text-sm mt-1">{comment.content}</p>
-                                                        
-                                                        {/* Comment actions - like functionality not available in contract */}
                                                     </div>
                                                 </div>
                                             </div>
