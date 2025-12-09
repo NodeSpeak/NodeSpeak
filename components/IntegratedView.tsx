@@ -9,7 +9,7 @@ import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
-import axios from "axios";
+import { uploadFile, getImageUrl } from "@/lib/ipfsClient";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
@@ -444,27 +444,12 @@ export const IntegratedView = ({
         }
     };
 
-    async function pinFileToIPFS(file: File) {
+    // Upload file to IPFS using centralized ipfsClient
+    async function pinFileToIPFS(file: File): Promise<string> {
         try {
-            const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const pinataMetadata = JSON.stringify({ name: file.name || "uploaded-file" });
-            formData.append("pinataMetadata", pinataMetadata);
-
-            const res = await axios.post(url, formData, {
-                maxBodyLength: Infinity,
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    pinata_api_key: "f8f064ba07b90906907d",
-                    pinata_secret_api_key: "4cf373c7ce0a77b1e7c26bcbc0ba2996cde5f3b508522459e7ff46afa507be08",
-                },
-            });
-
-            return res.data.IpfsHash as string;
+            return await uploadFile(file, file.name || "uploaded-file");
         } catch (err) {
-            console.error("Error uploading file to Pinata:", err);
+            console.error("Error uploading file to IPFS:", err);
             throw err;
         }
     }
@@ -1711,7 +1696,7 @@ export const IntegratedView = ({
                                 {community.coverImage ? (
                                     <>
                                         <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                            src={getImageUrl(community.coverImage)} 
                                             alt={`${community.name} cover`}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
@@ -1795,7 +1780,7 @@ export const IntegratedView = ({
                                         <div className="flex-shrink-0 w-16 h-16 rounded-2xl border-3 border-white bg-white shadow-lg overflow-hidden">
                                             {community.photo ? (
                                                 <img 
-                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                    src={getImageUrl(community.photo)} 
                                                     alt={community.name}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -1968,7 +1953,7 @@ export const IntegratedView = ({
                                 {/* Cover image container */}
                                 <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
                                     <img 
-                                        src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                        src={getImageUrl(community.coverImage)} 
                                         alt={`${getCommunityName(selectedCommunityId)} cover`}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
@@ -1983,7 +1968,7 @@ export const IntegratedView = ({
                                     {community.photo && (
                                         <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
                                             <img 
-                                                src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                src={getImageUrl(community.photo)} 
                                                 alt={community.name}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
@@ -2005,7 +1990,7 @@ export const IntegratedView = ({
                                 {community?.photo ? (
                                     <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
                                         <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                            src={getImageUrl(community.photo)} 
                                             alt={community.name}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {

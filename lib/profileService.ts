@@ -4,17 +4,10 @@ import { Contract } from "ethers";
 import { useCallback } from "react";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
+import { uploadFile, uploadText, fetchText, getImageUrl } from "@/lib/ipfsClient";
 
 // Transaction status callback type
 export type TransactionStatusCallback = (status: 'uploading' | 'signing' | 'pending' | 'confirmed' | 'failed', message?: string) => void;
-
-// IPFS configuration - using Pinata
-const ipfsGateway = "https://gateway.pinata.cloud/ipfs/";
-const ipfsApiUrl = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-
-// Pinata API credentials
-const PINATA_API_KEY = "f8f064ba07b90906907d";
-const PINATA_SECRET_API_KEY = "4cf373c7ce0a77b1e7c26bcbc0ba2996cde5f3b508522459e7ff46afa507be08";
 
 export interface ProfileData {
   exists: boolean;
@@ -29,39 +22,6 @@ export interface ProfileData {
   createdAt: number;
   updatedAt: number;
 }
-
-// Real function for IPFS upload using Pinata
-const uploadToIPFS = async (file: File | Blob, filename?: string): Promise<string> => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file, filename || 'file');
-
-    const pinataMetadata = JSON.stringify({
-      name: filename || 'profile-data'
-    });
-    formData.append('pinataMetadata', pinataMetadata);
-
-    const response = await fetch(ipfsApiUrl, {
-      method: 'POST',
-      headers: {
-        'pinata_api_key': PINATA_API_KEY,
-        'pinata_secret_api_key': PINATA_SECRET_API_KEY,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload to IPFS: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    return data.IpfsHash;
-  } catch (error) {
-    console.error("Error uploading to IPFS:", error);
-    throw error;
-  }
-};
 
 export const useProfileService = () => {
   const { provider, address } = useWalletContext();
@@ -134,22 +94,21 @@ export const useProfileService = () => {
       const onChainProfile = await contract.getProfile(userAddress);
 
 
-      // Fetch bio from IPFS if bioCID exists
+      // Fetch bio from IPFS if bioCID exists (using centralized ipfsClient)
       let bio = "Web3 enthusiast";
       if (onChainProfile.bioCID && onChainProfile.bioCID.length > 0) {
         try {
-          const bioResponse = await fetch(`${ipfsGateway}${onChainProfile.bioCID}`);
-          bio = await bioResponse.text();
+          bio = await fetchText(onChainProfile.bioCID);
         } catch (e) {
-
+          // Keep default bio on error
         }
       }
 
       return {
         exists: true,
         nickname: onChainProfile.nickname || "",
-        profilePicture: onChainProfile.profileCID ? `${ipfsGateway}${onChainProfile.profileCID}` : "",
-        coverPhoto: onChainProfile.coverCID ? `${ipfsGateway}${onChainProfile.coverCID}` : "",
+        profilePicture: getImageUrl(onChainProfile.profileCID || ""),
+        coverPhoto: getImageUrl(onChainProfile.coverCID || ""),
         bio: bio,
         likesReceived: Number(onChainProfile.likesReceived) || 0,
         likesGiven: Number(onChainProfile.likesGiven) || 0,
@@ -194,25 +153,29 @@ export const useProfileService = () => {
       let coverCID = "";
       let bioCID = "";
 
+      // Upload files in parallel for better performance
+      const uploadPromises: Promise<void>[] = [];
+
       if (profilePicture) {
-
-        profileCID = await uploadToIPFS(profilePicture, 'profile-picture.jpg');
-
+        uploadPromises.push(
+          uploadFile(profilePicture, 'profile-picture.jpg').then(cid => { profileCID = cid; })
+        );
       }
 
       if (coverPhoto) {
-
-        coverCID = await uploadToIPFS(coverPhoto, 'cover-photo.jpg');
-
+        uploadPromises.push(
+          uploadFile(coverPhoto, 'cover-photo.jpg').then(cid => { coverCID = cid; })
+        );
       }
 
-      // Upload bio to IPFS
       if (bio) {
-
-        const bioBlob = new Blob([bio], { type: 'text/plain' });
-        bioCID = await uploadToIPFS(bioBlob, 'bio.txt');
-
+        uploadPromises.push(
+          uploadText(bio, 'bio.txt').then(cid => { bioCID = cid; })
+        );
       }
+
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
 
 
 
@@ -299,32 +262,37 @@ export const useProfileService = () => {
 
       }
 
-      // Step 1: Upload files to IPFS (only new files)
+      // Step 1: Upload files to IPFS (only new files) - parallel uploads
       onStatusChange?.('uploading', 'Uploading files to IPFS...');
 
       let profileCID = existingProfileCID;
       let coverCID = existingCoverCID;
       let bioCID = existingBioCID;
 
+      // Upload files in parallel for better performance
+      const uploadPromises: Promise<void>[] = [];
+
       if (profilePicture) {
-
-        profileCID = await uploadToIPFS(profilePicture, 'profile-picture.jpg');
-
+        uploadPromises.push(
+          uploadFile(profilePicture, 'profile-picture.jpg').then(cid => { profileCID = cid; })
+        );
       }
 
       if (coverPhoto) {
-
-        coverCID = await uploadToIPFS(coverPhoto, 'cover-photo.jpg');
-
+        uploadPromises.push(
+          uploadFile(coverPhoto, 'cover-photo.jpg').then(cid => { coverCID = cid; })
+        );
       }
 
       // Always upload bio to IPFS
       if (bio) {
-
-        const bioBlob = new Blob([bio], { type: 'text/plain' });
-        bioCID = await uploadToIPFS(bioBlob, 'bio.txt');
-
+        uploadPromises.push(
+          uploadText(bio, 'bio.txt').then(cid => { bioCID = cid; })
+        );
       }
+
+      // Wait for all uploads to complete
+      await Promise.all(uploadPromises);
 
 
 

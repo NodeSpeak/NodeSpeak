@@ -5,21 +5,17 @@ import { useState, useEffect } from "react";
 import DOMPurify from 'dompurify';
 import { Contract, JsonRpcProvider } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
-import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp, Wallet } from "lucide-react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { fetchContent, getImageUrl } from '@/lib/ipfsClient';
 
 // Public RPC for Arbitrum One - allows reading without wallet connection
 const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
 
-const PINATA_GATEWAY = "https://ipfs.io/ipfs/";
-const BACKUP_GATEWAY = "https://ipfs.io/ipfs/";
-
-// Cache for content
-const contentCache = new Map();
+// Cache for community data (local to component for membership tracking)
 const communityDataCache = new Map();
 
 interface Post {
@@ -62,30 +58,15 @@ export default function ActivityPage() {
         return new JsonRpcProvider(ARBITRUM_RPC);
     };
 
-    // Helper function to fetch IPFS content
+    // Helper function to fetch IPFS content - uses centralized ipfsClient
     const fetchFromIPFS = async (cid: string) => {
         if (!cid) return null;
-        if (contentCache.has(cid)) {
-            return contentCache.get(cid);
+        try {
+            return await fetchContent(cid, { useCache: true });
+        } catch (error) {
+            console.error(`Failed to fetch content for CID ${cid}:`, error);
+            return "Content unavailable";
         }
-
-        const gateways = [PINATA_GATEWAY, BACKUP_GATEWAY, "https://cloudflare-ipfs.com/ipfs/", "https://dweb.link/ipfs/"];
-
-        for (const gateway of gateways) {
-            try {
-                const response = await axios.get(`${gateway}${cid}`, {
-                    timeout: 5000,
-                    validateStatus: (status) => status === 200
-                });
-                contentCache.set(cid, response.data);
-                return response.data;
-            } catch (error) {
-                continue;
-            }
-        }
-
-        contentCache.set(cid, "Content unavailable");
-        return "Content unavailable";
     };
 
     // Format timestamp to relative time
@@ -188,7 +169,7 @@ export default function ActivityPage() {
 
                             let imageUrl = undefined;
                             if (post.imageCID && post.imageCID !== "") {
-                                imageUrl = `${BACKUP_GATEWAY}${post.imageCID}`;
+                                imageUrl = getImageUrl(post.imageCID);
                             }
 
                             return {
@@ -432,7 +413,7 @@ export default function ActivityPage() {
                                         >
                                             {community.photo ? (
                                                 <img 
-                                                    src={`${BACKUP_GATEWAY}${community.photo}`}
+                                                    src={getImageUrl(community.photo)}
                                                     alt={community.name}
                                                     className="w-12 h-12 rounded-xl object-cover shadow-md"
                                                 />

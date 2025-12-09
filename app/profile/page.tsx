@@ -11,6 +11,7 @@ import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shie
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
+import { fetchText, fetchJSON, getImageUrl } from "@/lib/ipfsClient";
 
 // Note: followUser, unfollowUser, and isFollowing are available directly on the main forum contract
 
@@ -342,36 +343,17 @@ export default function ProfilePage() {
             const browserProvider = new BrowserProvider(ethereum);
             const contract = new Contract(forumAddress, forumABI, browserProvider);
             
-            // Cache for community names and content
+            // Cache for community names (local to this effect)
             const communityCache: Record<string, string> = {};
-            const contentCache: Record<string, string> = {};
             
-            // IPFS gateways to try (with CORS support)
-            const ipfsGateways = [
-              'https://cloudflare-ipfs.com/ipfs/',
-              'https://ipfs.io/ipfs/',
-              'https://dweb.link/ipfs/'
-            ];
-            
-            // Helper to fetch from IPFS with fallback gateways
+            // Helper to fetch from IPFS - uses centralized ipfsClient
             const fetchFromIPFS = async (cid: string): Promise<string | null> => {
-              if (contentCache[cid]) return contentCache[cid];
-              
-              for (const gateway of ipfsGateways) {
-                try {
-                  const response = await fetch(`${gateway}${cid}`, { 
-                    signal: AbortSignal.timeout(5000) // 5 second timeout
-                  });
-                  if (response.ok) {
-                    const text = await response.text();
-                    contentCache[cid] = text;
-                    return text;
-                  }
-                } catch {
-                  continue; // Try next gateway
-                }
+              if (!cid) return null;
+              try {
+                return await fetchText(cid, { useCache: true });
+              } catch {
+                return null;
               }
-              return null;
             };
             
             // Helper to get community name
@@ -623,7 +605,7 @@ export default function ProfilePage() {
         {!profileExists && !isOwnProfile && (
           <div className="mb-6 rounded-2xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 p-5">
             <p className="text-sky-700 dark:text-sky-300">
-              This user hasn't created a profile yet. You can still follow them.
+              This user has not created a profile yet. You can still follow them.
             </p>
           </div>
         )}
@@ -944,7 +926,7 @@ export default function ProfilePage() {
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0">
                       {community.photo ? (
                         <img 
-                          src={`https://gateway.pinata.cloud/ipfs/${community.photo}`}
+                          src={getImageUrl(community.photo)}
                           alt={community.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {

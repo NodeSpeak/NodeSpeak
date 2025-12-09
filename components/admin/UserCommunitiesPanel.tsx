@@ -12,6 +12,7 @@ import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { toast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { fetchJSON, getImageUrl } from "@/lib/ipfsClient";
 
 interface UserCommunity {
   id: string;
@@ -67,21 +68,18 @@ export const UserCommunitiesPanel: React.FC = () => {
         let photo = "";
         let coverImage = "";
 
-        // Parse metadata from IPFS if available
+        // Parse metadata from IPFS if available - using centralized ipfsClient
         if (community.metadataCID && community.metadataCID !== "") {
           try {
-            const metadataResponse = await fetch(
-              `https://gateway.pinata.cloud/ipfs/${community.metadataCID}`
-            );
-            if (metadataResponse.ok) {
-              const metadata = await metadataResponse.json();
+            const metadata = await fetchJSON(community.metadataCID);
+            if (metadata) {
               name = metadata.name || name;
               description = metadata.description || description;
               if (metadata.imageCID) {
-                photo = `https://gateway.pinata.cloud/ipfs/${metadata.imageCID}`;
+                photo = getImageUrl(metadata.imageCID);
               }
               if (metadata.coverCID) {
-                coverImage = `https://gateway.pinata.cloud/ipfs/${metadata.coverCID}`;
+                coverImage = getImageUrl(metadata.coverCID);
               }
             }
           } catch (err) {

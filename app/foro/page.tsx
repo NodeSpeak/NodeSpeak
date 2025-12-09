@@ -7,20 +7,14 @@ import { useSearchParams } from 'next/navigation';
 import { ethers, Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
-import axios from 'axios';
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { IntegratedView } from '@/components/IntegratedView';
 import siteConfig from '@/config';
+import { fetchContent, uploadFile, uploadJSON, getImageUrl } from '@/lib/ipfsClient';
 
-
-// Use a cached IPFS gateway to reduce rate limiting issues
-const PINATA_GATEWAY = "https://ipfs.io/ipfs/";
-// Add a backup gateway
-const BACKUP_GATEWAY = "https://ipfs.io/ipfs/";
-
-// Cache for content and community data
-const contentCache = new Map();
+// Cache for community data and post content (local to component)
 const communityDataCache = new Map();
+const contentCache = new Map();
 
 export default function Home() {
     const { isConnected, provider } = useWalletContext();
@@ -75,54 +69,15 @@ export default function Home() {
     const [showCommunityList, setShowCommunityList] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Helper function to fetch IPFS content with caching and fallback
+    // Helper function to fetch IPFS content - uses centralized ipfsClient
     const fetchFromIPFS = async (cid: any, useCache = true) => {
         if (!cid) return null;
-
-        // Si ya está en caché, devolver el valor
-        if (useCache && contentCache.has(cid)) {
-            return contentCache.get(cid);
+        try {
+            return await fetchContent(cid, { useCache });
+        } catch (error) {
+            console.error(`Failed to fetch content for CID ${cid}:`, error);
+            return "Content unavailable";
         }
-
-        // Lista de gateways IPFS para probar
-        const gateways = [
-            PINATA_GATEWAY,
-            BACKUP_GATEWAY,
-            "https://ipfs.io/ipfs/",
-            "https://cloudflare-ipfs.com/ipfs/",
-            "https://dweb.link/ipfs/"
-        ];
-
-        // Intentar con cada gateway
-        for (const gateway of gateways) {
-            try {
-                const response = await axios.get(`${gateway}${cid}`, {
-                    timeout: 5000, // Timeout de 5 segundos
-                    validateStatus: (status) => status === 200 // Solo aceptar 200 OK
-                });
-
-                const { data } = response;
-                // Guardar en caché si se obtuvo correctamente
-                contentCache.set(cid, data);
-                return data;
-            } catch (error) {
-                // Si hay error, loguear y probar con la siguiente gateway
-                if (error instanceof Error) {
-                    console.warn(`Failed to fetch from ${gateway} for CID ${cid}:`, error.message || 'Unknown error');
-                } else {
-                    console.warn(`Failed to fetch from ${gateway} for CID ${cid}: Unknown error`);
-                }
-                // Continuar al siguiente gateway
-            }
-        }
-
-        // Si todos los intentos fallan, devolver un valor por defecto
-        console.error(`Failed to fetch content for CID ${cid} from all gateways`);
-
-        // Cachear un valor por defecto para evitar intentos repetidos
-        const defaultContent = "Content unavailable";
-        contentCache.set(cid, defaultContent);
-        return defaultContent;
     };
 
     // Get communities from contract
@@ -325,10 +280,10 @@ export default function Home() {
                             console.error(`Error getting content for post ${id}`, err);
                         }
                     }
-                    // Handle image URL with proper gateway
+                    // Handle image URL with centralized ipfsClient
                     let imageUrl = undefined;
                     if (post.imageCID && post.imageCID !== "") {
-                        imageUrl = `${BACKUP_GATEWAY}${post.imageCID}`;
+                        imageUrl = getImageUrl(post.imageCID);
                     }
                     return {
                         id: id.toString(),
@@ -473,37 +428,6 @@ export default function Home() {
         }
     };
 
-    // Upload community data to Pinata
-    const uploadToIPFS = async (file: File | string) => {
-        try {
-            const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-            const formData = new FormData();
-            if (typeof file === 'string') {
-                const blob = new Blob([file], { type: 'application/json' });
-                formData.append("file", blob);
-            } else {
-                formData.append("file", file);
-            }
-
-            const pinataMetadata = JSON.stringify({ name: "community-data" });
-            formData.append("pinataMetadata", pinataMetadata);
-
-            const res = await axios.post(url, formData, {
-                maxBodyLength: Infinity,
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    pinata_api_key: "f8f064ba07b90906907d",
-                    pinata_secret_api_key: "4cf373c7ce0a77b1e7c26bcbc0ba2996cde5f3b508522459e7ff46afa507be08",
-                }
-            });
-
-            return res.data;
-        } catch (err) {
-            console.error("Error uploading community data to Pinata:", err);
-            throw err;
-        }
-    };
-
     // Create a new community
 const handleCreateCommunity = async (
     name: string,
@@ -522,26 +446,30 @@ const handleCreateCommunity = async (
         setCreatingCommunity(true);
 
         // Upload photo and cover image to IPFS if available
-        let photoCID = "";  // ✅ Cambiar null a "" (string vacío)
-        let coverImageCID = "";  // ✅ Cambiar null a ""
+        let photoCID = "";
+        let coverImageCID = "";
+
+        // Upload photo and cover image in parallel for better performance
+        const uploadPromises: Promise<void>[] = [];
 
         if (photo) {
-            try {
-                const photoResult = await uploadToIPFS(photo);
-                photoCID = photoResult.IpfsHash;
-            } catch (error) {
-                console.error("Error uploading community photo:", error);
-            }
+            uploadPromises.push(
+                uploadFile(photo, 'community-photo.jpg')
+                    .then(cid => { photoCID = cid; })
+                    .catch(error => console.error("Error uploading community photo:", error))
+            );
         }
 
         if (coverImage) {
-            try {
-                const coverResult = await uploadToIPFS(coverImage);
-                coverImageCID = coverResult.IpfsHash;
-            } catch (error) {
-                console.error("Error uploading community cover image:", error);
-            }
+            uploadPromises.push(
+                uploadFile(coverImage, 'community-cover.jpg')
+                    .then(cid => { coverImageCID = cid; })
+                    .catch(error => console.error("Error uploading community cover image:", error))
+            );
         }
+
+        // Wait for image uploads to complete
+        await Promise.all(uploadPromises);
 
         // Upload community data to IPFS
         const communityData = {
@@ -554,7 +482,7 @@ const handleCreateCommunity = async (
         console.log("Community data to upload:", communityData);
 
         // Upload data to IPFS
-        const contentCID = await uploadToIPFS(JSON.stringify(communityData));
+        const contentCID = await uploadJSON(communityData, 'community-data.json');
 
         // Send transaction to contract
         const signer = await provider.getSigner();
@@ -563,14 +491,14 @@ const handleCreateCommunity = async (
         try {
             // El contrato createCommunity espera: contentCID, initialTopics, profileCID, coverCID
             await contract.createCommunity.estimateGas(
-                contentCID.IpfsHash,
+                contentCID,
                 communityTopics,
                 photoCID,
                 coverImageCID
             );
 
             const tx = await contract.createCommunity(
-                contentCID.IpfsHash,
+                contentCID,
                 communityTopics,
                 photoCID,
                 coverImageCID
