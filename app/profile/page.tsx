@@ -7,7 +7,7 @@ import { useAdminContext } from "@/contexts/AdminContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff } from "lucide-react";
+import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff, ChevronDown, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
@@ -75,6 +75,18 @@ export default function ProfilePage() {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [userCommunities, setUserCommunities] = useState<UserCommunity[]>([]);
+  
+  // Followers/Following dropdown states
+  const [showFollowersMenu, setShowFollowersMenu] = useState(false);
+  const [showFollowingMenu, setShowFollowingMenu] = useState(false);
+  const [followersList, setFollowersList] = useState<string[]>([]);
+  const [followingList, setFollowingList] = useState<string[]>([]);
+  const [followersProfiles, setFollowersProfiles] = useState<Map<string, {nickname: string, profilePicture: string}>>(new Map());
+  const [followingProfiles, setFollowingProfiles] = useState<Map<string, {nickname: string, profilePicture: string}>>(new Map());
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
+  const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const followersMenuRef = useRef<HTMLDivElement>(null);
+  const followingMenuRef = useRef<HTMLDivElement>(null);
 
   // Check follow status for other users
   useEffect(() => {
@@ -148,6 +160,127 @@ export default function ProfilePage() {
       setFollowLoading(false);
     }
   };
+
+  // Load followers list
+  const loadFollowers = async () => {
+    if (!targetAddress || loadingFollowers) return;
+    
+    setLoadingFollowers(true);
+    try {
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) return;
+      
+      const provider = new BrowserProvider(ethereum);
+      const contract = new Contract(forumAddress, forumABI, provider);
+      
+      const followers: string[] = await contract.getFollowers(targetAddress);
+      console.log('Loaded followers for', targetAddress, ':', followers);
+      setFollowersList(followers);
+      
+      // Load profiles for each follower
+      const profilesMap = new Map<string, {nickname: string, profilePicture: string}>();
+      for (const addr of followers) {
+        try {
+          const profile = await profileService.getProfile(addr);
+          if (profile) {
+            profilesMap.set(addr.toLowerCase(), {
+              nickname: profile.nickname || '',
+              profilePicture: profile.profilePicture || ''
+            });
+          }
+        } catch (e) {
+          console.error('Error loading follower profile:', e);
+        }
+      }
+      setFollowersProfiles(profilesMap);
+    } catch (error) {
+      console.error('Error loading followers:', error);
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  // Load following list
+  const loadFollowing = async () => {
+    if (!targetAddress || loadingFollowing) return;
+    
+    setLoadingFollowing(true);
+    try {
+      const ethereum = (window as any).ethereum;
+      if (!ethereum) return;
+      
+      const provider = new BrowserProvider(ethereum);
+      const contract = new Contract(forumAddress, forumABI, provider);
+      
+      const following: string[] = await contract.getFollowing(targetAddress);
+      console.log('Loaded following for', targetAddress, ':', following);
+      setFollowingList(following);
+      
+      // Load profiles for each following
+      const profilesMap = new Map<string, {nickname: string, profilePicture: string}>();
+      for (const addr of following) {
+        try {
+          const profile = await profileService.getProfile(addr);
+          if (profile) {
+            profilesMap.set(addr.toLowerCase(), {
+              nickname: profile.nickname || '',
+              profilePicture: profile.profilePicture || ''
+            });
+          }
+        } catch (e) {
+          console.error('Error loading following profile:', e);
+        }
+      }
+      setFollowingProfiles(profilesMap);
+    } catch (error) {
+      console.error('Error loading following:', error);
+    } finally {
+      setLoadingFollowing(false);
+    }
+  };
+
+  // Handle followers menu toggle
+  const handleFollowersClick = () => {
+    if (!showFollowersMenu) {
+      loadFollowers();
+    }
+    setShowFollowersMenu(!showFollowersMenu);
+    setShowFollowingMenu(false);
+  };
+
+  // Handle following menu toggle
+  const handleFollowingClick = () => {
+    if (!showFollowingMenu) {
+      loadFollowing();
+    }
+    setShowFollowingMenu(!showFollowingMenu);
+    setShowFollowersMenu(false);
+  };
+
+  // Reset followers/following data when target address changes
+  useEffect(() => {
+    setFollowersList([]);
+    setFollowingList([]);
+    setFollowersProfiles(new Map());
+    setFollowingProfiles(new Map());
+    setShowFollowersMenu(false);
+    setShowFollowingMenu(false);
+  }, [targetAddress]);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (followersMenuRef.current && !followersMenuRef.current.contains(event.target as Node)) {
+        setShowFollowersMenu(false);
+      }
+      if (followingMenuRef.current && !followingMenuRef.current.contains(event.target as Node)) {
+        setShowFollowingMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Only redirect if viewing own profile and not connected
@@ -657,13 +790,138 @@ export default function ProfilePage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Likes Given</p>
               <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.likesGiven}</p>
             </div>
-            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Followers</p>
-              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.followers}</p>
+            {/* Followers - Clickable with dropdown */}
+            <div className="relative" ref={followersMenuRef}>
+              <button
+                onClick={handleFollowersClick}
+                className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Followers</p>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showFollowersMenu ? 'rotate-180' : ''}`} />
+                </div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.followers}</p>
+              </button>
+              
+              {/* Followers Dropdown Menu */}
+              {showFollowersMenu && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-700 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Followers ({profileData.followers})</p>
+                    <button onClick={() => setShowFollowersMenu(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="max-h-[320px] overflow-y-auto">
+                    {loadingFollowers ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : followersList.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
+                        <User className="w-8 h-8 mb-2 opacity-50" />
+                        <p className="text-sm">No followers yet</p>
+                      </div>
+                    ) : (
+                      followersList.map((addr) => {
+                        const profile = followersProfiles.get(addr.toLowerCase());
+                        return (
+                          <Link
+                            key={addr}
+                            href={`/profile?address=${addr}`}
+                            onClick={() => setShowFollowersMenu(false)}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+                          >
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
+                              {profile?.profilePicture ? (
+                                <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                {profile?.nickname || shortenAddress(addr)}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{shortenAddress(addr)}</p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Following</p>
-              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.following}</p>
+            
+            {/* Following - Clickable with dropdown */}
+            <div className="relative" ref={followingMenuRef}>
+              <button
+                onClick={handleFollowingClick}
+                className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:border-sky-300 dark:hover:border-sky-600 hover:shadow-md transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Following</p>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showFollowingMenu ? 'rotate-180' : ''}`} />
+                </div>
+                <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{profileData.following}</p>
+              </button>
+              
+              {/* Following Dropdown Menu */}
+              {showFollowingMenu && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-700 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Following ({profileData.following})</p>
+                    <button onClick={() => setShowFollowingMenu(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="max-h-[320px] overflow-y-auto">
+                    {loadingFollowing ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : followingList.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
+                        <User className="w-8 h-8 mb-2 opacity-50" />
+                        <p className="text-sm">Not following anyone yet</p>
+                      </div>
+                    ) : (
+                      followingList.map((addr) => {
+                        const profile = followingProfiles.get(addr.toLowerCase());
+                        return (
+                          <Link
+                            key={addr}
+                            href={`/profile?address=${addr}`}
+                            onClick={() => setShowFollowingMenu(false)}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0"
+                          >
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
+                              {profile?.profilePicture ? (
+                                <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                {profile?.nickname || shortenAddress(addr)}
+                              </p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{shortenAddress(addr)}</p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
