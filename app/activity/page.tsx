@@ -497,52 +497,62 @@ export default function ActivityPage() {
                                             className="px-6 py-5 hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
                                         >
                                             <div className="flex gap-4">
-                                                {/* Post Image (if exists) */}
-                                                {post.imageUrl && (
-                                                    <div className="flex-shrink-0">
-                                                        <img 
-                                                            src={post.imageUrl}
-                                                            alt=""
-                                                            className="w-20 h-20 rounded-xl object-cover shadow-sm"
-                                                        />
-                                                    </div>
-                                                )}
+                                                {/* User Avatar - always on the left */}
+                                                <div className="flex-shrink-0">
+                                                    <UserAvatar 
+                                                        address={post.author} 
+                                                        size="md" 
+                                                        showNickname={false}
+                                                    />
+                                                </div>
                                                 
                                                 {/* Post Content */}
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-4 mb-2">
-                                                        <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 flex-1">
-                                                            {stripHtmlAndTruncate(post.content)}
-                                                        </p>
-                                                        <span className="flex-shrink-0 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                                    {/* Header: Author name, topic, timestamp */}
+                                                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                                        <UserAvatar 
+                                                            address={post.author} 
+                                                            size="sm" 
+                                                            showNickname={true}
+                                                            className="[&>div:first-child]:hidden"
+                                                        />
+                                                        {post.topic && (
+                                                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                                {post.topic}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 ml-auto">
                                                             <Clock className="w-3 h-3" />
                                                             {formatRelativeTime(post.timestamp)}
                                                         </span>
                                                     </div>
                                                     
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-4">
-                                                            <UserAvatar 
-                                                                address={post.author} 
-                                                                size="sm" 
-                                                                showNickname={true}
+                                                    {/* Post text */}
+                                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-3">
+                                                        {stripHtmlAndTruncate(post.content)}
+                                                    </p>
+                                                    
+                                                    {/* Post Image (if exists) - larger and more prominent */}
+                                                    {post.imageUrl && (
+                                                        <div className="mb-3">
+                                                            <img 
+                                                                src={post.imageUrl}
+                                                                alt=""
+                                                                className="w-full max-w-md h-48 rounded-xl object-cover shadow-md border border-slate-200 dark:border-slate-600"
                                                             />
-                                                            {post.topic && (
-                                                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                                                                    {post.topic}
-                                                                </span>
-                                                            )}
                                                         </div>
-                                                        <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
-                                                            <span className="flex items-center gap-1">
-                                                                <Heart className="w-3.5 h-3.5" />
-                                                                {post.likeCount}
-                                                            </span>
-                                                            <span className="flex items-center gap-1">
-                                                                <MessageSquare className="w-3.5 h-3.5" />
-                                                                {post.commentCount}
-                                                            </span>
-                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Footer: Stats */}
+                                                    <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+                                                        <span className="flex items-center gap-1 hover:text-red-500 transition-colors cursor-pointer">
+                                                            <Heart className="w-3.5 h-3.5" />
+                                                            {post.likeCount}
+                                                        </span>
+                                                        <span className="flex items-center gap-1 hover:text-sky-500 transition-colors cursor-pointer">
+                                                            <MessageSquare className="w-3.5 h-3.5" />
+                                                            {post.commentCount}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
