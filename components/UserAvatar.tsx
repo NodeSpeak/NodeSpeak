@@ -193,11 +193,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
             left: menuPosition.left,
             zIndex: 9999
           }}
-          className="bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 min-w-[180px] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 min-w-[180px] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
         >
           {/* Menu Header */}
-          <div className="px-4 py-2.5 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Actions</p>
+          <div className="px-4 py-2.5 bg-gradient-to-r from-slate-50 to-white dark:from-slate-700 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Actions</p>
           </div>
           
           {/* View Profile Button */}
@@ -206,51 +206,51 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
               router.push(`/profile?address=${address}`);
               setShowMenu(false);
             }}
-            className="w-full px-4 py-3 text-left text-slate-700 hover:bg-gradient-to-r hover:from-sky-50 hover:to-white flex items-center gap-3 text-sm font-medium transition-all duration-200 group"
+            className="w-full px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-gradient-to-r hover:from-sky-50 hover:to-white dark:hover:from-sky-900/30 dark:hover:to-slate-800 flex items-center gap-3 text-sm font-medium transition-all duration-200 group"
           >
-            <div className="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center group-hover:bg-sky-200 transition-colors">
-              <ExternalLink className="w-4 h-4 text-sky-600" />
+            <div className="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center group-hover:bg-sky-200 dark:group-hover:bg-sky-800/50 transition-colors">
+              <ExternalLink className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             </div>
-            <span className="group-hover:text-sky-700 transition-colors">View Profile</span>
+            <span className="group-hover:text-sky-700 dark:group-hover:text-sky-300 transition-colors">View Profile</span>
           </button>
           
           {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent mx-3" />
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-600 to-transparent mx-3" />
           
           {/* Follow/Unfollow Button */}
           <button
             onClick={handleFollow}
             disabled={followLoading || !profile?.exists}
             title={!profile?.exists ? 'This user has not created a profile yet' : ''}
-            className="w-full px-4 py-3 text-left text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white flex items-center gap-3 text-sm font-medium transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            className="w-full px-4 py-3 text-left text-slate-700 dark:text-slate-200 hover:bg-gradient-to-r hover:from-slate-50 hover:to-white dark:hover:from-slate-700 dark:hover:to-slate-800 flex items-center gap-3 text-sm font-medium transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
             {followLoading ? (
               <>
-                <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                  <div className="w-4 h-4 border-2 border-slate-300 dark:border-slate-500 border-t-slate-600 dark:border-t-slate-300 rounded-full animate-spin" />
                 </div>
-                <span className="text-slate-500">Loading...</span>
+                <span className="text-slate-500 dark:text-slate-400">Loading...</span>
               </>
             ) : !profile?.exists ? (
               <>
-                <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <UserPlus className="w-4 h-4 text-slate-400" />
+                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                  <UserPlus className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 </div>
-                <span className="text-slate-400">No profile</span>
+                <span className="text-slate-400 dark:text-slate-500">No profile</span>
               </>
             ) : isFollowing ? (
               <>
-                <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
-                  <UserCheck className="w-4 h-4 text-red-500" />
+                <div className="w-8 h-8 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-800/50 transition-colors">
+                  <UserCheck className="w-4 h-4 text-red-500 dark:text-red-400" />
                 </div>
-                <span className="text-red-600 group-hover:text-red-700 transition-colors">Unfollow</span>
+                <span className="text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">Unfollow</span>
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
-                  <UserPlus className="w-4 h-4 text-emerald-600" />
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
+                  <UserPlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <span className="text-emerald-600 group-hover:text-emerald-700 transition-colors">Follow</span>
+                <span className="text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">Follow</span>
               </>
             )}
           </button>
