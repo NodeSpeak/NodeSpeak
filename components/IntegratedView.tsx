@@ -20,6 +20,15 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
 import { useProfileService } from "@/lib/profileService";
+import {
+    useAddComment,
+    useDeactivateComment,
+    useLikePost,
+    useDeactivatePost,
+    useAddTopic,
+    useDeactivateCommunity,
+    useUserPostLikes,
+} from "@/hooks/queries";
 
 // Types
 interface Community {
@@ -272,6 +281,18 @@ export const IntegratedView = ({
     const [loadingMembers, setLoadingMembers] = useState(false);
     const membersMenuRef = useRef<HTMLDivElement | null>(null);
 
+    // React Query Mutations
+    const likePostMutation = useLikePost();
+    const deactivatePostMutation = useDeactivatePost();
+    const addCommentMutation = useAddComment();
+    const deactivateCommentMutation = useDeactivateComment();
+    const addTopicMutation = useAddTopic();
+    const deactivateCommunityMutation = useDeactivateCommunity();
+
+    // React Query for user likes - get post IDs from visible posts
+    const postIds = useMemo(() => posts.map(p => p.id), [posts]);
+    const { data: userLikedPostsData = {} } = useUserPostLikes(postIds);
+
     // Update local communities when prop changes
     useEffect(() => {
         setLocalCommunities(communities);
@@ -367,53 +388,12 @@ export const IntegratedView = ({
         }
     }, [isCreatingPost]);
 
-    // Check which posts the current user has liked
+    // Sync React Query user likes data with local state
     useEffect(() => {
-        const checkUserLikes = async () => {
-            if (!isConnected || !walletProvider || !posts.length) return;
-            
-            try {
-                const signer = await walletProvider.getSigner();
-                const userAddress = await signer.getAddress();
-                
-                // ABI for postLikes mapping (public mapping generates getter)
-                const postManagerABI = [
-                    {
-                        "inputs": [
-                            { "internalType": "uint32", "name": "", "type": "uint32" },
-                            { "internalType": "address", "name": "", "type": "address" }
-                        ],
-                        "name": "postLikes",
-                        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }
-                ];
-                
-                // Get postManager address from main contract
-                const mainContract = new Contract(forumAddress, forumABI, walletProvider);
-                const postManagerAddress = await mainContract.postManager();
-                const postManager = new Contract(postManagerAddress, postManagerABI, walletProvider);
-                
-                // Check likes for all visible posts
-                const likeStatus: Record<string, boolean> = {};
-                for (const post of posts) {
-                    try {
-                        const hasLiked = await postManager.postLikes(post.id, userAddress);
-                        likeStatus[post.id] = hasLiked;
-                    } catch (e) {
-                        likeStatus[post.id] = false;
-                    }
-                }
-                
-                setUserLikedPosts(likeStatus);
-            } catch (error) {
-                console.error("Error checking user likes:", error);
-            }
-        };
-        
-        checkUserLikes();
-    }, [isConnected, walletProvider, posts, forumAddress, forumABI]);
+        if (Object.keys(userLikedPostsData).length > 0) {
+            setUserLikedPosts(userLikedPostsData);
+        }
+    }, [userLikedPostsData]);
 
     // CreatePost functions
     const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -737,16 +717,12 @@ export const IntegratedView = ({
             setIsSubmittingTopic(true);
             setTopicError("");
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            await addTopicMutation.mutateAsync({
+                communityId,
+                topic: newTopic,
+            });
 
-            const tx = await contract.addTopicToCommunity(communityId, newTopic);
-            console.log("Add topic transaction submitted:", tx.hash);
-
-            const receipt = await tx.wait();
-            console.log("Add topic transaction confirmed:", receipt);
-
-            // Update localCommunities first
+            // Update local state for immediate UI feedback
             setLocalCommunities(prevCommunities => {
                 const updatedCommunities = prevCommunities.map(community => {
                     if (community.id === communityId) {
@@ -759,11 +735,9 @@ export const IntegratedView = ({
                     return community;
                 });
 
-                // Actualizar también communityTopics si el ID de comunidad actual coincide
                 if (selectedCommunityId === communityId) {
                     const currentCommunity = updatedCommunities.find(c => c.id === communityId);
                     if (currentCommunity) {
-                        // Actualizar los tópicos disponibles con los topics actualizados
                         setCommunityTopics(currentCommunity.topics.map((name, index) => ({
                             id: index,
                             name
@@ -781,13 +755,7 @@ export const IntegratedView = ({
                 [communityId]: false
             }));
 
-            // Opcional: mostrar algún mensaje de éxito
             console.log(`Topic "${newTopic}" added successfully to community ${communityId}`);
-
-            // Refresh from backend if available
-            if (refreshCommunities) {
-                await refreshCommunities();
-            }
 
         } catch (error) {
             console.error("Error adding topic:", error);
@@ -1032,16 +1000,12 @@ export const IntegratedView = ({
                 [postId]: true
             }));
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
             console.log(`Adding comment to post ${postId}: "${newCommentText[postId]}"`);
 
-            const tx = await contract.addComment(postId, newCommentText[postId]);
-            console.log("Comment transaction submitted:", tx.hash);
-
-            const receipt = await tx.wait();
-            console.log("Comment transaction confirmed:", receipt);
+            await addCommentMutation.mutateAsync({
+                postId,
+                content: newCommentText[postId],
+            });
 
             // Limpiar el input de comentario
             setNewCommentText(prev => ({
@@ -1049,17 +1013,10 @@ export const IntegratedView = ({
                 [postId]: ""
             }));
 
-            // Primero refrescar los comentarios de este post específico
+            // Refrescar comentarios locales
             await fetchCommentsForPost(postId);
 
-            // Luego refrescar los posts para actualizar el contador de comentarios
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                await fetchPostsFromContract();
-            }
-
-            console.log(`Comment added to post ${postId} successfully and data refreshed.`);
+            console.log(`Comment added to post ${postId} successfully.`);
 
             // Asegurar que los comentarios permanezcan visibles
             setExpandedComments(prev => ({
@@ -1083,7 +1040,7 @@ export const IntegratedView = ({
             return;
         }
 
-        if (likingPost[postId]) return;
+        if (likePostMutation.isPending) return;
 
         // Check if user already liked this post
         if (userLikedPosts[postId]) {
@@ -1097,33 +1054,19 @@ export const IntegratedView = ({
                 [postId]: true
             }));
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            await likePostMutation.mutateAsync(postId);
 
-            const tx = await contract.likePost(postId);
-            await tx.wait();
-
-            // Update local like status immediately
+            // Update local like status immediately (optimistic update already done by mutation)
             setUserLikedPosts(prev => ({
                 ...prev,
                 [postId]: true
             }));
 
-            // Usar la función adecuada para refrescar los posts
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                // Si tenemos un ID de comunidad y la función específica, usarla
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                // De lo contrario, usar la función general
-                await fetchPostsFromContract();
-            }
-
-            console.log(`Post ${postId} liked successfully. Posts refreshed.`);
+            console.log(`Post ${postId} liked successfully.`);
         } catch (error) {
             console.error("Error liking post:", error);
             if (error instanceof Error && error.toString().includes("already liked")) {
                 alert("You have already liked this post.");
-                // Update local state to reflect this
                 setUserLikedPosts(prev => ({
                     ...prev,
                     [postId]: true
@@ -1146,7 +1089,7 @@ export const IntegratedView = ({
             return;
         }
 
-        if (deactivatingCommunityId === communityId) return;
+        if (deactivateCommunityMutation.isPending) return;
 
         // Confirm deactivation
         if (!window.confirm(`¿Estás seguro que deseas desactivar la comunidad "${communityName}"? Esta acción ocultará la comunidad y sus posts para todos los usuarios pero podrá ser reactivada más tarde desde el panel de administración.`)) {
@@ -1156,39 +1099,25 @@ export const IntegratedView = ({
         try {
             setDeactivatingCommunityId(communityId);
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            const txHash = await deactivateCommunityMutation.mutateAsync(communityId);
 
-            // Call deactivateCommunity function in the contract
-            const tx = await contract.deactivateCommunity(communityId);
-            
-            // Show pending transaction message
-            alert(`Transacción enviada. Por favor espere la confirmación.\nHash: ${tx.hash}`);
-            
-            await tx.wait();
+            alert(`Transacción confirmada.\nHash: ${txHash}`);
 
             // Update local communities
-            setLocalCommunities(prev => 
-                prev.map(community => 
-                    community.id === communityId 
-                        ? { ...community, isActive: false } 
+            setLocalCommunities(prev =>
+                prev.map(community =>
+                    community.id === communityId
+                        ? { ...community, isActive: false }
                         : community
                 )
             );
-            
-            // También ocultar la comunidad en el AdminContext para que aparezca en el panel de control
-            // Agregamos el address del usuario como parte del reason para poder filtrar por él más tarde
-            const userAddress = await signer.getAddress();
-            const reason = `Desactivada por el creador: ${userAddress.toLowerCase()}`;
+
+            // También ocultar la comunidad en el AdminContext
+            const reason = `Desactivada por el creador: ${currentUserAddress?.toLowerCase() || 'unknown'}`;
             hideCommunity(communityId, communityName, reason);
 
-            // Refresh communities from contract
-            if (refreshCommunities) {
-                await refreshCommunities();
-            }
-
             alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
-            
+
             // If we were viewing this community, go back to community list
             if (selectedCommunityId === communityId) {
                 setSelectedCommunityId(null);
@@ -1226,25 +1155,16 @@ export const IntegratedView = ({
         try {
             setDeletingPost(prev => ({ ...prev, [postId]: true }));
 
-            const signer = await walletProvider.getSigner();
-            const userAddress = await signer.getAddress();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            // Only the post author can delete their post
-            if (postAuthor.toLowerCase() !== userAddress.toLowerCase()) {
+            // Check author permission on client side
+            if (currentUserAddress && postAuthor.toLowerCase() !== currentUserAddress.toLowerCase()) {
                 alert("Only the post author can delete this post.");
                 return;
             }
 
-            const tx = await contract.deactivatePost(postId);
-            await tx.wait();
-
-            // Refresh posts
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                await fetchPostsFromContract();
-            }
+            await deactivatePostMutation.mutateAsync({
+                postId,
+                communityId: selectedCommunityId || '',
+            });
 
             console.log(`Post ${postId} deleted successfully.`);
         } catch (error: any) {
@@ -1287,26 +1207,20 @@ export const IntegratedView = ({
         try {
             setDeletingComment(prev => ({ ...prev, [comment.id]: true }));
 
-            const signer = await walletProvider.getSigner();
-            const userAddress = await signer.getAddress();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            // Only the comment author can delete their comment
-            if (comment.author.toLowerCase() !== userAddress.toLowerCase()) {
+            // Check author permission on client side
+            if (currentUserAddress && comment.author.toLowerCase() !== currentUserAddress.toLowerCase()) {
                 alert("Only the comment author can delete this comment.");
                 return;
             }
 
-            // Use the 1-based index for the contract call
-            const numericPostId = parseInt(comment.postId, 10);
-            const commentIndex = comment.index; // Already 1-based
-            
-            console.log(`Deleting comment - postId: ${numericPostId}, commentIndex: ${commentIndex}`);
+            console.log(`Deleting comment - postId: ${comment.postId}, commentIndex: ${comment.index}`);
 
-            const tx = await contract.deactivateComment(numericPostId, commentIndex);
-            await tx.wait();
+            await deactivateCommentMutation.mutateAsync({
+                postId: comment.postId,
+                commentIndex: comment.index,
+            });
 
-            // Refresh comments for this post
+            // Refresh comments for this post (optimistic update already done by mutation)
             setComments(prev => ({
                 ...prev,
                 [comment.postId]: prev[comment.postId]?.filter(c => c.id !== comment.id) || []
