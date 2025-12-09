@@ -6,7 +6,7 @@ import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
-import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus } from "lucide-react";
+import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus, Users, ChevronDown, X, User } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import { uploadFile, getImageUrl } from "@/lib/ipfsClient";
@@ -19,6 +19,7 @@ import Link from '@tiptap/extension-link';
 import { UserAvatar } from "@/components/UserAvatar";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
+import { useProfileService } from "@/lib/profileService";
 
 // Types
 interface Community {
@@ -208,6 +209,7 @@ export const IntegratedView = ({
     const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
     const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
     const { isCommunityOpen, canViewContent, requestMembership, hasPendingRequest, getPendingRequests } = useCommunitySettings();
+    const profileService = useProfileService();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -262,6 +264,13 @@ export const IntegratedView = ({
     const [tempCommunityLogoImage, setTempCommunityLogoImage] = useState<string>("");
     const [communityLogoFile, setCommunityLogoFile] = useState<File | null>(null);
     const [communityLogoPreview, setCommunityLogoPreview] = useState<string>("");
+
+    // Members dropdown state for selected community
+    const [showMembersMenu, setShowMembersMenu] = useState(false);
+    const [membersList, setMembersList] = useState<string[]>([]);
+    const [membersProfiles, setMembersProfiles] = useState<Map<string, { nickname: string; profilePicture: string }>>(new Map());
+    const [loadingMembers, setLoadingMembers] = useState(false);
+    const membersMenuRef = useRef<HTMLDivElement | null>(null);
 
     // Update local communities when prop changes
     useEffect(() => {
@@ -1350,6 +1359,82 @@ export const IntegratedView = ({
 
     const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
 
+    // Load members list (creator + post authors) for the selected community
+    const loadMembers = async () => {
+        if (!selectedCommunityId || loadingMembers) return;
+
+        const community = localCommunities.find(c => c.id === selectedCommunityId);
+        if (!community) return;
+
+        setLoadingMembers(true);
+        try {
+            const memberSet = new Set<string>();
+
+            // Always include community creator
+            if (community.creator) {
+                memberSet.add(community.creator.toLowerCase());
+            }
+
+            // Include authors of posts in this community
+            const communityPosts = posts.filter(post => post.communityId === selectedCommunityId);
+            for (const post of communityPosts) {
+                if (post.author) {
+                    memberSet.add(post.author.toLowerCase());
+                }
+            }
+
+            const addresses = Array.from(memberSet);
+            setMembersList(addresses);
+
+            // Load basic profile info for each address (nickname + avatar)
+            const profilesMap = new Map<string, { nickname: string; profilePicture: string }>();
+            for (const addr of addresses) {
+                try {
+                    const profile = await profileService.getProfile(addr);
+                    if (profile) {
+                        profilesMap.set(addr.toLowerCase(), {
+                            nickname: profile.nickname || "",
+                            profilePicture: profile.profilePicture || "",
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error loading member profile:", error);
+                }
+            }
+            setMembersProfiles(profilesMap);
+        } finally {
+            setLoadingMembers(false);
+        }
+    };
+
+    const handleMembersClick = () => {
+        if (!showMembersMenu) {
+            loadMembers();
+        }
+        setShowMembersMenu(prev => !prev);
+    };
+
+    // Reset members data when community changes
+    useEffect(() => {
+        setMembersList([]);
+        setMembersProfiles(new Map());
+        setShowMembersMenu(false);
+    }, [selectedCommunityId]);
+
+    // Close members menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (membersMenuRef.current && !membersMenuRef.current.contains(event.target as Node)) {
+                setShowMembersMenu(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     // Render Create Post Form
     const renderCreatePostForm = () => (
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-6 shadow-sm">
@@ -1930,7 +2015,7 @@ export const IntegratedView = ({
                     )}
                 </div>
 
-                {/* Community info */}
+                {/* Community info + Members menu */}
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
                     <span className="text-slate-500 dark:text-slate-400 text-sm">
                         {selectedCommunityId ? (
@@ -1941,6 +2026,90 @@ export const IntegratedView = ({
                             "All communities"
                         )}
                     </span>
+
+                    {selectedCommunityId && (
+                        <div className="relative" ref={membersMenuRef}>
+                            <button
+                                onClick={handleMembersClick}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80 text-xs font-medium text-slate-600 dark:text-slate-300 hover:border-sky-300 dark:hover:border-sky-600 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <Users className="w-3.5 h-3.5" />
+                                <span>Members</span>
+                                <ChevronDown
+                                    className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform ${showMembersMenu ? "rotate-180" : ""}`}
+                                />
+                            </button>
+
+                            {showMembersMenu && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-700 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            Members ({
+                                                membersList.length ||
+                                                localCommunities.find(c => c.id === selectedCommunityId)?.memberCount ||
+                                                0
+                                            })
+                                        </p>
+                                        <button
+                                            onClick={() => setShowMembersMenu(false)}
+                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="max-h-[320px] overflow-y-auto">
+                                        {loadingMembers ? (
+                                            <div className="flex items-center justify-center py-8">
+                                                <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        ) : membersList.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
+                                                <User className="w-8 h-8 mb-2 opacity-50" />
+                                                <p className="text-sm">No members found yet</p>
+                                            </div>
+                                        ) : (
+                                            membersList.map((addr) => {
+                                                const profile = membersProfiles.get(addr.toLowerCase());
+                                                return (
+                                                    <button
+                                                        key={addr}
+                                                        onClick={() => {
+                                                            window.location.href = `/profile?address=${addr}`;
+                                                            setShowMembersMenu(false);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0 text-left"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
+                                                            {profile?.profilePicture ? (
+                                                                <img
+                                                                    src={profile.profilePicture}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                                {profile?.nickname || formatAddress(addr)}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                                {formatAddress(addr)}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
