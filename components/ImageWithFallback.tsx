@@ -10,6 +10,8 @@ interface ImageWithFallbackProps {
   fallback?: React.ReactNode;
   onLoad?: () => void;
   onError?: () => void;
+  maxRetries?: number;
+  retryDelay?: number;
 }
 
 /**
@@ -28,13 +30,17 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   fallback,
   onLoad,
   onError,
+  maxRetries = 3,
+  retryDelay = 1000,
 }) => {
   const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
+  const [retryCount, setRetryCount] = useState(0);
   const attemptedUrls = useRef<Set<string>>(new Set());
   const imgRef = useRef<HTMLImageElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate all possible URLs from the CID
   useEffect(() => {
@@ -66,7 +72,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     onLoad?.();
   };
 
-  // Handle image load error - try next gateway
+  // Handle image load error - try next gateway or retry
   const handleImageError = () => {
     const currentUrl = urls[currentUrlIndex];
     attemptedUrls.current.add(currentUrl);
@@ -74,8 +80,22 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     // Try next gateway if available
     if (currentUrlIndex < urls.length - 1) {
       setCurrentUrlIndex((prev) => prev + 1);
+      setRetryCount(0); // Reset retry count for new gateway
+    } else if (retryCount < maxRetries) {
+      // Retry current gateway with exponential backoff
+      const delay = retryDelay * Math.pow(2, retryCount);
+      setRetryCount((prev) => prev + 1);
+      
+      retryTimeoutRef.current = setTimeout(() => {
+        // Force re-render by toggling a state
+        setImageLoaded(false);
+        // Retry same URL
+        if (imgRef.current) {
+          imgRef.current.src = currentUrl;
+        }
+      }, delay);
     } else {
-      // All gateways failed
+      // All gateways and retries failed
       setHasError(true);
       onError?.();
     }
@@ -87,6 +107,15 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
       setImageLoaded(false);
     }
   }, [currentUrlIndex, urls]);
+
+  // Cleanup retry timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Don't render anything if no CID provided
   if (!cid || urls.length === 0) {
@@ -114,7 +143,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
         }}
       />
       {!imageLoaded && !hasError && (
-        <div className={`${className} animate-pulse bg-slate-200 dark:bg-slate-700`} />
+        <div className={`${className} flex items-center justify-center bg-slate-200 dark:bg-slate-700`}>
+          <div className="w-6 h-6 border-2 border-slate-400 dark:border-slate-500 border-t-transparent rounded-full animate-spin" />
+        </div>
       )}
     </>
   );

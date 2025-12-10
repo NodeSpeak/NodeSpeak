@@ -31,6 +31,98 @@ const GATEWAYS: Array<(cid: string) => string> = [
   (cid) => `https://w3s.link/ipfs/${cid}`,
 ];
 
+// Gateway health tracking for intelligent failover
+interface GatewayHealth {
+  failures: number;
+  lastFailure: number;
+  lastSuccess: number;
+}
+
+const gatewayHealth = new Map<number, GatewayHealth>();
+
+/**
+ * Normalize CID/URL to extract clean CID
+ * Handles: ipfs://, /ipfs/, https://gateway.../ipfs/, raw CIDs
+ */
+function normalizeCID(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+
+  // Already a full HTTP/HTTPS URL - extract CID from it
+  if (input.startsWith('http://') || input.startsWith('https://')) {
+    // Extract CID from gateway URL: https://gateway.../ipfs/Qm...
+    const match = input.match(/\/ipfs\/([a-zA-Z0-9]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    // If no /ipfs/ found, might be a direct URL - return as is for now
+    return input;
+  }
+
+  // Remove ipfs:// protocol
+  let normalized = input.replace(/^ipfs:\/\//, '');
+
+  // Remove leading /ipfs/ or ipfs/ path segments
+  normalized = normalized.replace(/^\/?ipfs\//, '');
+
+  // Handle paths like "Qm.../filename" - take only the CID part
+  if (normalized.includes('/')) {
+    const parts = normalized.split('/');
+    normalized = parts[0];
+  }
+
+  // Trim whitespace
+  normalized = normalized.trim();
+
+  return normalized;
+}
+
+/**
+ * Check if a string is already a full URL
+ */
+function isFullURL(input: string): boolean {
+  return input.startsWith('http://') || input.startsWith('https://');
+}
+
+/**
+ * Record gateway success
+ */
+function recordGatewaySuccess(gatewayIndex: number): void {
+  const health = gatewayHealth.get(gatewayIndex) || { failures: 0, lastFailure: 0, lastSuccess: 0 };
+  health.lastSuccess = Date.now();
+  health.failures = Math.max(0, health.failures - 1); // Reduce failure count on success
+  gatewayHealth.set(gatewayIndex, health);
+}
+
+/**
+ * Record gateway failure
+ */
+function recordGatewayFailure(gatewayIndex: number): void {
+  const health = gatewayHealth.get(gatewayIndex) || { failures: 0, lastFailure: 0, lastSuccess: 0 };
+  health.failures++;
+  health.lastFailure = Date.now();
+  gatewayHealth.set(gatewayIndex, health);
+}
+
+/**
+ * Get gateways sorted by health (fewer failures first)
+ */
+function getHealthSortedGateways(): number[] {
+  const indices = Array.from({ length: GATEWAYS.length }, (_, i) => i);
+  
+  return indices.sort((a, b) => {
+    const healthA = gatewayHealth.get(a) || { failures: 0, lastFailure: 0, lastSuccess: 0 };
+    const healthB = gatewayHealth.get(b) || { failures: 0, lastFailure: 0, lastSuccess: 0 };
+    
+    // Prioritize gateways with fewer failures
+    if (healthA.failures !== healthB.failures) {
+      return healthA.failures - healthB.failures;
+    }
+    
+    // If same failures, prefer more recent success
+    return healthB.lastSuccess - healthA.lastSuccess;
+  });
+}
+
 // Default timeout for IPFS requests (ms)
 const DEFAULT_TIMEOUT = 5000;
 
@@ -200,14 +292,35 @@ export async function fetchText(
     throw new Error('[ipfsClient] CID is required');
   }
 
+  // Normalize the CID
+  const normalizedCID = normalizeCID(cid);
+  if (!normalizedCID) {
+    throw new Error('[ipfsClient] Invalid CID after normalization');
+  }
+
+  // If it's still a full URL after normalization, use it directly
+  if (isFullURL(normalizedCID)) {
+    try {
+      const response = await axios.get(normalizedCID, {
+        timeout: options.timeout || DEFAULT_TIMEOUT,
+        responseType: 'text',
+        validateStatus: (status) => status === 200,
+      });
+      return typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+    } catch (error) {
+      console.error(`[ipfsClient] Direct URL fetch failed: ${normalizedCID}`);
+      throw error;
+    }
+  }
+
   const { 
     timeout = DEFAULT_TIMEOUT, 
     useCache = true,
     cacheTTL = DEFAULT_CACHE_TTL 
   } = options;
 
-  // Check cache first
-  const cacheKey = `text:${cid}`;
+  // Check cache first (use normalized CID for cache key)
+  const cacheKey = `text:${normalizedCID}`;
   if (useCache) {
     const cached = getCached<string>(cacheKey, cacheTTL);
     if (cached !== null) {
@@ -215,11 +328,14 @@ export async function fetchText(
     }
   }
 
-  // Try each gateway in order
+  // Try each gateway in health-sorted order
   let lastError: Error | null = null;
+  const sortedIndices = getHealthSortedGateways();
   
-  for (const gateway of GATEWAYS) {
-    const url = gateway(cid);
+  for (const gatewayIndex of sortedIndices) {
+    const gateway = GATEWAYS[gatewayIndex];
+    const url = gateway(normalizedCID);
+    
     try {
       const response = await axios.get(url, {
         timeout,
@@ -231,21 +347,23 @@ export async function fetchText(
         ? response.data 
         : JSON.stringify(response.data);
 
-      // Cache the successful result
+      // Record success and cache result
+      recordGatewaySuccess(gatewayIndex);
       if (useCache) {
         setCache(cacheKey, text);
       }
 
       return text;
     } catch (error) {
+      recordGatewayFailure(gatewayIndex);
       lastError = error instanceof Error ? error : new Error(String(error));
       // Continue to next gateway
     }
   }
 
   // All gateways failed
-  console.error(`[ipfsClient] All gateways failed for CID: ${cid}`);
-  throw lastError || new Error(`IPFS fetch failed for all gateways: ${cid}`);
+  console.error(`[ipfsClient] All gateways failed for CID: ${normalizedCID}`);
+  throw lastError || new Error(`IPFS fetch failed for all gateways: ${normalizedCID}`);
 }
 
 /**
@@ -360,19 +478,27 @@ export async function fetchContent(
 
 /**
  * Get the best image URL for a CID
- * Uses the primary gateway (Pinata) for images
+ * Uses the healthiest gateway for images
  * 
  * @param cid - The Content Identifier of the image
  * @returns The full URL to the image, or empty string if no CID
  */
 export function getImageUrl(cid: string): string {
   if (!cid) return '';
-  // If already a full URL, return as is
-  if (cid.startsWith('http://') || cid.startsWith('https://')) {
-    return cid;
+  
+  // Normalize the CID
+  const normalizedCID = normalizeCID(cid);
+  if (!normalizedCID) return '';
+  
+  // If it's already a full URL after normalization, return it
+  if (isFullURL(normalizedCID)) {
+    return normalizedCID;
   }
-  // Use primary gateway for images (Pinata has good CDN)
-  return GATEWAYS[0](cid);
+  
+  // Use the healthiest gateway for images
+  const sortedIndices = getHealthSortedGateways();
+  const bestGatewayIndex = sortedIndices[0] || 0;
+  return GATEWAYS[bestGatewayIndex](normalizedCID);
 }
 
 /**
@@ -385,19 +511,42 @@ export function getImageUrl(cid: string): string {
  */
 export function getImageUrlWithGateway(cid: string, gatewayIndex: number): string {
   if (!cid) return '';
+  
+  // Normalize the CID
+  const normalizedCID = normalizeCID(cid);
+  if (!normalizedCID) return '';
+  
+  // If it's already a full URL, return it
+  if (isFullURL(normalizedCID)) {
+    return normalizedCID;
+  }
+  
   const index = Math.min(gatewayIndex, GATEWAYS.length - 1);
-  return GATEWAYS[index](cid);
+  return GATEWAYS[index](normalizedCID);
 }
 
 /**
  * Get all possible image URLs for a CID (for fallback loading)
+ * Returns URLs sorted by gateway health
  * 
  * @param cid - The Content Identifier of the image
- * @returns Array of URLs from all gateways
+ * @returns Array of URLs from all gateways, sorted by health
  */
 export function getAllImageUrls(cid: string): string[] {
   if (!cid) return [];
-  return GATEWAYS.map((gateway) => gateway(cid));
+  
+  // Normalize the CID
+  const normalizedCID = normalizeCID(cid);
+  if (!normalizedCID) return [];
+  
+  // If it's already a full URL, return it as single-item array
+  if (isFullURL(normalizedCID)) {
+    return [normalizedCID];
+  }
+  
+  // Return URLs sorted by gateway health
+  const sortedIndices = getHealthSortedGateways();
+  return sortedIndices.map(index => GATEWAYS[index](normalizedCID));
 }
 
 // =============================================================================
