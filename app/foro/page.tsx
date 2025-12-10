@@ -8,6 +8,7 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { IntegratedView } from '@/components/IntegratedView';
+import { Users } from 'lucide-react';
 import {
     useCommunities,
     useCommunityPosts,
@@ -161,9 +162,10 @@ export default function Home() {
                         <div className="mt-4">
                             <button
                                 onClick={() => setShowCommunityList(true)}
-                                className="text-slate-500 dark:text-slate-400 text-sm px-4 py-2 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 transition-colors inline-flex items-center gap-2"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                             >
-                                ← Communities
+                                <Users className="w-4 h-4" />
+                                Communities
                             </button>
                         </div>
                     )}
