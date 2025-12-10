@@ -169,40 +169,46 @@ export default function Home() {
                     )}
                 </header>
 
-                {isConnected && (
-                    <main className="space-y-6">
-                        {/* Loading indicator */}
-                        {isLoading && (
-                            <div className="text-center p-6">
-                                <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading...</p>
-                            </div>
-                        )}
+                <main className="space-y-6">
+                    {!isConnected && (
+                        <div className="p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300">
+                            <p className="text-sm">
+                                You can explore public communities without connecting your wallet. Connect when you want to create, join or interact.
+                            </p>
+                        </div>
+                    )}
 
-                        <IntegratedView
-                            communities={communities}
-                            posts={posts}
-                            fetchPostsFromContract={fetchPostsFromContract}
-                            forumAddress={forumAddress}
-                            forumABI={forumABI}
-                            provider={null}
-                            isCreatingCommunity={false}
-                            setIsCreatingCommunity={() => {}}
-                            handleCreateCommunity={handleCreateCommunity}
-                            handleJoinCommunity={handleJoinCommunity}
-                            handleLeaveCommunity={handleLeaveCommunity}
-                            isLoading={isLoading}
-                            creatingCommunity={createCommunityMutation.isPending}
-                            joiningCommunityId={joinCommunityMutation.isPending ? (joinCommunityMutation.variables as string) : null}
-                            leavingCommunityId={leaveCommunityMutation.isPending ? (leaveCommunityMutation.variables as string) : null}
-                            selectedCommunityId={selectedCommunityId}
-                            setSelectedCommunityId={setSelectedCommunityId}
-                            fetchPostsForCommunity={fetchPostsForCommunity}
-                            showCommunityList={showCommunityList}
-                            setShowCommunityList={setShowCommunityList}
-                            refreshCommunities={async () => { await refetchCommunities(); }}
-                        />
-                    </main>
-                )}
+                    {/* Loading indicator */}
+                    {isLoading && (
+                        <div className="text-center p-6">
+                            <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading...</p>
+                        </div>
+                    )}
+
+                    <IntegratedView
+                        communities={communities}
+                        posts={posts}
+                        fetchPostsFromContract={fetchPostsFromContract}
+                        forumAddress={forumAddress}
+                        forumABI={forumABI}
+                        provider={null}
+                        isCreatingCommunity={false}
+                        setIsCreatingCommunity={() => {}}
+                        handleCreateCommunity={handleCreateCommunity}
+                        handleJoinCommunity={handleJoinCommunity}
+                        handleLeaveCommunity={handleLeaveCommunity}
+                        isLoading={isLoading}
+                        creatingCommunity={createCommunityMutation.isPending}
+                        joiningCommunityId={joinCommunityMutation.isPending ? (joinCommunityMutation.variables as string) : null}
+                        leavingCommunityId={leaveCommunityMutation.isPending ? (leaveCommunityMutation.variables as string) : null}
+                        selectedCommunityId={selectedCommunityId}
+                        setSelectedCommunityId={setSelectedCommunityId}
+                        fetchPostsForCommunity={fetchPostsForCommunity}
+                        showCommunityList={showCommunityList}
+                        setShowCommunityList={setShowCommunityList}
+                        refreshCommunities={async () => { await refetchCommunities(); }}
+                    />
+                </main>
             </div>
             <AdminFloatingButton />
         </div>
