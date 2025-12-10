@@ -360,11 +360,20 @@ export default function ActivityPage() {
 
                 {/* Page Title */}
                 <div className="mb-8">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/50 dark:to-violet-800/30 flex items-center justify-center">
-                            <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/50 dark:to-violet-800/30 flex items-center justify-center">
+                                <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                            </div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
+                        <Link
+                            href="/foro"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+                        >
+                            <Users className="w-4 h-4" />
+                            Communities
+                        </Link>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 ml-13">Latest posts from all communities</p>
                 </div>
