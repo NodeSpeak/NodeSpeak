@@ -59,19 +59,11 @@ function TypingEffect({ text }: { text: string }) {
 function Landing() {
     const { isConnected, connect } = useWalletContext();
     const router = useRouter();
-    const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
     // Handler para el botón "Explore the forum" - navega directamente sin login
     const handleExplore = () => {
-        setRedirectTo('/activity');
+        router.push('/activity');
     };
-
-    // Efecto para redirigir cuando isConnected cambia
-    useEffect(() => {
-        if (isConnected && redirectTo) {
-            router.push(redirectTo);
-        }
-    }, [isConnected, router, redirectTo]);
 
     // Si no está conectado, muestra la landing principal con estilo claro
     return (
