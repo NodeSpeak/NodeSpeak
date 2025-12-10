@@ -105,12 +105,10 @@ function Landing() {
                                 <div className="flex flex-wrap items-center gap-4 mb-10">
                                     <button 
                                         onClick={handleExplore}
-                                        className="group/btn relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 dark:from-sky-500 dark:to-indigo-600 text-white font-medium text-sm shadow-lg shadow-slate-300 dark:shadow-sky-900/50 hover:shadow-xl hover:shadow-slate-400/50 dark:hover:shadow-sky-700/50 transition-all duration-300 hover:-translate-y-0.5"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                                     >
+                                        <Users className="w-4 h-4" />
                                         <span>Explore Forum</span>
-                                        <svg className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
                                     </button>
                                 </div>
 

@@ -399,10 +399,10 @@ export default function ActivityPage() {
                         <button
                             type="button"
                             onClick={handleGoToForo}
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 text-white font-medium text-sm shadow-lg hover:shadow-xl transition-all"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                         >
+                            <Users className="w-4 h-4" />
                             Browse Communities
-                            <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 )}

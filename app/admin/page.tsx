@@ -61,14 +61,13 @@ export default function AdminPage() {
                   {address}
                 </code>
               </div>
-              <Button
+              <button
                 onClick={() => router.push("/foro")}
-                className="w-full"
-                variant="outline"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <Users className="w-4 h-4" />
                 Volver al Foro
-              </Button>
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -106,11 +105,12 @@ export default function AdminPage() {
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Link href="/foro">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <ArrowLeft className="w-4 h-4" />
-                  Volver al Foro
-                </Button>
+              <Link
+                href="/foro"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <Users className="w-4 h-4" />
+                Volver al Foro
               </Link>
               <div className="bg-slate-100 dark:bg-slate-700 px-4 py-2 rounded-lg">
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Administrador conectado</p>
