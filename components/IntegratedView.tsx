@@ -1890,7 +1890,75 @@ export const IntegratedView = ({
     // Render Posts List
     const renderPostsList = () => (
         <div className="space-y-6">
-            {/* Topics filter strip */}
+            {/* Selected community info (cover, photo, name) */}
+            {selectedCommunityId && (
+                <div className="mb-4">
+                    {(() => {
+                        const community = localCommunities.find(c => c.id === selectedCommunityId);
+                        return community?.coverImage ? (
+                            <div className="relative mb-12">
+                                {/* Cover image container */}
+                                <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <ImageWithFallback
+                                        cid={community.coverImage}
+                                        alt={`${getCommunityName(selectedCommunityId)} cover`}
+                                        className="w-full h-full object-cover"
+                                        fallback={<div className="w-full h-full bg-slate-200 dark:bg-slate-700" />}
+                                    />
+                                </div>
+                                {/* Community photo overlapping cover image */}
+                                <div className="absolute -bottom-10 left-6 flex items-end gap-4">
+                                    {community.photo && (
+                                        <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
+                                            <ImageWithFallback
+                                                cid={community.photo}
+                                                alt={community.name}
+                                                className="w-full h-full object-cover"
+                                                fallback={
+                                                    <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                        <span className="text-slate-400 dark:text-slate-500 text-3xl font-semibold">
+                                                            {community.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Community name next to photo */}
+                                    <div className="mb-2">
+                                        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{community.name}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            // Fallback when no cover image
+                            <div className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
+                                {community?.photo ? (
+                                    <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
+                                        <ImageWithFallback
+                                            cid={community.photo}
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            fallback={
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                                                    {community?.name.charAt(0).toUpperCase() || "C"}
+                                                </div>
+                                            }
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border-2 border-slate-200 dark:border-slate-600 mr-4">
+                                        {community?.name.charAt(0).toUpperCase() || "C"}
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{community?.name}</h2>
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
+
+            {/* Topics filter strip + viewing info + members & back button */}
             <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Filter:</span>
@@ -1932,17 +2000,27 @@ export const IntegratedView = ({
                     )}
                 </div>
 
-                {/* Community info + Members menu */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500 dark:text-slate-400 text-sm">
-                        {selectedCommunityId ? (
-                            <>
-                                Viewing: <span className="text-slate-900 dark:text-slate-100 font-medium">{getCommunityName(selectedCommunityId)}</span>
-                            </>
-                        ) : (
-                            "All communities"
+                {/* Community info + Members menu + back to communities */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-wrap items-center gap-3">
+                        {!showCommunityList && (
+                            <button
+                                onClick={() => setShowCommunityList(true)}
+                                className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm px-3 py-1.5 rounded-lg hover:bg-white/70 dark:hover:bg-slate-700/60 transition-colors inline-flex items-center gap-2"
+                            >
+                                Communities
+                            </button>
                         )}
-                    </span>
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">
+                            {selectedCommunityId ? (
+                                <>
+                                    Viewing: <span className="text-slate-900 dark:text-slate-100 font-medium">{getCommunityName(selectedCommunityId)}</span>
+                                </>
+                            ) : (
+                                "All communities"
+                            )}
+                        </span>
+                    </div>
 
                     {selectedCommunityId && (
                         <div className="relative" ref={membersMenuRef}>
@@ -2034,73 +2112,6 @@ export const IntegratedView = ({
                     )}
                 </div>
             </div>
-
-            {selectedCommunityId && (
-                <div className="mb-4">
-                    {(() => {
-                        const community = localCommunities.find(c => c.id === selectedCommunityId);
-                        return community?.coverImage ? (
-                            <div className="relative mb-12">
-                                {/* Cover image container */}
-                                <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <ImageWithFallback
-                                        cid={community.coverImage}
-                                        alt={`${getCommunityName(selectedCommunityId)} cover`}
-                                        className="w-full h-full object-cover"
-                                        fallback={<div className="w-full h-full bg-slate-200 dark:bg-slate-700" />}
-                                    />
-                                </div>
-                                {/* Community photo overlapping cover image */}
-                                <div className="absolute -bottom-10 left-6 flex items-end gap-4">
-                                    {community.photo && (
-                                        <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
-                                            <ImageWithFallback
-                                                cid={community.photo}
-                                                alt={community.name}
-                                                className="w-full h-full object-cover"
-                                                fallback={
-                                                    <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                        <span className="text-slate-400 dark:text-slate-500 text-3xl font-semibold">
-                                                            {community.name.charAt(0).toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                }
-                                            />
-                                        </div>
-                                    )}
-                                    {/* Community name next to photo */}
-                                    <div className="mb-2">
-                                        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{community.name}</h2>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            // Fallback when no cover image
-                            <div className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
-                                {community?.photo ? (
-                                    <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
-                                        <ImageWithFallback
-                                            cid={community.photo}
-                                            alt={community.name}
-                                            className="w-full h-full object-cover"
-                                            fallback={
-                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
-                                                    {community?.name.charAt(0).toUpperCase() || "C"}
-                                                </div>
-                                            }
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border-2 border-slate-200 dark:border-slate-600 mr-4">
-                                        {community?.name.charAt(0).toUpperCase() || "C"}
-                                    </div>
-                                )}
-                                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{community?.name}</h2>
-                            </div>
-                        );
-                    })()}
-                </div>
-            )}
             {/* Closed community access denied view */}
             {selectedCommunityId && (() => {
                 const community = localCommunities.find(c => c.id === selectedCommunityId);
