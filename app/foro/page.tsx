@@ -26,6 +26,7 @@ export default function Home() {
     // UI State
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
     const [showCommunityList, setShowCommunityList] = useState(true);
+    const [isCreatingCommunity, setIsCreatingCommunity] = useState(false);
 
     // React Query hooks
     const {
@@ -194,8 +195,8 @@ export default function Home() {
                         forumAddress={forumAddress}
                         forumABI={forumABI}
                         provider={null}
-                        isCreatingCommunity={false}
-                        setIsCreatingCommunity={() => {}}
+                        isCreatingCommunity={isCreatingCommunity}
+                        setIsCreatingCommunity={setIsCreatingCommunity}
                         handleCreateCommunity={handleCreateCommunity}
                         handleJoinCommunity={handleJoinCommunity}
                         handleLeaveCommunity={handleLeaveCommunity}
