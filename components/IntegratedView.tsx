@@ -6,10 +6,10 @@ import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
-import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus } from "lucide-react";
+import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus, Users, ChevronDown, X, User } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
-import axios from "axios";
+import { uploadFile } from "@/lib/ipfsClient";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
@@ -17,8 +17,19 @@ import Italic from '@tiptap/extension-italic';
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import { UserAvatar } from "@/components/UserAvatar";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
+import { useProfileService } from "@/lib/profileService";
+import {
+    useAddComment,
+    useDeactivateComment,
+    useLikePost,
+    useDeactivatePost,
+    useAddTopic,
+    useDeactivateCommunity,
+    useUserPostLikes,
+} from "@/hooks/queries";
 
 // Types
 interface Community {
@@ -208,6 +219,7 @@ export const IntegratedView = ({
     const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
     const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
     const { isCommunityOpen, canViewContent, requestMembership, hasPendingRequest, getPendingRequests } = useCommunitySettings();
+    const profileService = useProfileService();
 
     // State for both components
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -262,6 +274,25 @@ export const IntegratedView = ({
     const [tempCommunityLogoImage, setTempCommunityLogoImage] = useState<string>("");
     const [communityLogoFile, setCommunityLogoFile] = useState<File | null>(null);
     const [communityLogoPreview, setCommunityLogoPreview] = useState<string>("");
+
+    // Members dropdown state for selected community
+    const [showMembersMenu, setShowMembersMenu] = useState(false);
+    const [membersList, setMembersList] = useState<string[]>([]);
+    const [membersProfiles, setMembersProfiles] = useState<Map<string, { nickname: string; profilePicture: string }>>(new Map());
+    const [loadingMembers, setLoadingMembers] = useState(false);
+    const membersMenuRef = useRef<HTMLDivElement | null>(null);
+
+    // React Query Mutations
+    const likePostMutation = useLikePost();
+    const deactivatePostMutation = useDeactivatePost();
+    const addCommentMutation = useAddComment();
+    const deactivateCommentMutation = useDeactivateComment();
+    const addTopicMutation = useAddTopic();
+    const deactivateCommunityMutation = useDeactivateCommunity();
+
+    // React Query for user likes - get post IDs from visible posts
+    const postIds = useMemo(() => posts.map(p => p.id), [posts]);
+    const { data: userLikedPostsData = {} } = useUserPostLikes(postIds);
 
     // Update local communities when prop changes
     useEffect(() => {
@@ -358,53 +389,12 @@ export const IntegratedView = ({
         }
     }, [isCreatingPost]);
 
-    // Check which posts the current user has liked
+    // Sync React Query user likes data with local state
     useEffect(() => {
-        const checkUserLikes = async () => {
-            if (!isConnected || !walletProvider || !posts.length) return;
-            
-            try {
-                const signer = await walletProvider.getSigner();
-                const userAddress = await signer.getAddress();
-                
-                // ABI for postLikes mapping (public mapping generates getter)
-                const postManagerABI = [
-                    {
-                        "inputs": [
-                            { "internalType": "uint32", "name": "", "type": "uint32" },
-                            { "internalType": "address", "name": "", "type": "address" }
-                        ],
-                        "name": "postLikes",
-                        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }
-                ];
-                
-                // Get postManager address from main contract
-                const mainContract = new Contract(forumAddress, forumABI, walletProvider);
-                const postManagerAddress = await mainContract.postManager();
-                const postManager = new Contract(postManagerAddress, postManagerABI, walletProvider);
-                
-                // Check likes for all visible posts
-                const likeStatus: Record<string, boolean> = {};
-                for (const post of posts) {
-                    try {
-                        const hasLiked = await postManager.postLikes(post.id, userAddress);
-                        likeStatus[post.id] = hasLiked;
-                    } catch (e) {
-                        likeStatus[post.id] = false;
-                    }
-                }
-                
-                setUserLikedPosts(likeStatus);
-            } catch (error) {
-                console.error("Error checking user likes:", error);
-            }
-        };
-        
-        checkUserLikes();
-    }, [isConnected, walletProvider, posts, forumAddress, forumABI]);
+        if (Object.keys(userLikedPostsData).length > 0) {
+            setUserLikedPosts(userLikedPostsData);
+        }
+    }, [userLikedPostsData]);
 
     // CreatePost functions
     const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -444,27 +434,12 @@ export const IntegratedView = ({
         }
     };
 
-    async function pinFileToIPFS(file: File) {
+    // Upload file to IPFS using centralized ipfsClient
+    async function pinFileToIPFS(file: File): Promise<string> {
         try {
-            const url = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const pinataMetadata = JSON.stringify({ name: file.name || "uploaded-file" });
-            formData.append("pinataMetadata", pinataMetadata);
-
-            const res = await axios.post(url, formData, {
-                maxBodyLength: Infinity,
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                    pinata_api_key: "f8f064ba07b90906907d",
-                    pinata_secret_api_key: "4cf373c7ce0a77b1e7c26bcbc0ba2996cde5f3b508522459e7ff46afa507be08",
-                },
-            });
-
-            return res.data.IpfsHash as string;
+            return await uploadFile(file, file.name || "uploaded-file");
         } catch (err) {
-            console.error("Error uploading file to Pinata:", err);
+            console.error("Error uploading file to IPFS:", err);
             throw err;
         }
     }
@@ -743,16 +718,12 @@ export const IntegratedView = ({
             setIsSubmittingTopic(true);
             setTopicError("");
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            await addTopicMutation.mutateAsync({
+                communityId,
+                topic: newTopic,
+            });
 
-            const tx = await contract.addTopicToCommunity(communityId, newTopic);
-            console.log("Add topic transaction submitted:", tx.hash);
-
-            const receipt = await tx.wait();
-            console.log("Add topic transaction confirmed:", receipt);
-
-            // Update localCommunities first
+            // Update local state for immediate UI feedback
             setLocalCommunities(prevCommunities => {
                 const updatedCommunities = prevCommunities.map(community => {
                     if (community.id === communityId) {
@@ -765,11 +736,9 @@ export const IntegratedView = ({
                     return community;
                 });
 
-                // Actualizar también communityTopics si el ID de comunidad actual coincide
                 if (selectedCommunityId === communityId) {
                     const currentCommunity = updatedCommunities.find(c => c.id === communityId);
                     if (currentCommunity) {
-                        // Actualizar los tópicos disponibles con los topics actualizados
                         setCommunityTopics(currentCommunity.topics.map((name, index) => ({
                             id: index,
                             name
@@ -787,13 +756,7 @@ export const IntegratedView = ({
                 [communityId]: false
             }));
 
-            // Opcional: mostrar algún mensaje de éxito
             console.log(`Topic "${newTopic}" added successfully to community ${communityId}`);
-
-            // Refresh from backend if available
-            if (refreshCommunities) {
-                await refreshCommunities();
-            }
 
         } catch (error) {
             console.error("Error adding topic:", error);
@@ -1038,16 +1001,12 @@ export const IntegratedView = ({
                 [postId]: true
             }));
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
             console.log(`Adding comment to post ${postId}: "${newCommentText[postId]}"`);
 
-            const tx = await contract.addComment(postId, newCommentText[postId]);
-            console.log("Comment transaction submitted:", tx.hash);
-
-            const receipt = await tx.wait();
-            console.log("Comment transaction confirmed:", receipt);
+            await addCommentMutation.mutateAsync({
+                postId,
+                content: newCommentText[postId],
+            });
 
             // Limpiar el input de comentario
             setNewCommentText(prev => ({
@@ -1055,17 +1014,10 @@ export const IntegratedView = ({
                 [postId]: ""
             }));
 
-            // Primero refrescar los comentarios de este post específico
+            // Refrescar comentarios locales
             await fetchCommentsForPost(postId);
 
-            // Luego refrescar los posts para actualizar el contador de comentarios
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                await fetchPostsFromContract();
-            }
-
-            console.log(`Comment added to post ${postId} successfully and data refreshed.`);
+            console.log(`Comment added to post ${postId} successfully.`);
 
             // Asegurar que los comentarios permanezcan visibles
             setExpandedComments(prev => ({
@@ -1089,7 +1041,7 @@ export const IntegratedView = ({
             return;
         }
 
-        if (likingPost[postId]) return;
+        if (likePostMutation.isPending) return;
 
         // Check if user already liked this post
         if (userLikedPosts[postId]) {
@@ -1103,33 +1055,19 @@ export const IntegratedView = ({
                 [postId]: true
             }));
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            await likePostMutation.mutateAsync(postId);
 
-            const tx = await contract.likePost(postId);
-            await tx.wait();
-
-            // Update local like status immediately
+            // Update local like status immediately (optimistic update already done by mutation)
             setUserLikedPosts(prev => ({
                 ...prev,
                 [postId]: true
             }));
 
-            // Usar la función adecuada para refrescar los posts
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                // Si tenemos un ID de comunidad y la función específica, usarla
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                // De lo contrario, usar la función general
-                await fetchPostsFromContract();
-            }
-
-            console.log(`Post ${postId} liked successfully. Posts refreshed.`);
+            console.log(`Post ${postId} liked successfully.`);
         } catch (error) {
             console.error("Error liking post:", error);
             if (error instanceof Error && error.toString().includes("already liked")) {
                 alert("You have already liked this post.");
-                // Update local state to reflect this
                 setUserLikedPosts(prev => ({
                     ...prev,
                     [postId]: true
@@ -1152,7 +1090,7 @@ export const IntegratedView = ({
             return;
         }
 
-        if (deactivatingCommunityId === communityId) return;
+        if (deactivateCommunityMutation.isPending) return;
 
         // Confirm deactivation
         if (!window.confirm(`¿Estás seguro que deseas desactivar la comunidad "${communityName}"? Esta acción ocultará la comunidad y sus posts para todos los usuarios pero podrá ser reactivada más tarde desde el panel de administración.`)) {
@@ -1162,39 +1100,25 @@ export const IntegratedView = ({
         try {
             setDeactivatingCommunityId(communityId);
 
-            const signer = await walletProvider.getSigner();
-            const contract = new Contract(forumAddress, forumABI, signer);
+            const txHash = await deactivateCommunityMutation.mutateAsync(communityId);
 
-            // Call deactivateCommunity function in the contract
-            const tx = await contract.deactivateCommunity(communityId);
-            
-            // Show pending transaction message
-            alert(`Transacción enviada. Por favor espere la confirmación.\nHash: ${tx.hash}`);
-            
-            await tx.wait();
+            alert(`Transacción confirmada.\nHash: ${txHash}`);
 
             // Update local communities
-            setLocalCommunities(prev => 
-                prev.map(community => 
-                    community.id === communityId 
-                        ? { ...community, isActive: false } 
+            setLocalCommunities(prev =>
+                prev.map(community =>
+                    community.id === communityId
+                        ? { ...community, isActive: false }
                         : community
                 )
             );
-            
-            // También ocultar la comunidad en el AdminContext para que aparezca en el panel de control
-            // Agregamos el address del usuario como parte del reason para poder filtrar por él más tarde
-            const userAddress = await signer.getAddress();
-            const reason = `Desactivada por el creador: ${userAddress.toLowerCase()}`;
+
+            // También ocultar la comunidad en el AdminContext
+            const reason = `Desactivada por el creador: ${currentUserAddress?.toLowerCase() || 'unknown'}`;
             hideCommunity(communityId, communityName, reason);
 
-            // Refresh communities from contract
-            if (refreshCommunities) {
-                await refreshCommunities();
-            }
-
             alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
-            
+
             // If we were viewing this community, go back to community list
             if (selectedCommunityId === communityId) {
                 setSelectedCommunityId(null);
@@ -1232,25 +1156,16 @@ export const IntegratedView = ({
         try {
             setDeletingPost(prev => ({ ...prev, [postId]: true }));
 
-            const signer = await walletProvider.getSigner();
-            const userAddress = await signer.getAddress();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            // Only the post author can delete their post
-            if (postAuthor.toLowerCase() !== userAddress.toLowerCase()) {
+            // Check author permission on client side
+            if (currentUserAddress && postAuthor.toLowerCase() !== currentUserAddress.toLowerCase()) {
                 alert("Only the post author can delete this post.");
                 return;
             }
 
-            const tx = await contract.deactivatePost(postId);
-            await tx.wait();
-
-            // Refresh posts
-            if (selectedCommunityId && fetchPostsForCommunity) {
-                await fetchPostsForCommunity(selectedCommunityId);
-            } else {
-                await fetchPostsFromContract();
-            }
+            await deactivatePostMutation.mutateAsync({
+                postId,
+                communityId: selectedCommunityId || '',
+            });
 
             console.log(`Post ${postId} deleted successfully.`);
         } catch (error: any) {
@@ -1293,26 +1208,20 @@ export const IntegratedView = ({
         try {
             setDeletingComment(prev => ({ ...prev, [comment.id]: true }));
 
-            const signer = await walletProvider.getSigner();
-            const userAddress = await signer.getAddress();
-            const contract = new Contract(forumAddress, forumABI, signer);
-
-            // Only the comment author can delete their comment
-            if (comment.author.toLowerCase() !== userAddress.toLowerCase()) {
+            // Check author permission on client side
+            if (currentUserAddress && comment.author.toLowerCase() !== currentUserAddress.toLowerCase()) {
                 alert("Only the comment author can delete this comment.");
                 return;
             }
 
-            // Use the 1-based index for the contract call
-            const numericPostId = parseInt(comment.postId, 10);
-            const commentIndex = comment.index; // Already 1-based
-            
-            console.log(`Deleting comment - postId: ${numericPostId}, commentIndex: ${commentIndex}`);
+            console.log(`Deleting comment - postId: ${comment.postId}, commentIndex: ${comment.index}`);
 
-            const tx = await contract.deactivateComment(numericPostId, commentIndex);
-            await tx.wait();
+            await deactivateCommentMutation.mutateAsync({
+                postId: comment.postId,
+                commentIndex: comment.index,
+            });
 
-            // Refresh comments for this post
+            // Refresh comments for this post (optimistic update already done by mutation)
             setComments(prev => ({
                 ...prev,
                 [comment.postId]: prev[comment.postId]?.filter(c => c.id !== comment.id) || []
@@ -1364,6 +1273,82 @@ export const IntegratedView = ({
     };
 
     const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
+
+    // Load members list (creator + post authors) for the selected community
+    const loadMembers = async () => {
+        if (!selectedCommunityId || loadingMembers) return;
+
+        const community = localCommunities.find(c => c.id === selectedCommunityId);
+        if (!community) return;
+
+        setLoadingMembers(true);
+        try {
+            const memberSet = new Set<string>();
+
+            // Always include community creator
+            if (community.creator) {
+                memberSet.add(community.creator.toLowerCase());
+            }
+
+            // Include authors of posts in this community
+            const communityPosts = posts.filter(post => post.communityId === selectedCommunityId);
+            for (const post of communityPosts) {
+                if (post.author) {
+                    memberSet.add(post.author.toLowerCase());
+                }
+            }
+
+            const addresses = Array.from(memberSet);
+            setMembersList(addresses);
+
+            // Load basic profile info for each address (nickname + avatar)
+            const profilesMap = new Map<string, { nickname: string; profilePicture: string }>();
+            for (const addr of addresses) {
+                try {
+                    const profile = await profileService.getProfile(addr);
+                    if (profile) {
+                        profilesMap.set(addr.toLowerCase(), {
+                            nickname: profile.nickname || "",
+                            profilePicture: profile.profilePicture || "",
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error loading member profile:", error);
+                }
+            }
+            setMembersProfiles(profilesMap);
+        } finally {
+            setLoadingMembers(false);
+        }
+    };
+
+    const handleMembersClick = () => {
+        if (!showMembersMenu) {
+            loadMembers();
+        }
+        setShowMembersMenu(prev => !prev);
+    };
+
+    // Reset members data when community changes
+    useEffect(() => {
+        setMembersList([]);
+        setMembersProfiles(new Map());
+        setShowMembersMenu(false);
+    }, [selectedCommunityId]);
+
+    // Close members menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (membersMenuRef.current && !membersMenuRef.current.contains(event.target as Node)) {
+                setShowMembersMenu(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     // Render Create Post Form
     const renderCreatePostForm = () => (
@@ -1710,14 +1695,11 @@ export const IntegratedView = ({
                             <div className="relative h-40">
                                 {community.coverImage ? (
                                     <>
-                                        <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
+                                        <ImageWithFallback
+                                            cid={community.coverImage}
                                             alt={`${community.name} cover`}
                                             className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.style.display = 'none';
-                                            }}
+                                            fallback={<div className="w-full h-full bg-gradient-to-br from-indigo-100 via-slate-100 to-slate-50" />}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                                     </>
@@ -1794,10 +1776,15 @@ export const IntegratedView = ({
                                         {/* Avatar */}
                                         <div className="flex-shrink-0 w-16 h-16 rounded-2xl border-3 border-white bg-white shadow-lg overflow-hidden">
                                             {community.photo ? (
-                                                <img 
-                                                    src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
+                                                <ImageWithFallback
+                                                    cid={community.photo}
                                                     alt={community.name}
                                                     className="w-full h-full object-cover"
+                                                    fallback={
+                                                        <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold text-xl">
+                                                            {community.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    }
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold text-xl">
@@ -1903,10 +1890,81 @@ export const IntegratedView = ({
     // Render Posts List
     const renderPostsList = () => (
         <div className="space-y-6">
-            {/* Topics filter strip */}
+            {/* Selected community info (cover, photo, name) */}
+            {selectedCommunityId && (
+                <div className="mb-4">
+                    {(() => {
+                        const community = localCommunities.find(c => c.id === selectedCommunityId);
+                        return community?.coverImage ? (
+                            <div className="relative mb-12">
+                                {/* Cover image container */}
+                                <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <ImageWithFallback
+                                        cid={community.coverImage}
+                                        alt={`${getCommunityName(selectedCommunityId)} cover`}
+                                        className="w-full h-full object-cover"
+                                        fallback={<div className="w-full h-full bg-slate-200 dark:bg-slate-700" />}
+                                    />
+                                </div>
+                                {/* Community photo overlapping cover image */}
+                                <div className="absolute -bottom-10 left-6 flex items-end gap-4">
+                                    {community.photo && (
+                                        <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
+                                            <ImageWithFallback
+                                                cid={community.photo}
+                                                alt={community.name}
+                                                className="w-full h-full object-cover"
+                                                fallback={
+                                                    <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                        <span className="text-slate-400 dark:text-slate-500 text-3xl font-semibold">
+                                                            {community.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                    {/* Community name next to photo */}
+                                    <div className="mb-2">
+                                        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{community.name}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            // Fallback when no cover image
+                            <div className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
+                                {community?.photo ? (
+                                    <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
+                                        <ImageWithFallback
+                                            cid={community.photo}
+                                            alt={community.name}
+                                            className="w-full h-full object-cover"
+                                            fallback={
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                                                    {community?.name.charAt(0).toUpperCase() || "C"}
+                                                </div>
+                                            }
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border-2 border-slate-200 dark:border-slate-600 mr-4">
+                                        {community?.name.charAt(0).toUpperCase() || "C"}
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{community?.name}</h2>
+                            </div>
+                        );
+                    })()}
+                </div>
+            )}
+
+            {/* Communities + Viewing + Members (top) + Topics filter (bottom) */}
             <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Filter:</span>
+
+                {/* Topics filter strip */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Filter:</span>
 
                     {/* Show all option */}
                     <button
@@ -1933,98 +1991,109 @@ export const IntegratedView = ({
                         </button>
                     ))}
 
-                    {/* New Topic button - only visible to community creator */}
-                    {selectedCommunityId && localCommunities.find(c => c.id === selectedCommunityId)?.isCreator && (
-                        <button
-                            onClick={() => handleQuickAddTopic(selectedCommunityId)}
-                            disabled={isSubmittingTopic}
-                            className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmittingTopic ? "Adding..." : "+ New Topic"}
-                        </button>
+                        {/* New Topic button - only visible to community creator */}
+                        {selectedCommunityId && localCommunities.find(c => c.id === selectedCommunityId)?.isCreator && (
+                            <button
+                                onClick={() => handleQuickAddTopic(selectedCommunityId)}
+                                disabled={isSubmittingTopic}
+                                className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmittingTopic ? "Adding..." : "+ New Topic"}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Members button */}
+                    {selectedCommunityId && (
+                        <div className="relative" ref={membersMenuRef}>
+                            <button
+                                onClick={handleMembersClick}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80 text-xs font-medium text-slate-600 dark:text-slate-300 hover:border-sky-300 dark:hover:border-sky-600 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <Users className="w-3.5 h-3.5" />
+                                <span>Members</span>
+                                <ChevronDown
+                                    className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform ${showMembersMenu ? "rotate-180" : ""}`}
+                                />
+                            </button>
+
+                            {showMembersMenu && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-700 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                            Members ({
+                                                membersList.length ||
+                                                localCommunities.find(c => c.id === selectedCommunityId)?.memberCount ||
+                                                0
+                                            })
+                                        </p>
+                                        <button
+                                            onClick={() => setShowMembersMenu(false)}
+                                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="max-h-[320px] overflow-y-auto">
+                                        {loadingMembers ? (
+                                            <div className="flex items-center justify-center py-8">
+                                                <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                                            </div>
+                                        ) : membersList.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
+                                                <User className="w-8 h-8 mb-2 opacity-50" />
+                                                <p className="text-sm">No members found yet</p>
+                                            </div>
+                                        ) : (
+                                            membersList.map((addr) => {
+                                                const profile = membersProfiles.get(addr.toLowerCase());
+                                                return (
+                                                    <button
+                                                        key={addr}
+                                                        onClick={() => {
+                                                            window.location.href = `/profile?address=${addr}`;
+                                                            setShowMembersMenu(false);
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-b-0 text-left"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
+                                                            {profile?.profilePicture ? (
+                                                                <ImageWithFallback
+                                                                    cid={profile.profilePicture}
+                                                                    alt=""
+                                                                    className="w-full h-full object-cover"
+                                                                    fallback={
+                                                                        <div className="w-full h-full flex items-center justify-center">
+                                                                            <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                                                        </div>
+                                                                    }
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                                                {profile?.nickname || formatAddress(addr)}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                                {formatAddress(addr)}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
-
-                {/* Community info */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500 dark:text-slate-400 text-sm">
-                        {selectedCommunityId ? (
-                            <>
-                                Viewing: <span className="text-slate-900 dark:text-slate-100 font-medium">{getCommunityName(selectedCommunityId)}</span>
-                            </>
-                        ) : (
-                            "All communities"
-                        )}
-                    </span>
-                </div>
             </div>
-
-            {selectedCommunityId && (
-                <div className="mb-4">
-                    {(() => {
-                        const community = localCommunities.find(c => c.id === selectedCommunityId);
-                        return community?.coverImage ? (
-                            <div className="relative mb-12">
-                                {/* Cover image container */}
-                                <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <img 
-                                        src={`https://gateway.pinata.cloud/ipfs/${community.coverImage}`} 
-                                        alt={`${getCommunityName(selectedCommunityId)} cover`}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            // If image fails to load, hide the container
-                                            const target = e.target as HTMLImageElement;
-                                            target.parentElement!.style.display = 'none';
-                                        }}
-                                    />
-                                </div>
-                                {/* Community photo overlapping cover image */}
-                                <div className="absolute -bottom-10 left-6 flex items-end gap-4">
-                                    {community.photo && (
-                                        <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
-                                            <img 
-                                                src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
-                                                alt={community.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback to a default image
-                                                    (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                    {/* Community name next to photo */}
-                                    <div className="mb-2">
-                                        <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{community.name}</h2>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            // Fallback when no cover image
-                            <div className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
-                                {community?.photo ? (
-                                    <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
-                                        <img 
-                                            src={`https://gateway.pinata.cloud/ipfs/${community.photo}`} 
-                                            alt={community.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                // Fallback to a default image
-                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                            }}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold border-2 border-slate-200 dark:border-slate-600 mr-4">
-                                        {community?.name.charAt(0).toUpperCase() || "C"}
-                                    </div>
-                                )}
-                                <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{community?.name}</h2>
-                            </div>
-                        );
-                    })()}
-                </div>
-            )}
             {/* Closed community access denied view */}
             {selectedCommunityId && (() => {
                 const community = localCommunities.find(c => c.id === selectedCommunityId);
@@ -2168,10 +2237,11 @@ export const IntegratedView = ({
 
                         {post.imageUrl && (
                             <div className="mt-4 flex justify-center">
-                                <img
-                                    src={post.imageUrl}
+                                <ImageWithFallback
+                                    cid={post.imageUrl}
                                     alt="Post attachment"
                                     className="max-w-full max-h-96 rounded-xl border border-slate-200 dark:border-slate-700 object-contain"
+                                    fallback={<div className="max-w-full h-96 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">Image unavailable</div>}
                                 />
                             </div>
                         )}

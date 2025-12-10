@@ -59,36 +59,11 @@ function TypingEffect({ text }: { text: string }) {
 function Landing() {
     const { isConnected, connect } = useWalletContext();
     const router = useRouter();
+
     // Handler para el botón "Explore the forum" - navega directamente sin login
     const handleExplore = () => {
         router.push('/activity');
     };
-
-    // Efecto para redirigir cuando isConnected cambia
-    useEffect(() => {
-        if (isConnected) {
-            router.push('/foro');
-        }
-    }, [isConnected, router]);
-
-    // Si está conectado, podemos mostrar un mensaje de carga mientras redirige
-    if (isConnected) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center transition-colors duration-300">
-                <div className="max-w-md w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 px-8 py-10 text-center">
-                    <p className="text-sm font-semibold tracking-[0.2em] text-slate-500 dark:text-slate-400 uppercase mb-3">
-                        Redirecting
-                    </p>
-                    <p className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">
-                        Taking you to the forum…
-                    </p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        <TypingEffect text="Loading your decentralized space" />
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     // Si no está conectado, muestra la landing principal con estilo claro
     return (
@@ -130,12 +105,10 @@ function Landing() {
                                 <div className="flex flex-wrap items-center gap-4 mb-10">
                                     <button 
                                         onClick={handleExplore}
-                                        className="group/btn relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-slate-900 to-slate-800 dark:from-sky-500 dark:to-indigo-600 text-white font-medium text-sm shadow-lg shadow-slate-300 dark:shadow-sky-900/50 hover:shadow-xl hover:shadow-slate-400/50 dark:hover:shadow-sky-700/50 transition-all duration-300 hover:-translate-y-0.5"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                                     >
+                                        <Users className="w-4 h-4" />
                                         <span>Explore Forum</span>
-                                        <svg className="w-4 h-4 transition-transform group-hover/btn:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
                                     </button>
                                 </div>
 

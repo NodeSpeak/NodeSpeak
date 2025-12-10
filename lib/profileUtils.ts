@@ -1,63 +1,21 @@
 "use client";
 
-import axios from 'axios';
-import { ethers, BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
-
-// IPFS Gateways
-const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs/";
-const BACKUP_GATEWAY = "https://ipfs.io/ipfs/";
-
-// Cache for profile data
-const profileCache = new Map<string, any>();
+import { fetchJSON, getImageUrl } from '@/lib/ipfsClient';
 
 /**
- * Fetch profile data from IPFS using multiple gateways with fallback
- * Similar to how community data is fetched
+ * Fetch profile data from IPFS using centralized ipfsClient
+ * @deprecated Use fetchJSON from ipfsClient directly
  */
 export const fetchProfileFromIPFS = async (cid: string, useCache = true): Promise<any | null> => {
   if (!cid) return null;
-
-  // Check cache first
-  if (useCache && profileCache.has(cid)) {
-    console.log(`Profile data retrieved from cache for CID: ${cid}`);
-    return profileCache.get(cid);
+  try {
+    return await fetchJSON(cid, { useCache });
+  } catch (error) {
+    console.error(`Failed to fetch profile data for CID ${cid}:`, error);
+    return null;
   }
-
-  // List of gateways to try
-  const gateways = [
-    PINATA_GATEWAY,
-    BACKUP_GATEWAY,
-    "https://cloudflare-ipfs.com/ipfs/",
-    "https://dweb.link/ipfs/"
-  ];
-
-  // Try each gateway
-  for (const gateway of gateways) {
-    try {
-      const response = await axios.get(`${gateway}${cid}`, {
-        timeout: 5000,
-        validateStatus: (status) => status === 200
-      });
-
-      const { data } = response;
-      
-      // Cache the data
-      profileCache.set(cid, data);
-      console.log(`Profile data fetched from ${gateway} for CID: ${cid}`);
-      
-      return data;
-    } catch (error) {
-      if (error instanceof Error) {
-        console.warn(`Failed to fetch from ${gateway} for CID ${cid}:`, error.message);
-      }
-      // Continue to next gateway
-    }
-  }
-
-  // If all gateways fail
-  console.error(`Failed to fetch profile data for CID ${cid} from all gateways`);
-  return null;
 };
 
 /**
@@ -96,11 +54,15 @@ export const getCompleteProfile = async (address: string): Promise<any | null> =
     console.log(`[getCompleteProfile] profileDataCID from localStorage: ${profileDataCID}`);
     
     if (profileDataCID) {
-      // Fetch complete profile data from IPFS
-      const profileData = await fetchProfileFromIPFS(profileDataCID);
-      console.log(`[getCompleteProfile] Profile from IPFS:`, profileData);
-      if (profileData && profileData.profilePicture) {
-        return profileData;
+      // Fetch complete profile data from IPFS using centralized client
+      try {
+        const profileData = await fetchJSON(profileDataCID);
+        console.log(`[getCompleteProfile] Profile from IPFS:`, profileData);
+        if (profileData && profileData.profilePicture) {
+          return profileData;
+        }
+      } catch (e) {
+        console.warn(`[getCompleteProfile] Failed to fetch from IPFS:`, e);
       }
     }
 
@@ -141,11 +103,11 @@ export const getCompleteProfile = async (address: string): Promise<any | null> =
           const onChainProfile = await contract.getProfile(address);
           console.log(`[getCompleteProfile] onChainProfile:`, onChainProfile);
           
-          // Return profile with CIDs (the hook will add the gateway URL)
+          // Return profile with proper image URLs from centralized ipfsClient
           const profileData = {
             nickname: onChainProfile.nickname || '',
-            profilePicture: onChainProfile.profileCID || '',
-            coverPhoto: onChainProfile.coverCID || '',
+            profilePicture: getImageUrl(onChainProfile.profileCID || ''),
+            coverPhoto: getImageUrl(onChainProfile.coverCID || ''),
             bio: '', // Bio needs to be fetched from IPFS separately
             address: address
           };

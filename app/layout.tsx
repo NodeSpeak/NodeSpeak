@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { WalletProvider } from '@/contexts/WalletContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { CommunitySettingsProvider } from '@/contexts/CommunitySettingsContext';
+import { QueryClientProvider } from '@/lib/queryClient';
 
 export const metadata: Metadata = {
     title: 'Node Speak',
@@ -37,14 +38,16 @@ export default function RootLayout({
             </head>
             <body>
                 <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="nodespeak-theme">
-                    <WalletProvider>
-                        <AdminProvider>
-                            <CommunitySettingsProvider>
-                                {children}
-                                <Toaster />
-                            </CommunitySettingsProvider>
-                        </AdminProvider>
-                    </WalletProvider>
+                    <QueryClientProvider>
+                        <WalletProvider>
+                            <AdminProvider>
+                                <CommunitySettingsProvider>
+                                    {children}
+                                    <Toaster />
+                                </CommunitySettingsProvider>
+                            </AdminProvider>
+                        </WalletProvider>
+                    </QueryClientProvider>
                 </ThemeProvider>
             </body>
         </html>

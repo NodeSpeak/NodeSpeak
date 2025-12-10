@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getCompleteProfile, shortenAddress } from '@/lib/profileUtils';
 import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
+import { getImageUrl } from '@/lib/ipfsClient';
 
 export interface UserProfile {
   address: string;
@@ -44,15 +45,15 @@ export const useUserProfile = (address: string | undefined) => {
         const profileData = await getCompleteProfile(address);
         
         if (profileData) {
-          // Helper to build IPFS URL - only add gateway if it's just a CID
+          // Helper to build IPFS URL - uses centralized ipfsClient
           const buildIpfsUrl = (cid: string) => {
             if (!cid) return '';
             // If already a full URL, return as is
             if (cid.startsWith('http://') || cid.startsWith('https://')) {
               return cid;
             }
-            // Otherwise, add the gateway prefix
-            return `https://gateway.pinata.cloud/ipfs/${cid}`;
+            // Otherwise, use centralized getImageUrl
+            return getImageUrl(cid);
           };
           
           const profilePictureUrl = buildIpfsUrl(profileData.profilePicture);
