@@ -19,13 +19,14 @@ import {
 import type { Community, Post } from '@/types/forum';
 
 export default function Home() {
-    const { isConnected } = useWalletContext();
+    const { isConnected, provider } = useWalletContext();
     const { setCommunityType } = useCommunitySettings();
     const searchParams = useSearchParams();
 
     // UI State
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
     const [showCommunityList, setShowCommunityList] = useState(true);
+    const [isCreatingCommunity, setIsCreatingCommunity] = useState(false);
 
     // React Query hooks
     const {
@@ -193,9 +194,9 @@ export default function Home() {
                         fetchPostsFromContract={fetchPostsFromContract}
                         forumAddress={forumAddress}
                         forumABI={forumABI}
-                        provider={null}
-                        isCreatingCommunity={false}
-                        setIsCreatingCommunity={() => {}}
+                        provider={provider}
+                        isCreatingCommunity={isCreatingCommunity}
+                        setIsCreatingCommunity={setIsCreatingCommunity}
                         handleCreateCommunity={handleCreateCommunity}
                         handleJoinCommunity={handleJoinCommunity}
                         handleLeaveCommunity={handleLeaveCommunity}
