@@ -19,7 +19,7 @@ import {
 import type { Community, Post } from '@/types/forum';
 
 export default function Home() {
-    const { isConnected } = useWalletContext();
+    const { isConnected, provider } = useWalletContext();
     const { setCommunityType } = useCommunitySettings();
     const searchParams = useSearchParams();
 
@@ -194,7 +194,7 @@ export default function Home() {
                         fetchPostsFromContract={fetchPostsFromContract}
                         forumAddress={forumAddress}
                         forumABI={forumABI}
-                        provider={null}
+                        provider={provider}
                         isCreatingCommunity={isCreatingCommunity}
                         setIsCreatingCommunity={setIsCreatingCommunity}
                         handleCreateCommunity={handleCreateCommunity}

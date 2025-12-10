@@ -110,7 +110,8 @@ export function useAddComment() {
       });
 
       allPostQueries.forEach(([queryKey, posts]) => {
-        if (posts) {
+        // Asegurarnos de que posts sea realmente un array antes de usar map
+        if (Array.isArray(posts)) {
           queryClient.setQueryData<Post[]>(
             queryKey,
             posts.map((post) =>

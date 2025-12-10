@@ -704,7 +704,7 @@ export default function ProfilePage() {
                   className="bg-red-600 text-white hover:bg-red-700 rounded-full px-4 text-sm shadow-lg"
                 >
                   <Shield className="h-4 w-4 mr-2" />
-                  Moderación
+                  Moderation
                 </Button>
               )}
               
