@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { BrowserProvider, JsonRpcProvider } from "ethers";
 
 // Arbitrum One network configuration
@@ -17,28 +17,35 @@ const ARBITRUM_NETWORK = {
     blockExplorerUrls: ["https://arbiscan.io"],
 };
 
+// Storage key for wallet persistence
+const WALLET_STORAGE_KEY = "nodespeak_wallet_connected";
+
 interface WalletContextProps {
     isConnected: boolean;
     address: string | null;
-    ensName: string | null; // Agregamos ENS
+    ensName: string | null;
     connect: () => Promise<void>;
     disconnect: () => void;
     provider: BrowserProvider | null;
+    isReconnecting: boolean;
 }
 
 const WalletContext = createContext<WalletContextProps>({
     isConnected: false,
     address: null,
-    ensName: null, // Valor inicial para ENS
+    ensName: null,
     connect: async () => {},
     disconnect: () => {},
     provider: null,
+    isReconnecting: false,
 });
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [address, setAddress] = useState<string | null>(null);
     const [ensName, setEnsName] = useState<string | null>(null);
     const [provider, setProvider] = useState<BrowserProvider | null>(null);
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const reconnectAttempted = useRef(false);
 
     // Función para resolver ENS usando mainnet (ENS vive en Ethereum mainnet)
     const resolveEns = async (addr: string) => {
@@ -53,10 +60,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     };
 
-    const connect = async () => {
+    // Helper to get the ethereum provider
+    const getEthereumProvider = useCallback((): EthereumProvider | null => {
         if (typeof window === "undefined" || !window.ethereum) {
-            alert("Please install MetaMask, Trust or use other Web3 wallet");
-            return;
+            return null;
         }
 
         let selectedProvider = window.ethereum as EthereumProvider;
@@ -66,8 +73,68 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 window.ethereum.providers.find((prov) => prov.isMetaMask) || selectedProvider;
         }
 
+        return selectedProvider;
+    }, []);
+
+    // Reconnect wallet silently (used on page load)
+    const reconnectWallet = useCallback(async () => {
+        if (reconnectAttempted.current) return;
+        reconnectAttempted.current = true;
+
+        const wasConnected = localStorage.getItem(WALLET_STORAGE_KEY);
+        if (!wasConnected) return;
+
+        const selectedProvider = getEthereumProvider();
+        if (!selectedProvider) return;
+
+        setIsReconnecting(true);
+
+        try {
+            // Use eth_accounts (doesn't prompt user) instead of eth_requestAccounts
+            const accounts = await selectedProvider.request({ method: "eth_accounts" });
+
+            if (accounts && accounts.length > 0) {
+                // Verify we're on the correct chain
+                const chainId = await selectedProvider.request({ method: "eth_chainId" });
+
+                if (chainId === ARBITRUM_CHAIN_ID) {
+                    setAddress(accounts[0]);
+                    const prov = new BrowserProvider(selectedProvider);
+                    setProvider(prov);
+                    await resolveEns(accounts[0]);
+                } else {
+                    // Try to switch to Arbitrum silently
+                    try {
+                        await selectedProvider.request({
+                            method: "wallet_switchEthereumChain",
+                            params: [{ chainId: ARBITRUM_CHAIN_ID }],
+                        });
+                        setAddress(accounts[0]);
+                        const prov = new BrowserProvider(selectedProvider);
+                        setProvider(prov);
+                        await resolveEns(accounts[0]);
+                    } catch {
+                        // User rejected or chain not available, clear storage
+                        localStorage.removeItem(WALLET_STORAGE_KEY);
+                    }
+                }
+            } else {
+                // No accounts available, user disconnected from wallet
+                localStorage.removeItem(WALLET_STORAGE_KEY);
+            }
+        } catch (error) {
+            console.warn("Error reconnecting wallet:", error);
+            localStorage.removeItem(WALLET_STORAGE_KEY);
+        } finally {
+            setIsReconnecting(false);
+        }
+    }, [getEthereumProvider]);
+
+    const connect = async () => {
+        const selectedProvider = getEthereumProvider();
+
         if (!selectedProvider) {
-            alert("Por favor, instala MetaMask o habilita un proveedor compatible.");
+            alert("Please install MetaMask, Trust or use other Web3 wallet");
             return;
         }
 
@@ -97,6 +164,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const prov = new BrowserProvider(selectedProvider);
             setProvider(prov);
 
+            // Save connection state to localStorage for persistence
+            localStorage.setItem(WALLET_STORAGE_KEY, "true");
+
             // Resolver ENS después de conectar
             await resolveEns(accounts[0]);
         } catch (error) {
@@ -107,24 +177,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const disconnect = () => {
         setAddress(null);
         setProvider(null);
-        setEnsName(null); // Limpiar ENS al desconectar
-        sessionStorage.removeItem("wallet_connected");
+        setEnsName(null);
+        localStorage.removeItem(WALLET_STORAGE_KEY);
     };
 
+    // Auto-reconnect on mount
     useEffect(() => {
-        if (provider && window.ethereum) {
-            window.ethereum.on?.("accountsChanged", async (accounts: string[]) => {
-                if (accounts.length === 0) {
-                    setAddress(null);
-                    setEnsName(null);
-                } else {
-                    setAddress(accounts[0]);
-                    // Actualizar ENS cuando cambia la cuenta
-                    await resolveEns(accounts[0]);
-                }
-            });
-        }
-    }, [provider]);
+        reconnectWallet();
+    }, [reconnectWallet]);
+
+    // Listen for account changes
+    useEffect(() => {
+        if (typeof window === "undefined" || !window.ethereum) return;
+
+        const handleAccountsChanged = async (accounts: string[]) => {
+            if (accounts.length === 0) {
+                setAddress(null);
+                setEnsName(null);
+                setProvider(null);
+                localStorage.removeItem(WALLET_STORAGE_KEY);
+            } else {
+                setAddress(accounts[0]);
+                await resolveEns(accounts[0]);
+            }
+        };
+
+        const handleChainChanged = () => {
+            // Reload to ensure consistent state on chain change
+            window.location.reload();
+        };
+
+        window.ethereum.on?.("accountsChanged", handleAccountsChanged);
+        window.ethereum.on?.("chainChanged", handleChainChanged);
+
+        return () => {
+            window.ethereum?.removeListener?.("accountsChanged", handleAccountsChanged);
+            window.ethereum?.removeListener?.("chainChanged", handleChainChanged);
+        };
+    }, []);
 
     return (
         <WalletContext.Provider
@@ -135,6 +225,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 connect,
                 disconnect,
                 provider,
+                isReconnecting,
             }}
         >
             {children}

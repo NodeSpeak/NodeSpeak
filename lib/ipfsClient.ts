@@ -21,11 +21,14 @@ const PINATA_UPLOAD_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
 // Gateway functions ordered by reliability/speed
 // Each function takes a CID and returns the full URL
+// Updated with public gateways that work better with CORS
 const GATEWAYS: Array<(cid: string) => string> = [
   (cid) => `https://gateway.pinata.cloud/ipfs/${cid}`,
-  (cid) => `https://cloudflare-ipfs.com/ipfs/${cid}`,
   (cid) => `https://ipfs.io/ipfs/${cid}`,
   (cid) => `https://dweb.link/ipfs/${cid}`,
+  (cid) => `https://cf-ipfs.com/ipfs/${cid}`,
+  (cid) => `https://hardbin.com/ipfs/${cid}`,
+  (cid) => `https://w3s.link/ipfs/${cid}`,
 ];
 
 // Default timeout for IPFS requests (ms)

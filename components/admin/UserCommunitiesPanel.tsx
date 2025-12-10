@@ -12,7 +12,8 @@ import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { toast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { fetchJSON, getImageUrl } from "@/lib/ipfsClient";
+import { fetchJSON } from "@/lib/ipfsClient";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 
 interface UserCommunity {
   id: string;
@@ -76,10 +77,10 @@ export const UserCommunitiesPanel: React.FC = () => {
               name = metadata.name || name;
               description = metadata.description || description;
               if (metadata.imageCID) {
-                photo = getImageUrl(metadata.imageCID);
+                photo = metadata.imageCID;
               }
               if (metadata.coverCID) {
-                coverImage = getImageUrl(metadata.coverCID);
+                coverImage = metadata.coverCID;
               }
             }
           } catch (err) {
@@ -215,10 +216,13 @@ export const UserCommunitiesPanel: React.FC = () => {
       {/* Cover Image */}
       <div className="h-24 relative overflow-hidden">
         {community.coverImage ? (
-          <img
-            src={community.coverImage}
+          <ImageWithFallback
+            cid={community.coverImage}
             alt={community.name}
             className={`w-full h-full object-cover ${!community.isActive ? 'opacity-60 grayscale' : ''}`}
+            fallback={
+              <div className={`w-full h-full bg-gradient-to-br ${!community.isActive ? 'from-red-100 via-slate-100 to-slate-50' : 'from-indigo-100 via-slate-100 to-slate-50'}`} />
+            }
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${!community.isActive ? 'from-red-100 via-slate-100 to-slate-50' : 'from-indigo-100 via-slate-100 to-slate-50'}`} />
@@ -246,10 +250,15 @@ export const UserCommunitiesPanel: React.FC = () => {
           {/* Community Photo */}
           <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border-2 border-white shadow-sm -mt-8 relative z-10">
             {community.photo ? (
-              <img
-                src={community.photo}
+              <ImageWithFallback
+                cid={community.photo}
                 alt={community.name}
                 className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-200 to-indigo-300 flex items-center justify-center">
+                    <Home className="w-6 h-6 text-indigo-600" />
+                  </div>
+                }
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-indigo-200 to-indigo-300 flex items-center justify-center">

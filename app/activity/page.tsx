@@ -1,6 +1,7 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
 import { UserAvatar } from '@/components/UserAvatar';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 import { useState, useEffect } from "react";
 import DOMPurify from 'dompurify';
 import { Contract, JsonRpcProvider } from "ethers";
@@ -10,7 +11,7 @@ import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp, W
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { fetchContent, getImageUrl } from '@/lib/ipfsClient';
+import { fetchContent } from '@/lib/ipfsClient';
 
 // Public RPC for Arbitrum One - allows reading without wallet connection
 const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
@@ -169,7 +170,7 @@ export default function ActivityPage() {
 
                             let imageUrl = undefined;
                             if (post.imageCID && post.imageCID !== "") {
-                                imageUrl = getImageUrl(post.imageCID);
+                                imageUrl = post.imageCID;
                             }
 
                             return {
@@ -412,10 +413,15 @@ export default function ActivityPage() {
                                             className="flex items-center gap-4 hover:opacity-80 transition-opacity"
                                         >
                                             {community.photo ? (
-                                                <img 
-                                                    src={getImageUrl(community.photo)}
+                                                <ImageWithFallback
+                                                    cid={community.photo}
                                                     alt={community.name}
                                                     className="w-12 h-12 rounded-xl object-cover shadow-md"
+                                                    fallback={
+                                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/50 dark:to-indigo-900/50 flex items-center justify-center shadow-md">
+                                                            <Users className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+                                                        </div>
+                                                    }
                                                 />
                                             ) : (
                                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-sky-900/50 dark:to-indigo-900/50 flex items-center justify-center shadow-md">
@@ -516,10 +522,15 @@ export default function ActivityPage() {
                                                     {/* Post Image (if exists) - larger and more prominent */}
                                                     {post.imageUrl && (
                                                         <div className="mb-3">
-                                                            <img 
-                                                                src={post.imageUrl}
+                                                            <ImageWithFallback
+                                                                cid={post.imageUrl}
                                                                 alt=""
                                                                 className="w-full max-w-md h-48 rounded-xl object-cover shadow-md border border-slate-200 dark:border-slate-600"
+                                                                fallback={
+                                                                    <div className="w-full max-w-md h-48 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                                                                        Image unavailable
+                                                                    </div>
+                                                                }
                                                             />
                                                         </div>
                                                     )}

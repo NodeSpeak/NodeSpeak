@@ -9,6 +9,7 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { User, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 
 interface UserAvatarProps {
   address: string;
@@ -29,15 +30,9 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  
-  // Reset image error when profile changes
-  useEffect(() => {
-    setImageError(false);
-  }, [profile?.profilePicture]);
 
   // Check if this is the current user's avatar
   const isCurrentUser = currentUserAddress?.toLowerCase() === address?.toLowerCase();
@@ -163,20 +158,17 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   return (
     <div className={`flex items-center gap-2 ${className} relative`} ref={menuRef}>
-      <div 
+      <div
         ref={avatarRef}
         className={`${sizeClasses[size]} rounded-full overflow-hidden border border-[var(--matrix-green)] flex items-center justify-center bg-black ${!isCurrentUser && currentUserAddress ? 'cursor-pointer hover:border-[var(--matrix-green)]/80' : ''}`}
         onClick={handleAvatarClick}
       >
-        {profile?.profilePicture && !imageError ? (
-          <img 
-            src={profile.profilePicture} 
+        {profile?.profilePicture ? (
+          <ImageWithFallback
+            cid={profile.profilePicture}
             alt={profile.nickname || 'User'}
             className="w-full h-full object-cover"
-            onError={() => {
-              console.log('Image failed to load:', profile.profilePicture);
-              setImageError(true);
-            }}
+            fallback={<User className={`${iconSizes[size]} text-[var(--matrix-green)]`} />}
           />
         ) : (
           <User className={`${iconSizes[size]} text-[var(--matrix-green)]`} />

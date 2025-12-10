@@ -9,7 +9,7 @@ import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus, Users, ChevronDown, X, User } from "lucide-react";
 import DOMPurify from 'dompurify';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
-import { uploadFile, getImageUrl } from "@/lib/ipfsClient";
+import { uploadFile } from "@/lib/ipfsClient";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Bold from '@tiptap/extension-bold';
@@ -17,6 +17,7 @@ import Italic from '@tiptap/extension-italic';
 import Code from '@tiptap/extension-code';
 import Link from '@tiptap/extension-link';
 import { UserAvatar } from "@/components/UserAvatar";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
 import { useProfileService } from "@/lib/profileService";
@@ -1694,14 +1695,11 @@ export const IntegratedView = ({
                             <div className="relative h-40">
                                 {community.coverImage ? (
                                     <>
-                                        <img 
-                                            src={getImageUrl(community.coverImage)} 
+                                        <ImageWithFallback
+                                            cid={community.coverImage}
                                             alt={`${community.name} cover`}
                                             className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.style.display = 'none';
-                                            }}
+                                            fallback={<div className="w-full h-full bg-gradient-to-br from-indigo-100 via-slate-100 to-slate-50" />}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
                                     </>
@@ -1778,10 +1776,15 @@ export const IntegratedView = ({
                                         {/* Avatar */}
                                         <div className="flex-shrink-0 w-16 h-16 rounded-2xl border-3 border-white bg-white shadow-lg overflow-hidden">
                                             {community.photo ? (
-                                                <img 
-                                                    src={getImageUrl(community.photo)} 
+                                                <ImageWithFallback
+                                                    cid={community.photo}
                                                     alt={community.name}
                                                     className="w-full h-full object-cover"
+                                                    fallback={
+                                                        <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold text-xl">
+                                                            {community.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    }
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 font-semibold text-xl">
@@ -1996,10 +1999,15 @@ export const IntegratedView = ({
                                                     >
                                                         <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
                                                             {profile?.profilePicture ? (
-                                                                <img
-                                                                    src={profile.profilePicture}
+                                                                <ImageWithFallback
+                                                                    cid={profile.profilePicture}
                                                                     alt=""
                                                                     className="w-full h-full object-cover"
+                                                                    fallback={
+                                                                        <div className="w-full h-full flex items-center justify-center">
+                                                                            <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                                                        </div>
+                                                                    }
                                                                 />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center">
@@ -2035,29 +2043,28 @@ export const IntegratedView = ({
                             <div className="relative mb-12">
                                 {/* Cover image container */}
                                 <div className="w-full h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <img 
-                                        src={getImageUrl(community.coverImage)} 
+                                    <ImageWithFallback
+                                        cid={community.coverImage}
                                         alt={`${getCommunityName(selectedCommunityId)} cover`}
                                         className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            // If image fails to load, hide the container
-                                            const target = e.target as HTMLImageElement;
-                                            target.parentElement!.style.display = 'none';
-                                        }}
+                                        fallback={<div className="w-full h-full bg-slate-200 dark:bg-slate-700" />}
                                     />
                                 </div>
                                 {/* Community photo overlapping cover image */}
                                 <div className="absolute -bottom-10 left-6 flex items-end gap-4">
                                     {community.photo && (
                                         <div className="w-28 h-28 rounded-2xl border-4 border-white dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-800 shadow-xl">
-                                            <img 
-                                                src={getImageUrl(community.photo)} 
+                                            <ImageWithFallback
+                                                cid={community.photo}
                                                 alt={community.name}
                                                 className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // Fallback to a default image
-                                                    (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                                }}
+                                                fallback={
+                                                    <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                        <span className="text-slate-400 dark:text-slate-500 text-3xl font-semibold">
+                                                            {community.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                }
                                             />
                                         </div>
                                     )}
@@ -2072,14 +2079,15 @@ export const IntegratedView = ({
                             <div className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm mb-4 flex items-center shadow-sm">
                                 {community?.photo ? (
                                     <div className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden mr-4">
-                                        <img 
-                                            src={getImageUrl(community.photo)} 
+                                        <ImageWithFallback
+                                            cid={community.photo}
                                             alt={community.name}
                                             className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                // Fallback to a default image
-                                                (e.target as HTMLImageElement).src = '/community-placeholder.png';
-                                            }}
+                                            fallback={
+                                                <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                                                    {community?.name.charAt(0).toUpperCase() || "C"}
+                                                </div>
+                                            }
                                         />
                                     </div>
                                 ) : (
@@ -2236,10 +2244,11 @@ export const IntegratedView = ({
 
                         {post.imageUrl && (
                             <div className="mt-4 flex justify-center">
-                                <img
-                                    src={post.imageUrl}
+                                <ImageWithFallback
+                                    cid={post.imageUrl}
                                     alt="Post attachment"
                                     className="max-w-full max-h-96 rounded-xl border border-slate-200 dark:border-slate-700 object-contain"
+                                    fallback={<div className="max-w-full h-96 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">Image unavailable</div>}
                                 />
                             </div>
                         )}

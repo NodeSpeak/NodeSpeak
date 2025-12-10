@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff, ChevronDown, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
-import { fetchText, fetchJSON, getImageUrl } from "@/lib/ipfsClient";
+import { fetchText, fetchJSON } from "@/lib/ipfsClient";
 
 // Note: followUser, unfollowUser, and isFollowing are available directly on the main forum contract
 
@@ -615,10 +616,11 @@ export default function ProfilePage() {
           {/* Cover Photo as Full Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-slate-800 dark:to-slate-700">
             {profileData.coverPhoto && (
-              <img 
-                src={profileData.coverPhoto} 
-                alt="Cover" 
+              <ImageWithFallback
+                cid={profileData.coverPhoto}
+                alt="Cover"
                 className="w-full h-full object-cover"
+                fallback={<div className="w-full h-full bg-gradient-to-br from-sky-100 to-indigo-100 dark:from-slate-800 dark:to-slate-700" />}
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/30 dark:via-slate-900/10 dark:to-slate-900/40"></div>
@@ -632,10 +634,15 @@ export default function ProfilePage() {
               <div className="flex justify-center md:justify-start">
                 <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl bg-slate-50 dark:bg-slate-700">
                   {profileData.profilePicture ? (
-                    <img 
-                      src={profileData.profilePicture} 
-                      alt={displayName} 
+                    <ImageWithFallback
+                      cid={profileData.profilePicture}
+                      alt={displayName}
                       className="h-full w-full object-cover"
+                      fallback={
+                        <div className="h-full w-full flex items-center justify-center">
+                          <User className="h-14 w-14 text-slate-400 dark:text-slate-500" />
+                        </div>
+                      }
                     />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
@@ -817,7 +824,16 @@ export default function ProfilePage() {
                           >
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
                               {profile?.profilePicture ? (
-                                <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                                <ImageWithFallback
+                                  cid={profile.profilePicture}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  fallback={
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                  }
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                   <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
@@ -884,7 +900,16 @@ export default function ProfilePage() {
                           >
                             <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0 border border-slate-300 dark:border-slate-500">
                               {profile?.profilePicture ? (
-                                <img src={profile.profilePicture} alt="" className="w-full h-full object-cover" />
+                                <ImageWithFallback
+                                  cid={profile.profilePicture}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  fallback={
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                  }
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
                                   <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
@@ -925,28 +950,15 @@ export default function ProfilePage() {
                   >
                     <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-600 flex-shrink-0">
                       {community.photo ? (
-                        <img 
-                          src={getImageUrl(community.photo)}
+                        <ImageWithFallback
+                          cid={community.photo}
                           alt={community.name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Try alternative gateway
-                            const img = e.target as HTMLImageElement;
-                            if (!img.dataset.retried) {
-                              img.dataset.retried = 'true';
-                              img.src = `https://ipfs.io/ipfs/${community.photo}`;
-                            } else {
-                              // Hide image and show fallback initial
-                              img.style.display = 'none';
-                              const parent = img.parentElement;
-                              if (parent && !parent.querySelector('.fallback-initial')) {
-                                const fallback = document.createElement('div');
-                                fallback.className = 'fallback-initial w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-300 text-sm font-medium';
-                                fallback.textContent = community.name.charAt(0).toUpperCase();
-                                parent.appendChild(fallback);
-                              }
-                            }
-                          }}
+                          fallback={
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-300 text-sm font-medium">
+                              {community.name.charAt(0).toUpperCase()}
+                            </div>
+                          }
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-300 text-sm font-medium">
