@@ -1960,28 +1960,50 @@ export const IntegratedView = ({
 
             {/* Communities + Viewing + Members (top) + Topics filter (bottom) */}
             <div className="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                {/* Community info + Members menu + back to communities */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                        {!showCommunityList && (
+
+                {/* Topics filter strip */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Filter:</span>
+
+                    {/* Show all option */}
+                    <button
+                        onClick={() => setSelectedTopic(null)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === null
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
+                            }`}
+                    >
+                        All
+                    </button>
+
+                    {/* Topic pills */}
+                    {availableTopics.map((topic) => (
+                        <button
+                            key={topic}
+                            onClick={() => setSelectedTopic(topic)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === topic
+                                ? "bg-indigo-600 text-white"
+                                : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
+                                }`}
+                        >
+                            {topic}
+                        </button>
+                    ))}
+
+                        {/* New Topic button - only visible to community creator */}
+                        {selectedCommunityId && localCommunities.find(c => c.id === selectedCommunityId)?.isCreator && (
                             <button
-                                onClick={() => setShowCommunityList(true)}
-                                className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm px-3 py-1.5 rounded-lg hover:bg-white/70 dark:hover:bg-slate-700/60 transition-colors inline-flex items-center gap-2"
+                                onClick={() => handleQuickAddTopic(selectedCommunityId)}
+                                disabled={isSubmittingTopic}
+                                className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Communities
+                                {isSubmittingTopic ? "Adding..." : "+ New Topic"}
                             </button>
                         )}
-                        <span className="text-slate-500 dark:text-slate-400 text-sm">
-                            {selectedCommunityId ? (
-                                <>
-                                    Viewing: <span className="text-slate-900 dark:text-slate-100 font-medium">{getCommunityName(selectedCommunityId)}</span>
-                                </>
-                            ) : (
-                                "All communities"
-                            )}
-                        </span>
                     </div>
 
+                    {/* Members button */}
                     {selectedCommunityId && (
                         <div className="relative" ref={membersMenuRef}>
                             <button
@@ -2069,47 +2091,6 @@ export const IntegratedView = ({
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
-
-                {/* Topics filter strip */}
-                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Filter:</span>
-
-                    {/* Show all option */}
-                    <button
-                        onClick={() => setSelectedTopic(null)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === null
-                            ? "bg-indigo-600 text-white"
-                            : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
-                            }`}
-                    >
-                        All
-                    </button>
-
-                    {/* Topic pills */}
-                    {availableTopics.map((topic) => (
-                        <button
-                            key={topic}
-                            onClick={() => setSelectedTopic(topic)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedTopic === topic
-                                ? "bg-indigo-600 text-white"
-                                : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
-                                }`}
-                        >
-                            {topic}
-                        </button>
-                    ))}
-
-                    {/* New Topic button - only visible to community creator */}
-                    {selectedCommunityId && localCommunities.find(c => c.id === selectedCommunityId)?.isCreator && (
-                        <button
-                            onClick={() => handleQuickAddTopic(selectedCommunityId)}
-                            disabled={isSubmittingTopic}
-                            className="ml-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isSubmittingTopic ? "Adding..." : "+ New Topic"}
-                        </button>
                     )}
                 </div>
             </div>
