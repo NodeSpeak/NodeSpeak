@@ -1363,6 +1363,7 @@ export const IntegratedView = ({
                     <select
                         value={selectedCommunityId || ""}
                         onChange={handleCommunityChange}
+                        disabled={!!selectedCommunityId}
                         className="bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 p-3 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 focus:border-indigo-400 dark:focus:border-indigo-600"
                     >
                         <option value="" disabled>Select a community</option>
@@ -2417,7 +2418,13 @@ export const IntegratedView = ({
                     {/* Create Post - primary action */}
                     {!showCommunityList && !isCreatingCommunity && (
                         <Button
-                            onClick={() => setIsCreatingPost(!isCreatingPost)}
+                            onClick={() => {
+                                if (!selectedCommunityId) {
+                                    alert("Please select a community first");
+                                    return;
+                                }
+                                setIsCreatingPost(!isCreatingPost);
+                            }}
                             className={`rounded-full px-6 font-medium ${isCreatingPost
                                 ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
                                 : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200"}`}
