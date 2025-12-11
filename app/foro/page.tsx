@@ -1,7 +1,6 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { AdminFloatingButton } from '@/components/admin/AdminFloatingButton';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -213,7 +212,6 @@ export default function Home() {
                     />
                 </main>
             </div>
-            <AdminFloatingButton />
         </div>
     );
 }
