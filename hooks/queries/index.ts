@@ -48,3 +48,12 @@ export {
   useFollowUser,
   useUnfollowUser,
 } from './useProfiles';
+
+// IPFS Files
+export {
+  useIPFSFile,
+  useIPFSPrefetch,
+  prefetchIPFSFile,
+  prefetchIPFSFiles,
+  ipfsQueryKeys,
+} from './useIPFSFile';

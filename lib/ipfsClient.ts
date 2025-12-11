@@ -9,6 +9,7 @@
  */
 
 import axios from 'axios';
+import { getCachedFile, setCachedFile, isIndexedDBAvailable } from './ipfsCache';
 
 // =============================================================================
 // CONFIGURATION
@@ -473,6 +474,140 @@ export async function fetchContent(
 }
 
 // =============================================================================
+// FILE FETCH WITH PERSISTENT CACHE
+// =============================================================================
+
+/**
+ * Gateways ordered by reliability for file fetching
+ * Different order than text fetching - optimized for binary content
+ */
+const FILE_GATEWAYS: Array<(cid: string) => string> = [
+  (cid) => `https://w3s.link/ipfs/${cid}`,
+  (cid) => `https://cloudflare-ipfs.com/ipfs/${cid}`,
+  (cid) => `https://gateway.pinata.cloud/ipfs/${cid}`,
+  (cid) => `https://ipfs.io/ipfs/${cid}`,
+];
+
+// Timeout per gateway for file fetching (ms)
+const FILE_GATEWAY_TIMEOUT = 8000;
+
+/**
+ * Fetch a file from IPFS with persistent IndexedDB caching
+ *
+ * Behavior:
+ * 1. Check IndexedDB cache first
+ * 2. If not cached, try gateways in order with 8s timeout each
+ * 3. Store successful fetch in IndexedDB
+ * 4. Return Blob
+ *
+ * SSR-safe: Returns null on server, cache operations are no-ops
+ *
+ * @param cid - The Content Identifier to fetch
+ * @returns The file as a Blob, or null if fetch fails or on server
+ */
+export async function fetchIPFSFileWithCache(cid: string): Promise<Blob | null> {
+  if (!cid) {
+    return null;
+  }
+
+  // Normalize the CID
+  const normalizedCID = normalizeCID(cid);
+  if (!normalizedCID) {
+    return null;
+  }
+
+  // If it's already a full URL, fetch directly without caching
+  if (isFullURL(normalizedCID)) {
+    try {
+      const response = await axios.get(normalizedCID, {
+        timeout: FILE_GATEWAY_TIMEOUT,
+        responseType: 'blob',
+        validateStatus: (status) => status === 200,
+      });
+      return response.data as Blob;
+    } catch (error) {
+      console.error(`[ipfsClient] Direct URL fetch failed: ${normalizedCID}`);
+      return null;
+    }
+  }
+
+  // Check IndexedDB cache first (SSR-safe)
+  if (isIndexedDBAvailable()) {
+    try {
+      const cached = await getCachedFile(normalizedCID);
+      if (cached) {
+        return cached;
+      }
+    } catch (error) {
+      // Cache read failed, continue to fetch
+      console.warn('[ipfsClient] Cache read failed, fetching from network');
+    }
+  }
+
+  // Try each gateway in order
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < FILE_GATEWAYS.length; i++) {
+    const gateway = FILE_GATEWAYS[i];
+    const url = gateway(normalizedCID);
+
+    try {
+      const response = await axios.get(url, {
+        timeout: FILE_GATEWAY_TIMEOUT,
+        responseType: 'blob',
+        validateStatus: (status) => status === 200,
+      });
+
+      const blob = response.data as Blob;
+
+      // Store in IndexedDB cache (SSR-safe, async fire-and-forget)
+      if (isIndexedDBAvailable()) {
+        setCachedFile(normalizedCID, blob).catch((err) => {
+          console.warn('[ipfsClient] Failed to cache file:', err);
+        });
+      }
+
+      return blob;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      // Continue to next gateway
+    }
+  }
+
+  // All gateways failed
+  console.error(`[ipfsClient] All gateways failed for file CID: ${normalizedCID}`, lastError);
+  return null;
+}
+
+/**
+ * Fetch multiple files from IPFS with caching (parallel)
+ *
+ * @param cids - Array of CIDs to fetch
+ * @returns Map of CID to Blob (null for failed fetches)
+ */
+export async function fetchIPFSFilesWithCache(
+  cids: string[]
+): Promise<Map<string, Blob | null>> {
+  const results = new Map<string, Blob | null>();
+  const validCids = cids.filter(Boolean);
+
+  const fetches = await Promise.allSettled(
+    validCids.map(async (cid) => {
+      const blob = await fetchIPFSFileWithCache(cid);
+      return { cid: normalizeCID(cid), blob };
+    })
+  );
+
+  fetches.forEach((result) => {
+    if (result.status === 'fulfilled') {
+      results.set(result.value.cid, result.value.blob);
+    }
+  });
+
+  return results;
+}
+
+// =============================================================================
 // URL BUILDERS
 // =============================================================================
 
@@ -591,16 +726,20 @@ export async function prefetchCIDs(
 // =============================================================================
 // EXPORTS SUMMARY
 // =============================================================================
-// 
+//
 // Upload functions:
 //   - uploadFile(file, filename?) → CID
 //   - uploadJSON(data, filename?) → CID
 //   - uploadText(text, filename?) → CID
 //
-// Fetch functions:
+// Fetch functions (text/JSON with in-memory cache):
 //   - fetchText(cid, options?) → string
 //   - fetchJSON(cid, options?) → T
 //   - fetchContent(cid, options?) → any (auto-detect)
+//
+// File fetch with persistent IndexedDB cache:
+//   - fetchIPFSFileWithCache(cid) → Promise<Blob | null>
+//   - fetchIPFSFilesWithCache(cids) → Promise<Map<string, Blob | null>>
 //
 // URL builders:
 //   - getImageUrl(cid) → string
