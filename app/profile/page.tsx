@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff, ChevronDown, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
@@ -572,16 +572,6 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Back to forum link */}
-        <div className="mb-6">
-          <Link 
-            href="/foro" 
-            className="inline-flex items-center text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Forum
-          </Link>
-        </div>
         {/* Banner if no profile exists */}
         {!profileExists && isOwnProfile && (
           <div className="mb-6 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-5">
