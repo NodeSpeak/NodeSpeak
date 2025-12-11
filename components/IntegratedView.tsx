@@ -687,6 +687,27 @@ export const IntegratedView = ({
         return Array.from(topicSet);
     }, [posts, selectedCommunityId, localCommunities]);
 
+    const selectedCommunityForTopics = useMemo(() => {
+        if (!selectedCommunityId) return null;
+        return (
+            localCommunities.find((c) => c.id === selectedCommunityId) ||
+            communities.find((c) => c.id === selectedCommunityId) ||
+            null
+        );
+    }, [selectedCommunityId, localCommunities, communities]);
+
+    const canCurrentUserAddTopics = useMemo(() => {
+        if (!selectedCommunityForTopics) return false;
+        if (selectedCommunityForTopics.isCreator !== undefined) {
+            return selectedCommunityForTopics.isCreator;
+        }
+        if (!currentUserAddress) return false;
+        return (
+            selectedCommunityForTopics.creator.toLowerCase() ===
+            currentUserAddress.toLowerCase()
+        );
+    }, [selectedCommunityForTopics, currentUserAddress]);
+
     // Handle community selection
     const handleSelectCommunity = (communityId: string) => {
         setSelectedCommunityId(communityId);
@@ -1396,7 +1417,7 @@ export const IntegratedView = ({
                                 // Update the community topics when a new topic is added
                                 setCommunityTopics(newTopics);
                             }}
-                            disableAddingTopics={false}
+                            disableAddingTopics={!canCurrentUserAddTopics}
                             selectedTopic={postSelectedTopic}
                         />
                     </div>
