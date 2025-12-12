@@ -131,3 +131,54 @@ export function ActivityLoadingSkeleton({
     </div>
   );
 }
+
+/**
+ * Skeleton para lista de comunidades (sin posts)
+ * Usado en /foro cuando se lista solo comunidades
+ */
+export function CommunityCardSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn(
+      "bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-white/60 dark:border-slate-700 p-4 sm:p-6",
+      className
+    )}>
+      <div className="flex items-start gap-4">
+        {/* Community photo */}
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse flex-shrink-0" />
+
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* Title */}
+          <div className="h-6 w-2/3 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+
+          {/* Description */}
+          <div className="space-y-2">
+            <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4">
+            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          </div>
+        </div>
+
+        {/* Action button */}
+        <div className="h-9 w-20 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse flex-shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Skeleton para grid de comunidades
+ */
+export function CommunityGridSkeleton({ count = 6, className }: { count?: number; className?: string }) {
+  return (
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-fadeIn", className)}>
+      {Array.from({ length: count }).map((_, index) => (
+        <CommunityCardSkeleton key={index} />
+      ))}
+    </div>
+  );
+}

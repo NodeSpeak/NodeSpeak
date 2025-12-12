@@ -1,6 +1,7 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Loading } from '@/components/Loading';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -180,11 +181,12 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* Loading indicator */}
-                    {isLoading && (
-                        <div className="text-center p-6">
-                            <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading...</p>
-                        </div>
+                    {/* Loading state - Skeleton */}
+                    {isLoading && showCommunityList && (
+                        <Loading type="forum-community-list" count={6} />
+                    )}
+                    {isLoading && !showCommunityList && selectedCommunityId && (
+                        <Loading type="forum-posts" count={5} />
                     )}
 
                     <IntegratedView

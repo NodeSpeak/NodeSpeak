@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ArrowLeft, Users, Home, EyeOff, Construction } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Loading } from "@/components/Loading";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -28,10 +29,9 @@ export default function AdminPage() {
   // Show loading while checking connection
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center transition-colors duration-300">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 dark:border-slate-100 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Verificando conexión...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <Loading type="admin-dashboard" />
         </div>
       </div>
     );

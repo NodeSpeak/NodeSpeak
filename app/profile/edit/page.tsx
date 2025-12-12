@@ -13,6 +13,7 @@ import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { toast } from "@/hooks/use-toast";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { formatAddress } from "@/lib/addressUtils";
+import { Loading } from "@/components/Loading";
 import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
@@ -379,14 +380,9 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center">
-        <div className="flex flex-col items-center bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700">
-          <p className="text-lg text-slate-700 dark:text-slate-200 font-medium">Loading profile...</p>
-          <div className="mt-4 flex space-x-2">
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse"></div>
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-150"></div>
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-300"></div>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <Loading type="profile" />
         </div>
       </div>
     );
