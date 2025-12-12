@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff, ChevronDown, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
+import { AddressDisplay } from "@/components/AddressDisplay";
+import { formatAddress } from "@/lib/addressUtils";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { fetchText, fetchJSON } from "@/lib/ipfsClient";
@@ -34,17 +36,6 @@ interface UserCommunity {
   memberCount: number;
 }
 
-// Helper function to shorten Ethereum addresses
-function shortenAddress(address: string, chars = 4): string {
-  if (!address) return '';
-  
-  // Ensure the address has enough length
-  if (address.length < chars * 2 + 2) {
-    return address;
-  }
-  
-  return `${address.substring(0, chars + 2)}...${address.substring(address.length - chars)}`;
-}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -551,7 +542,7 @@ export default function ProfilePage() {
   }, []);
 
   // Get display name - use ensName only for own profile
-  const displayName = (isOwnProfile ? ensName : null) || profileData.nickname || (targetAddress ? shortenAddress(targetAddress) : "");
+  const displayName = (isOwnProfile ? ensName : null) || profileData.nickname || (targetAddress ? formatAddress(targetAddress) : "");
   const fullAddress = targetAddress || "";
 
   if (isLoading) {
@@ -700,9 +691,9 @@ export default function ProfilePage() {
               
               {/* Botón Ocultar Usuario - Solo visible para administradores en perfil ajeno */}
               {isAdmin && !isOwnProfile && targetAddress && (
-                <Button 
+                <Button
                   onClick={() => {
-                    const displayName = profileData.nickname || shortenAddress(targetAddress);
+                    const displayName = profileData.nickname || formatAddress(targetAddress);
                     if (window.confirm(`¿Estás seguro de que quieres ocultar a ${displayName}?\n\nEsto ocultará todos sus posts y comentarios.`)) {
                       // Usa la función del AdminContext
                       hideUser(
@@ -832,9 +823,9 @@ export default function ProfilePage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                {profile?.nickname || shortenAddress(addr)}
+                                {profile?.nickname || formatAddress(addr)}
                               </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{shortenAddress(addr)}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{formatAddress(addr)}</p>
                             </div>
                           </Link>
                         );
@@ -908,9 +899,9 @@ export default function ProfilePage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                {profile?.nickname || shortenAddress(addr)}
+                                {profile?.nickname || formatAddress(addr)}
                               </p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{shortenAddress(addr)}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{formatAddress(addr)}</p>
                             </div>
                           </Link>
                         );

@@ -12,6 +12,7 @@ import { Search, Home, RefreshCw, Undo2 } from "lucide-react";
 import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { toast } from "@/hooks/use-toast";
+import { AddressDisplay } from "@/components/AddressDisplay";
 
 export const UserDeactivatedCommunitiesPanel: React.FC = () => {
   const { hiddenCommunities, unhideCommunity } = useAdminContext();
@@ -80,10 +81,6 @@ export const UserDeactivatedCommunitiesPanel: React.FC = () => {
     });
   };
 
-  const formatId = (id: string) => {
-    // Si el ID es muy largo, mostrar versión acortada
-    return id.length > 12 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
-  };
 
   // Función para reactivar comunidad
   const handleReactivateCommunity = async (communityId: string, communityName: string) => {
@@ -215,9 +212,13 @@ export const UserDeactivatedCommunitiesPanel: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-slate-100 px-2 py-1 rounded">
-                        {formatId(community.id)}
-                      </code>
+                      <AddressDisplay
+                        value={community.id}
+                        type="id"
+                        showCopy
+                        showTooltip
+                        autoResponsive
+                      />
                     </TableCell>
                     <TableCell className="text-slate-600">
                       {formatDate(community.hiddenAt)}

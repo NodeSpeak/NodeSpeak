@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EyeOff, Eye, Search, UserX } from "lucide-react";
 import { UserAvatar } from "@/components/UserAvatar";
+import { AddressDisplay } from "@/components/AddressDisplay";
 
 export const HiddenUsersPanel: React.FC = () => {
   const { hiddenUsers, unhideUser } = useAdminContext();
@@ -30,9 +31,6 @@ export const HiddenUsersPanel: React.FC = () => {
     });
   };
 
-  const formatAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   return (
     <Card className="w-full">
@@ -97,9 +95,13 @@ export const HiddenUsersPanel: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-slate-100 px-2 py-1 rounded">
-                        {formatAddress(user.address)}
-                      </code>
+                      <AddressDisplay
+                        value={user.address}
+                        type="address"
+                        showCopy
+                        showTooltip
+                        autoResponsive
+                      />
                     </TableCell>
                     <TableCell className="text-slate-600">
                       {formatDate(user.hiddenAt)}

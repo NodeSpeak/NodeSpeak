@@ -5,6 +5,7 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { Check, LogOut, User } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AddressText } from "@/components/AddressDisplay";
 // import { CypherpunkProfileButton } from '@/components/CypherpunkProfileButton';
 
 export const WalletConnect = () => {
@@ -38,7 +39,7 @@ export const WalletConnect = () => {
                     >
                         <Check className="h-3 w-3" />
                         <span className="font-medium">
-                            {ensName ? ensName : `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                            {ensName ? ensName : <AddressText value={address || ''} autoResponsive />}
                         </span>
                     </Link>
                     <Button

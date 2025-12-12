@@ -20,6 +20,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { MembershipRequestsPanel } from "@/components/MembershipRequestsPanel";
+import { AddressDisplay, AddressText } from "@/components/AddressDisplay";
+import { formatAddress } from "@/lib/addressUtils";
 import { useProfileService } from "@/lib/profileService";
 import {
     useAddComment,
@@ -1288,11 +1290,6 @@ export const IntegratedView = ({
         return community ? community.name : `Community #${communityId}`;
     };
 
-    const formatAddress = (address: string) => {
-        if (!address) return "";
-        return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-    };
-
     const [likeLoading, setLikeLoading] = useState<Record<string, boolean>>({});
 
     // Load members list (creator + post authors) for the selected community
@@ -2104,10 +2101,10 @@ export const IntegratedView = ({
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                                                                {profile?.nickname || formatAddress(addr)}
+                                                                {profile?.nickname || <AddressText value={addr} className="font-medium" />}
                                                             </p>
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                                {formatAddress(addr)}
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                                <AddressText value={addr} className="text-xs" />
                                                             </p>
                                                         </div>
                                                     </button>
@@ -2168,7 +2165,7 @@ export const IntegratedView = ({
                                 // Note: This would need the contract to support adding members
                                 // For now, we just approve in localStorage
                                 // The user would need to join manually after approval
-                                alert(`Approved! User ${requesterAddress.slice(0, 6)}...${requesterAddress.slice(-4)} can now join the community.`);
+                                alert(`Approved! User ${formatAddress(requesterAddress)} can now join the community.`);
                             }}
                             currentUserAddress={currentUserAddress || undefined}
                         />
