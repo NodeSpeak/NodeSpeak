@@ -3,6 +3,7 @@
 import React from "react";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { UserPlus, Check, X } from "lucide-react";
+import { AddressText } from "@/components/AddressDisplay";
 
 interface MembershipRequestsPanelProps {
     communityId: string;
@@ -49,7 +50,7 @@ export const MembershipRequestsPanel: React.FC<MembershipRequestsPanelProps> = (
                     >
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-slate-700">
-                                {request.requesterAddress.slice(0, 6)}...{request.requesterAddress.slice(-4)}
+                                <AddressText value={request.requesterAddress} autoResponsive />
                             </span>
                             <span className="text-xs text-slate-400">
                                 {new Date(request.requestedAt).toLocaleDateString()}

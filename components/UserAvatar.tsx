@@ -10,6 +10,7 @@ import { User, UserPlus, UserCheck, ExternalLink } from 'lucide-react';
 import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 import { ImageWithFallback } from '@/components/ImageWithFallback';
+import { AddressText } from '@/components/AddressDisplay';
 
 interface UserAvatarProps {
   address: string;
@@ -258,7 +259,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           <span>
             {profile?.nickname
               ? profile.nickname
-              : `${address.substring(0, 6)}...${address.substring(address.length - 4)}`}
+              : <AddressText value={address} autoResponsive />}
           </span>
         </Link>
       )}

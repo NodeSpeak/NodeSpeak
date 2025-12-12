@@ -12,6 +12,8 @@ import { ArrowLeft, User, Save, Upload, ImagePlus, Pencil, UserX, AlertTriangle 
 import { CoverImageEditor } from "@/components/CoverImageEditor";
 import { toast } from "@/hooks/use-toast";
 import { useAdminContext } from "@/contexts/AdminContext";
+import { formatAddress } from "@/lib/addressUtils";
+import { Loading } from "@/components/Loading";
 import { Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 
@@ -378,26 +380,15 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center">
-        <div className="flex flex-col items-center bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700">
-          <p className="text-lg text-slate-700 dark:text-slate-200 font-medium">Loading profile...</p>
-          <div className="mt-4 flex space-x-2">
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse"></div>
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-150"></div>
-            <div className="h-2 w-2 bg-sky-500 rounded-full animate-pulse delay-300"></div>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <Loading type="profile" />
         </div>
       </div>
     );
   }
 
-  // Helper function to shorten Ethereum addresses
-  const shortenAddress = (addr: string, chars = 4): string => {
-    if (!addr) return '';
-    return `${addr.substring(0, chars + 2)}...${addr.substring(addr.length - chars)}`;
-  };
-
-  const displayName = ensName || nickname || (address ? shortenAddress(address) : "");
+  const displayName = ensName || nickname || (address ? formatAddress(address) : "");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f5f7ff] via-[#fdfbff] to-[#e6f0ff] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
@@ -511,7 +502,7 @@ export default function EditProfilePage() {
                   
                   <div>
                     <Label className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2 block">Address</Label>
-                    <div className="text-slate-600 dark:text-slate-300 text-sm font-mono bg-white dark:bg-slate-700 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 truncate">{shortenAddress(address || '', 12)}</div>
+                    <div className="text-slate-600 dark:text-slate-300 text-sm font-mono bg-white dark:bg-slate-700 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 truncate">{formatAddress(address || '', 14, 10)}</div>
                   </div>
                 </div>
                 

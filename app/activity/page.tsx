@@ -2,6 +2,7 @@
 import { WalletConnect } from '@/components/WalletConnect';
 import { UserAvatar } from '@/components/UserAvatar';
 import { ImageWithFallback } from '@/components/ImageWithFallback';
+import { ActivityLoadingSkeleton } from '@/components/skeletons/PostSkeleton';
 import { useState, useEffect } from "react";
 import DOMPurify from 'dompurify';
 import { Contract, JsonRpcProvider } from "ethers";
@@ -378,15 +379,8 @@ export default function ActivityPage() {
                     <p className="text-slate-500 dark:text-slate-400 ml-13">Latest posts from all communities</p>
                 </div>
 
-                {/* Loading State */}
-                {isLoading && (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="text-center">
-                            <div className="w-12 h-12 rounded-full border-4 border-sky-200 dark:border-sky-800 border-t-sky-500 animate-spin mx-auto mb-4"></div>
-                            <p className="text-slate-500 dark:text-slate-400">Loading activity...</p>
-                        </div>
-                    </div>
-                )}
+                {/* Loading State - Skeleton */}
+                {isLoading && <ActivityLoadingSkeleton communityCount={3} />}
 
                 {/* Communities with Posts */}
                 {!isLoading && communities.length === 0 && (
@@ -409,10 +403,12 @@ export default function ActivityPage() {
 
                 {!isLoading && communities.length > 0 && (
                     <div className="space-y-8">
-                        {communities.map((community) => (
-                            <div 
+                        {communities.map((community, index) => (
+                            <div
                                 key={community.id}
-                                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 border border-white/60 dark:border-slate-700 overflow-hidden"
+                                className={`bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/40 dark:shadow-slate-900/40 border border-white/60 dark:border-slate-700 overflow-hidden ${
+                                    index < 5 ? `stagger-item-${index + 1}` : 'animate-slideInUp'
+                                }`}
                             >
                                 {/* Community Header */}
                                 <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-slate-50/80 dark:from-slate-700/50 to-transparent">
