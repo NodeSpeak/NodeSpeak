@@ -89,14 +89,14 @@ function Landing() {
                 </header>
 
                 {/* Hero Section */}
-                <main className="grid gap-6 lg:gap-10 lg:grid-cols-[1fr_340px] items-start">
-                    <section className="space-y-6">
+                <main className="grid gap-6 lg:gap-10 lg:grid-cols-[1fr_340px] items-start lg:items-stretch">
+                    <section className="space-y-6 lg:h-full">
                         {/* Main Hero Card */}
-                        <div className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/60 p-6 md:p-8 overflow-hidden transition-all duration-500 hover:shadow-slate-300/60 dark:hover:shadow-slate-900/80">
+                        <div className="group relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/60 p-6 md:p-8 overflow-hidden transition-all duration-500 hover:shadow-slate-300/60 dark:hover:shadow-slate-900/80 flex flex-col lg:h-full">
                             {/* Subtle gradient overlay on hover */}
                             <div className="absolute inset-0 bg-gradient-to-br from-sky-50/0 to-indigo-50/0 group-hover:from-sky-50/50 group-hover:to-indigo-50/30 dark:group-hover:from-sky-900/20 dark:group-hover:to-indigo-900/20 transition-all duration-500 rounded-3xl" />
                             
-                            <div className="relative z-10">
+                            <div className="relative z-10 flex flex-col h-full">
                                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 mb-3 leading-[1.15]">
                                     The Decentralized and Immutable Forum
                                 </h2>
@@ -114,7 +114,7 @@ function Landing() {
                                 </div>
 
                                 {/* Feature Cards */}
-                                <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="grid gap-3 sm:grid-cols-3 lg:mt-auto">
                                     <div className="group/card relative rounded-2xl border border-slate-100 dark:border-slate-700 bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-800 dark:to-slate-900/80 p-4 transition-all duration-300 hover:border-sky-200 dark:hover:border-sky-700 hover:shadow-lg hover:shadow-sky-100/50 dark:hover:shadow-sky-900/30 hover:-translate-y-1">
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-900/50 dark:to-sky-800/50 flex items-center justify-center mb-2 group-hover/card:from-sky-200 group-hover/card:to-sky-100 dark:group-hover/card:from-sky-800/50 dark:group-hover/card:to-sky-700/50 transition-colors">
                                             <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
