@@ -1,12 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Contract } from 'ethers';
+import { Contract, JsonRpcProvider } from 'ethers';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 import { fetchContent, uploadFile, uploadJSON, getImageUrl } from '@/lib/ipfsClient';
 import { queryKeys } from '@/lib/queryClient';
 import type { Community, RawCommunity, CreateCommunityInput, UpdateCommunityImagesInput } from '@/types/forum';
+
+// Public RPC for Arbitrum One - allows reading without wallet connection
+const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
 
 // =============================================================================
 // FETCH FUNCTIONS
@@ -110,6 +113,30 @@ export function useCommunities() {
     },
     enabled: !!provider,
     staleTime: 2 * 60 * 1000, // 2 minutos
+  });
+}
+
+/**
+ * Hook para obtener comunidades usando RPC público (sin wallet)
+ * Ideal para landing pages y vistas públicas
+ */
+export function usePublicCommunities() {
+  return useQuery({
+    queryKey: ['communities', 'public'],
+    queryFn: async (): Promise<Community[]> => {
+      const provider = new JsonRpcProvider(ARBITRUM_RPC);
+      const contract = new Contract(forumAddress, forumABI, provider);
+      const rawCommunities: RawCommunity[] = await contract.getActiveCommunities();
+
+      // Parse communities without user-specific data
+      const communities = await Promise.all(
+        rawCommunities.map((raw) => parseCommunity(raw, contract, null))
+      );
+
+      return communities;
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    retry: 2,
   });
 }
 
