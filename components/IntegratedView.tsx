@@ -8,6 +8,7 @@ import { useAdminContext } from "@/contexts/AdminContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus, Users, ChevronDown, X, User } from "lucide-react";
 import DOMPurify from 'dompurify';
+import { toast } from 'sonner';
 import { TopicsDropdown } from "@/components/TopicsDropdown";
 import { uploadFile } from "@/lib/ipfsClient";
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -448,7 +449,7 @@ export const IntegratedView = ({
 
     const handleCreatePost = async (communityId: string, imageCID: string | null, textCID: string, topic: string, title: string) => {
         if (!provider) {
-            alert("No Ethereum provider connected.");
+            toast.error("No Ethereum provider connected.");
             return;
         }
         try {
@@ -465,7 +466,7 @@ export const IntegratedView = ({
                 if (!isCreatorOrMember) {
                     const isMember = await contract.isMember(communityId, userAddress);
                     if (!isMember) {
-                        alert("You must be a member of this community to create a post. Please join the community first.");
+                        toast.error("You must be a member of this community to create a post. Please join the community first.");
                         return;
                     }
                 }
@@ -501,9 +502,9 @@ export const IntegratedView = ({
             } catch (estimateError: any) {
                 console.error("Gas estimation error:", estimateError);
                 if (estimateError.message) {
-                    alert(`Cannot create post: ${estimateError.message}`);
+                    toast.error(`Cannot create post: ${estimateError.message}`);
                 } else {
-                    alert("Error creating post. The transaction would fail.");
+                    toast.error("Error creating post. The transaction would fail.");
                 }
                 return false; // Indicamos que la transacción falló
             }
@@ -519,7 +520,7 @@ export const IntegratedView = ({
                     errorMessage = "Please wait before creating another post. Cooldown period is active.";
                 }
             }
-            alert(errorMessage);
+            toast.error(errorMessage);
             return false; // Indicamos que la transacción falló
         }
     };
@@ -531,15 +532,15 @@ export const IntegratedView = ({
         const textContent = tempElement.textContent || tempElement.innerText || '';
 
         if (!textContent.trim()) {
-            alert("Enter content for your post");
+            toast.warning("Enter content for your post");
             return;
         }
         if (!postSelectedTopic) {
-            alert("Select a topic");
+            toast.warning("Select a topic");
             return;
         }
         if (!selectedCommunityId) {
-            alert("Select a community");
+            toast.warning("Select a community");
             return;
         }
 
@@ -588,7 +589,7 @@ export const IntegratedView = ({
                     } else if (topicError.message?.includes("user rejected")) {
                         errorMessage = "Transaction was rejected by user";
                     }
-                    alert(errorMessage);
+                    toast.error(errorMessage);
                     setLoading(false);
                     return;
                 }
@@ -620,7 +621,7 @@ export const IntegratedView = ({
             }
         } catch (error) {
             console.error("Error in upload process:", error);
-            alert("Error uploading files to Pinata.");
+            toast.error("Error uploading files to Pinata.");
         } finally {
             setLoading(false);
         }
@@ -820,7 +821,7 @@ export const IntegratedView = ({
     // Quick add topic with prompt - generates transaction directly
     const handleQuickAddTopic = async (communityId: string) => {
         if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to add a topic");
+            toast.error("Please connect your wallet to add a topic");
             return;
         }
 
@@ -860,15 +861,15 @@ export const IntegratedView = ({
                 await refreshCommunities();
             }
 
-            alert(`Topic "${topicName.trim()}" added successfully!`);
+            toast.success(`Topic "${topicName.trim()}" added successfully!`);
         } catch (error: any) {
             console.error("Error adding topic:", error);
             if (error.message?.includes("Only the community creator")) {
-                alert("Only the community creator can add new topics.");
+                toast.error("Only the community creator can add new topics.");
             } else if (error.message?.includes("user rejected")) {
                 // User cancelled transaction, no alert needed
             } else {
-                alert(`Failed to add topic: ${error.message || "Unknown error"}`);
+                toast.error(`Failed to add topic: ${error.message || "Unknown error"}`);
             }
         } finally {
             setIsSubmittingTopic(false);
@@ -1014,7 +1015,7 @@ export const IntegratedView = ({
 
     const addComment = async (postId: string) => {
         if (!newCommentText[postId]?.trim() || !isConnected || !walletProvider) {
-            alert("Please enter a comment and connect your wallet");
+            toast.error("Please enter a comment and connect your wallet");
             return;
         }
 
@@ -1049,7 +1050,7 @@ export const IntegratedView = ({
             }));
         } catch (error) {
             console.error("Error adding comment:", error);
-            alert("Failed to add comment. Make sure your wallet is connected and you have enough gas.");
+            toast.error("Failed to add comment. Make sure your wallet is connected and you have enough gas.");
         } finally {
             setSubmittingComment(prev => ({
                 ...prev,
@@ -1060,7 +1061,7 @@ export const IntegratedView = ({
 
     const handleLikePost = async (postId: string) => {
         if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to like posts");
+            toast.error("Please connect your wallet to like posts");
             return;
         }
 
@@ -1068,7 +1069,7 @@ export const IntegratedView = ({
 
         // Check if user already liked this post
         if (userLikedPosts[postId]) {
-            alert("You have already liked this post. Unlike functionality is not available in the current contract.");
+            toast.info("You have already liked this post. Unlike functionality is not available in the current contract.");
             return;
         }
 
@@ -1090,13 +1091,13 @@ export const IntegratedView = ({
         } catch (error) {
             console.error("Error liking post:", error);
             if (error instanceof Error && error.toString().includes("already liked")) {
-                alert("You have already liked this post.");
+                toast.info("You have already liked this post.");
                 setUserLikedPosts(prev => ({
                     ...prev,
                     [postId]: true
                 }));
             } else {
-                alert("Failed to like post. Make sure your wallet is connected and you have enough gas.");
+                toast.error("Failed to like post. Make sure your wallet is connected and you have enough gas.");
             }
         } finally {
             setLikingPost(prev => ({
@@ -1109,7 +1110,7 @@ export const IntegratedView = ({
     // Desactivar Comunidad
     const handleDeactivateCommunity = async (communityId: string, communityName: string) => {
         if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to deactivate community.");
+            toast.error("Please connect your wallet to deactivate community.");
             return;
         }
 
@@ -1125,7 +1126,7 @@ export const IntegratedView = ({
 
             const txHash = await deactivateCommunityMutation.mutateAsync(communityId);
 
-            alert(`Transacción confirmada.\nHash: ${txHash}`);
+            toast.success(`Transacción confirmada. Hash: ${txHash}`);
 
             // Update local communities
             setLocalCommunities(prev =>
@@ -1140,7 +1141,7 @@ export const IntegratedView = ({
             const reason = `Desactivada por el creador: ${currentUserAddress?.toLowerCase() || 'unknown'}`;
             hideCommunity(communityId, communityName, reason);
 
-            alert(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
+            toast.success(`La comunidad "${communityName}" ha sido desactivada exitosamente.`);
 
             // If we were viewing this community, go back to community list
             if (selectedCommunityId === communityId) {
@@ -1150,11 +1151,11 @@ export const IntegratedView = ({
         } catch (error) {
             console.error("Error deactivating community:", error);
             if (error instanceof Error && error.toString().includes("Not community creator")) {
-                alert("Solo el creador de la comunidad puede desactivarla.");
+                toast.error("Solo el creador de la comunidad puede desactivarla.");
             } else if (error instanceof Error && error.toString().includes("user rejected")) {
                 // User cancelled, no alert needed
             } else {
-                alert(`Error al desactivar la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+                toast.error(`Error al desactivar la comunidad: ${error instanceof Error ? error.message : 'Error desconocido'}`);
             }
         } finally {
             setDeactivatingCommunityId(null);
@@ -1164,7 +1165,7 @@ export const IntegratedView = ({
     // Delete/Deactivate post
     const handleDeletePost = async (postId: string, postAuthor: string) => {
         if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to delete posts.");
+            toast.error("Please connect your wallet to delete posts.");
             return;
         }
 
@@ -1181,7 +1182,7 @@ export const IntegratedView = ({
 
             // Check author permission on client side
             if (currentUserAddress && postAuthor.toLowerCase() !== currentUserAddress.toLowerCase()) {
-                alert("Only the post author can delete this post.");
+                toast.error("Only the post author can delete this post.");
                 return;
             }
 
@@ -1194,11 +1195,11 @@ export const IntegratedView = ({
         } catch (error: any) {
             console.error("Error deleting post:", error);
             if (error.message?.includes("Only the post author")) {
-                alert("Only the post author can delete this post.");
+                toast.error("Only the post author can delete this post.");
             } else if (error.message?.includes("user rejected")) {
                 // User cancelled, no alert needed
             } else {
-                alert("Failed to delete post. Please try again.");
+                toast.error("Failed to delete post. Please try again.");
             }
         } finally {
             setDeletingPost(prev => ({ ...prev, [postId]: false }));
@@ -1216,7 +1217,7 @@ export const IntegratedView = ({
     // Delete/Deactivate comment
     const handleDeleteComment = async (comment: Comment) => {
         if (!isConnected || !walletProvider) {
-            alert("Please connect your wallet to delete comments.");
+            toast.error("Please connect your wallet to delete comments.");
             return;
         }
 
@@ -1233,7 +1234,7 @@ export const IntegratedView = ({
 
             // Check author permission on client side
             if (currentUserAddress && comment.author.toLowerCase() !== currentUserAddress.toLowerCase()) {
-                alert("Only the comment author can delete this comment.");
+                toast.error("Only the comment author can delete this comment.");
                 return;
             }
 
@@ -1254,11 +1255,11 @@ export const IntegratedView = ({
         } catch (error: any) {
             console.error("Error deleting comment:", error);
             if (error.message?.includes("Not comment owner")) {
-                alert("Only the comment author can delete this comment.");
+                toast.error("Only the comment author can delete this comment.");
             } else if (error.message?.includes("user rejected")) {
                 // User cancelled, no alert needed
             } else {
-                alert("Failed to delete comment. Please try again.");
+                toast.error("Failed to delete comment. Please try again.");
             }
         } finally {
             setDeletingComment(prev => ({ ...prev, [comment.id]: false }));
@@ -1676,7 +1677,7 @@ export const IntegratedView = ({
                             setCommunityLogoFile(null);
                             setCommunityLogoPreview("");
                         } else {
-                            alert("Please fill in all fields");
+                            toast.warning("Please fill in all fields");
                         }
                     }}
                     className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg py-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50 transition-all mt-1"
@@ -1764,7 +1765,7 @@ export const IntegratedView = ({
                                                     // Comunidad cerrada: solicitar acceso
                                                     if (currentUserAddress && !hasPendingRequest(community.id, currentUserAddress)) {
                                                         requestMembership(community.id, currentUserAddress);
-                                                        alert('Membership request sent! The community creator will review it.');
+                                                        toast.success('Membership request sent! The community creator will review it.');
                                                     }
                                                 } else {
                                                     handleJoinCommunity(community.id);
@@ -2134,7 +2135,7 @@ export const IntegratedView = ({
                                 <button
                                     onClick={() => {
                                         requestMembership(selectedCommunityId, currentUserAddress);
-                                        alert('Membership request sent! The community creator will review it.');
+                                        toast.success('Membership request sent! The community creator will review it.');
                                     }}
                                     className="bg-amber-500 text-white px-6 py-2 rounded-xl hover:bg-amber-600 transition-colors inline-flex items-center gap-2"
                                 >
@@ -2165,7 +2166,7 @@ export const IntegratedView = ({
                                 // Note: This would need the contract to support adding members
                                 // For now, we just approve in localStorage
                                 // The user would need to join manually after approval
-                                alert(`Approved! User ${formatAddress(requesterAddress)} can now join the community.`);
+                                toast.success(`Approved! User ${formatAddress(requesterAddress)} can now join the community.`);
                             }}
                             currentUserAddress={currentUserAddress || undefined}
                         />
@@ -2443,7 +2444,7 @@ export const IntegratedView = ({
                         <Button
                             onClick={() => {
                                 if (!selectedCommunityId) {
-                                    alert("Please select a community first");
+                                    toast.warning("Please select a community first");
                                     return;
                                 }
                                 setIsCreatingPost(!isCreatingPost);

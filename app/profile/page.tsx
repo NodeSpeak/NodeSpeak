@@ -16,6 +16,7 @@ import { Loading } from "@/components/Loading";
 import { BrowserProvider, Contract } from "ethers";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { fetchText, fetchJSON } from "@/lib/ipfsClient";
+import { toast } from 'sonner';
 
 // Note: followUser, unfollowUser, and isFollowing are available directly on the main forum contract
 
@@ -111,7 +112,7 @@ export default function ProfilePage() {
     
     // Check if target user has a profile (required by contract)
     if (!profileExists) {
-      alert('This user has not created a profile yet. You can only follow users with an active profile.');
+      toast.warning('This user has not created a profile yet. You can only follow users with an active profile.');
       return;
     }
     
@@ -119,7 +120,7 @@ export default function ProfilePage() {
     try {
       const ethereum = (window as any).ethereum;
       if (!ethereum) {
-        alert('Please connect your wallet');
+        toast.error('Please connect your wallet');
         return;
       }
       
@@ -144,11 +145,11 @@ export default function ProfilePage() {
       console.error('Error following/unfollowing user:', error);
       // Show user-friendly error
       if (error.reason) {
-        alert(`Transaction failed: ${error.reason}`);
+        toast.error(`Transaction failed: ${error.reason}`);
       } else if (error.message?.includes('user rejected')) {
         // User cancelled, no alert needed
       } else {
-        alert('Transaction failed. Please try again.');
+        toast.error('Transaction failed. Please try again.');
       }
     } finally {
       setFollowLoading(false);
@@ -699,7 +700,7 @@ export default function ProfilePage() {
                       );
                       
                       // Redirecciona al usuario de vuelta al foro
-                      alert(`Usuario ${displayName} ocultado correctamente.`);
+                      toast.success(`Usuario ${displayName} ocultado correctamente.`);
                       router.push('/foro');
                     }
                   }}

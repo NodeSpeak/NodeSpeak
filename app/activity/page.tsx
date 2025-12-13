@@ -13,6 +13,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { fetchContent } from '@/lib/ipfsClient';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchFeedImages } from '@/lib/ipfsPrefetch';
 
 // Public RPC for Arbitrum One - allows reading without wallet connection
 const ARBITRUM_RPC = "https://arb1.arbitrum.io/rpc";
@@ -49,6 +52,7 @@ interface Community {
 export default function ActivityPage() {
     const { isConnected, provider, address, connect } = useWalletContext();
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [communities, setCommunities] = useState<Community[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
@@ -108,55 +112,49 @@ export default function ActivityPage() {
             const contract = new Contract(forumAddress, forumABI, readProvider);
             const communitiesFromContract = await contract.getActiveCommunities();
 
-            const communitiesWithPosts: Community[] = [];
+            // Process all communities in parallel for better performance
+            const communitiesWithPosts: Community[] = (await Promise.all(
+                communitiesFromContract.map(async (community: any) => {
+                    const id = community.id.toString();
+                    let name = `Community #${id}`;
+                    let description = "";
+                    let photo = "";
 
-            for (const community of communitiesFromContract) {
-                const id = community.id.toString();
-                let name = `Community #${id}`;
-                let description = "";
-                let photo = "";
-
-                // Get community data from IPFS
-                const cacheKey = `community_${id}`;
-                if (communityDataCache.has(cacheKey)) {
-                    const cached = communityDataCache.get(cacheKey);
-                    name = cached.name;
-                    description = cached.description;
-                    photo = cached.photo || "";
-                } else {
-                    try {
-                        const communityData = await fetchFromIPFS(community.contentCID);
-                        if (communityData) {
-                            name = communityData.name || name;
-                            description = communityData.description || "";
-                            photo = communityData.photo || "";
-                            communityDataCache.set(cacheKey, { name, description, photo });
+                    // Get community data from IPFS
+                    const cacheKey = `community_${id}`;
+                    if (communityDataCache.has(cacheKey)) {
+                        const cached = communityDataCache.get(cacheKey);
+                        name = cached.name;
+                        description = cached.description;
+                        photo = cached.photo || "";
+                    } else {
+                        try {
+                            const communityData = await fetchFromIPFS(community.contentCID);
+                            if (communityData) {
+                                name = communityData.name || name;
+                                description = communityData.description || "";
+                                photo = communityData.photo || "";
+                                communityDataCache.set(cacheKey, { name, description, photo });
+                            }
+                        } catch (err) {
+                            console.error(`Error getting data for community ${id}:`, err);
                         }
-                    } catch (err) {
-                        console.error(`Error getting data for community ${id}:`, err);
                     }
-                }
 
-                // Get member count and check membership
-                let memberCount = 0;
-                let isMember = false;
-                try {
-                    const count = await contract.getCommunityMemberCount(id);
-                    memberCount = parseInt(count.toString(), 10);
-                    
-                    // Check if user is a member (only if connected)
-                    if (isConnected && address) {
-                        isMember = await contract.isMember(id, address);
-                    }
-                } catch (err) {
-                    console.error(`Error getting member count for community ${id}:`, err);
-                }
+                    // Fetch member count, membership status, and posts in parallel
+                    const [memberCountResult, isMemberResult, postsFromContract] = await Promise.all([
+                        contract.getCommunityMemberCount(id).catch(() => 0),
+                        isConnected && address 
+                            ? contract.isMember(id, address).catch(() => false) 
+                            : Promise.resolve(false),
+                        contract.getCommunityPosts(id).catch(() => [])
+                    ]);
 
-                // Get posts for this community
-                try {
-                    const postsFromContract = await contract.getCommunityPosts(id);
+                    const memberCount = parseInt(memberCountResult.toString(), 10);
+                    const isMember = isMemberResult;
                     const activePosts = postsFromContract.filter((post: any) => post.isActive);
 
+                    // Fetch all post contents in parallel
                     const posts: Post[] = await Promise.all(
                         activePosts.slice(0, 5).map(async (post: any) => {
                             const postId = parseInt(post.id.toString(), 10);
@@ -195,7 +193,7 @@ export default function ActivityPage() {
                     posts.sort((a, b) => b.timestamp - a.timestamp);
 
                     if (posts.length > 0) {
-                        communitiesWithPosts.push({
+                        return {
                             id,
                             name,
                             description,
@@ -204,12 +202,11 @@ export default function ActivityPage() {
                             photo,
                             posts,
                             isMember
-                        });
+                        } as Community;
                     }
-                } catch (err) {
-                    console.error(`Error getting posts for community ${id}:`, err);
-                }
-            }
+                    return null;
+                })
+            )).filter((c): c is Community => c !== null);
 
             // Sort communities by most recent post
             communitiesWithPosts.sort((a, b) => {
@@ -230,6 +227,19 @@ export default function ActivityPage() {
         // Fetch activity on mount - no wallet required
         fetchActivity();
     }, [isConnected, address]); // Re-fetch when connection status changes to update membership
+
+    // Prefetch images when communities are loaded
+    useEffect(() => {
+        if (communities.length > 0) {
+            // Extract all posts from all communities
+            const allPosts = communities.flatMap(c => c.posts);
+            // Prefetch community photos and post images
+            prefetchFeedImages(queryClient, {
+                posts: allPosts.map(p => ({ imageCID: p.imageUrl })),
+                communities: communities.map(c => ({ image: c.photo }))
+            });
+        }
+    }, [communities, queryClient]);
 
     // Effect to join community after wallet connection
     useEffect(() => {
@@ -274,7 +284,7 @@ export default function ActivityPage() {
     // Join a community
     const handleJoinCommunity = async (communityId: string) => {
         if (!provider || !isConnected) {
-            alert("Please connect your wallet first.");
+            toast.error("Please connect your wallet first.");
             return;
         }
 
@@ -323,7 +333,7 @@ export default function ActivityPage() {
                     return community;
                 }));
             } else {
-                alert("Error joining community. Check console.");
+                toast.error("Error joining community. Check console.");
             }
         } finally {
             setJoiningCommunityId(null);
