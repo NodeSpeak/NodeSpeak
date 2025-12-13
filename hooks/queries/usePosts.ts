@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Contract } from 'ethers';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
@@ -118,6 +118,80 @@ export function usePost(postId: string | null) {
       return parsePost(raw);
     },
     enabled: !!provider && !!postId,
+  });
+}
+
+/**
+ * Hook para obtener posts con scroll infinito (paginación client-side)
+ * Dado que el contrato no soporta paginación nativa, cargamos todos y paginamos en cliente
+ */
+export function useInfiniteCommunityPosts(communityId: string | null, pageSize: number = 10) {
+  const { provider } = useWalletContext();
+
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.posts.byCommunity(communityId || ''), 'infinite'],
+    queryFn: async ({ pageParam = 0 }): Promise<{ posts: Post[]; nextPage: number | null }> => {
+      if (!provider || !communityId) return { posts: [], nextPage: null };
+
+      const contract = new Contract(forumAddress, forumABI, provider);
+      const rawPosts: RawPost[] = await contract.getCommunityPosts(communityId);
+
+      // Filter active posts and parse
+      const activePosts = rawPosts.filter((post) => post.isActive);
+      const allPosts = await Promise.all(activePosts.map(parsePost));
+
+      // Sort by timestamp (newest first)
+      const sortedPosts = allPosts.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Paginate client-side
+      const start = pageParam * pageSize;
+      const end = start + pageSize;
+      const paginatedPosts = sortedPosts.slice(start, end);
+
+      return {
+        posts: paginatedPosts,
+        nextPage: end < sortedPosts.length ? pageParam + 1 : null,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
+    enabled: !!provider && !!communityId,
+    staleTime: 1 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook para obtener todos los posts con scroll infinito
+ */
+export function useInfiniteAllPosts(pageSize: number = 15) {
+  const { provider } = useWalletContext();
+
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.posts.active(), 'infinite'],
+    queryFn: async ({ pageParam = 0 }): Promise<{ posts: Post[]; nextPage: number | null; totalCount: number }> => {
+      if (!provider) return { posts: [], nextPage: null, totalCount: 0 };
+
+      const contract = new Contract(forumAddress, forumABI, provider);
+      const rawPosts: RawPost[] = await contract.getActivePosts();
+
+      const allPosts = await Promise.all(rawPosts.map(parsePost));
+      const sortedPosts = allPosts.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Paginate client-side
+      const start = pageParam * pageSize;
+      const end = start + pageSize;
+      const paginatedPosts = sortedPosts.slice(start, end);
+
+      return {
+        posts: paginatedPosts,
+        nextPage: end < sortedPosts.length ? pageParam + 1 : null,
+        totalCount: sortedPosts.length,
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+    initialPageParam: 0,
+    enabled: !!provider,
+    staleTime: 1 * 60 * 1000,
   });
 }
 

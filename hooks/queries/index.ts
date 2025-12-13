@@ -26,6 +26,8 @@ export {
   useCreatePost,
   useLikePost,
   useDeactivatePost,
+  useInfiniteCommunityPosts,
+  useInfiniteAllPosts,
 } from './usePosts';
 
 // Comments
@@ -57,3 +59,9 @@ export {
   prefetchIPFSFiles,
   ipfsQueryKeys,
 } from './useIPFSFile';
+
+// Activity Feed
+export {
+  useActivityFeed,
+  useUpdateCommunityMembership,
+} from './useActivityFeed';
