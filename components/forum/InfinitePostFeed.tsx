@@ -267,7 +267,7 @@ const PostItem: React.FC<PostItemProps> = ({
                         <div className="flex items-center gap-2 flex-wrap">
                             {post.author && (
                                 <AddressText
-                                    address={post.author}
+                                    value={post.author}
                                     className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                 />
                             )}
@@ -375,7 +375,7 @@ const PostItem: React.FC<PostItemProps> = ({
                                         <UserAvatar address={comment.author} size="sm" />
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <AddressText address={comment.author} className="text-sm font-medium" />
+                                                <AddressText value={comment.author} className="text-sm font-medium" />
                                                 <span className="text-xs text-slate-400">{formatTimestamp(comment.timestamp)}</span>
                                             </div>
                                             <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{comment.content}</p>

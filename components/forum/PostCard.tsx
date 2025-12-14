@@ -98,7 +98,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                             <div className="flex items-center gap-2">
                                 {post.author && (
                                     <AddressText 
-                                        address={post.author} 
+                                        value={post.author} 
                                         className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                     />
                                 )}
@@ -255,7 +255,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <AddressText
-                                                        address={comment.author}
+                                                        value={comment.author}
                                                         className="text-sm font-medium text-slate-900 dark:text-slate-100"
                                                     />
                                                     <span className="text-xs text-slate-400">
