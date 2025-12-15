@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { HiddenUsersPanel, UserCommunitiesPanel } from "@/components/admin";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ArrowLeft, Users, Home, EyeOff, Construction } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Loading } from "@/components/Loading";
 
 export default function AdminPage() {
   const router = useRouter();
   const { isConnected, address, ensName } = useWalletContext();
+  const { t } = useLanguage();
   const { isAdmin, hiddenUsers, hiddenCommunities } = useAdminContext();
   const [activeTab, setActiveTab] = useState("hidden-users");
 

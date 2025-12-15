@@ -8,11 +8,13 @@ import { useState, useEffect, useMemo } from "react";
 import DOMPurify from 'dompurify';
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { Clock, MessageSquare, Heart, Users, ArrowRight, Sparkles, TrendingUp } from "lucide-react";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { prefetchFeedImages } from '@/lib/ipfsPrefetch';
@@ -20,6 +22,7 @@ import { useActivityFeed, useUpdateCommunityMembership } from '@/hooks/queries';
 
 export default function ActivityPage() {
     const { isConnected, provider, address, connect } = useWalletContext();
+    const { t } = useLanguage();
     const router = useRouter();
     const queryClient = useQueryClient();
     
@@ -36,10 +39,10 @@ export default function ActivityPage() {
         const now = Date.now() / 1000;
         const diff = now - timestamp;
 
-        if (diff < 60) return "Just now";
-        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-        if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+        if (diff < 60) return t("time.now");
+        if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+        if (diff < 604800) return `${Math.floor(diff / 86400)}d`;
         return new Date(timestamp * 1000).toLocaleDateString();
     };
 
@@ -107,7 +110,7 @@ export default function ActivityPage() {
     // Join a community with optimistic update
     const handleJoinCommunity = async (communityId: string) => {
         if (!provider || !isConnected) {
-            toast.error("Please connect your wallet first.");
+            toast.error(t("error.walletRequired"));
             return;
         }
 
@@ -133,7 +136,7 @@ export default function ActivityPage() {
             const tx = await contract.joinCommunity(communityId);
             await tx.wait();
 
-            toast.success("Successfully joined community!");
+            toast.success(t("common.success"));
 
         } catch (error: any) {
             console.error("Error joining community:", error);
@@ -143,7 +146,7 @@ export default function ActivityPage() {
             } else {
                 // Rollback optimistic update
                 updateMembership(communityId, false, -1);
-                toast.error("Error joining community. Check console.");
+                toast.error(t("error.generic"));
             }
         } finally {
             setJoiningCommunityId(null);
@@ -160,9 +163,10 @@ export default function ActivityPage() {
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-200 dark:shadow-sky-900/50">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
-                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Node Speak v3.3</h1>
+                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Node Speak</h1>
                         </Link>
                         <div className="flex items-center gap-4">
+                            <LanguageSwitcher />
                             <ThemeToggle />
                             {isConnected ? (
                                 <WalletConnect />
@@ -172,7 +176,7 @@ export default function ActivityPage() {
                                     disabled={isConnecting}
                                     className="inline-flex items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-200 dark:hover:bg-sky-800/50 transition-colors text-xs font-medium px-5 py-2 h-auto shadow-sm disabled:opacity-70"
                                 >
-                                    {isConnecting ? "Connecting..." : "Connect"}
+                                    {isConnecting ? t("nav.connecting") : t("nav.connect")}
                                 </button>
                             )}
                         </div>
@@ -186,17 +190,17 @@ export default function ActivityPage() {
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/50 dark:to-violet-800/30 flex items-center justify-center">
                                 <TrendingUp className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">{t("forum.activity")}</h2>
                         </div>
                         <Link
                             href="/foro"
                             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                         >
                             <Users className="w-4 h-4" />
-                            Communities
+                            {t("forum.communities")}
                         </Link>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 ml-13">Latest posts from all communities</p>
+                    <p className="text-slate-500 dark:text-slate-400 ml-13">{t("forum.latest")}</p>
                 </div>
 
                 {/* Loading State */}
@@ -208,15 +212,15 @@ export default function ActivityPage() {
                         <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-4">
                             <MessageSquare className="w-8 h-8 text-slate-400" />
                         </div>
-                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">No activity yet</h3>
-                        <p className="text-slate-500 dark:text-slate-400 mb-6">Be the first to create a post in a community!</p>
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{t("forum.noResults")}</h3>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">{t("post.noComments")}</p>
                         <button
                             type="button"
                             onClick={handleGoToForo}
                             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                         >
                             <Users className="w-4 h-4" />
-                            Browse Communities
+                            {t("forum.communities")}
                         </button>
                     </div>
                 )}
@@ -259,11 +263,11 @@ export default function ActivityPage() {
                                                 <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                                     <span className="flex items-center gap-1">
                                                         <Users className="w-3.5 h-3.5" />
-                                                        {community.memberCount} members
+                                                        {community.memberCount}
                                                     </span>
                                                     <span className="flex items-center gap-1">
                                                         <MessageSquare className="w-3.5 h-3.5" />
-                                                        {community.postCount} posts
+                                                        {community.postCount}
                                                     </span>
                                                 </div>
                                             </div>
@@ -274,7 +278,7 @@ export default function ActivityPage() {
                                                     href={`/foro?community=${community.id}`}
                                                     className="text-sm font-medium text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
                                                 >
-                                                    View all
+                                                    {t("landing.viewAll")}
                                                     <ArrowRight className="w-4 h-4" />
                                                 </Link>
                                             ) : (
@@ -287,7 +291,7 @@ export default function ActivityPage() {
                                                             : "bg-indigo-600 hover:bg-indigo-700 text-white"
                                                     }`}
                                                 >
-                                                    {joiningCommunityId === community.id ? "Joining..." : "Join"}
+                                                    {joiningCommunityId === community.id ? t("common.loading") : t("landing.joinCommunity")}
                                                 </button>
                                             )
                                         ) : (
@@ -296,7 +300,7 @@ export default function ActivityPage() {
                                                 disabled={isConnecting}
                                                 className="text-sm font-medium px-4 py-1.5 rounded-full transition-all bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-70"
                                             >
-                                                {isConnecting && pendingJoinCommunityId === community.id ? "Connecting..." : "Join"}
+                                                {isConnecting && pendingJoinCommunityId === community.id ? t("nav.connecting") : t("landing.joinCommunity")}
                                             </button>
                                         )}
                                     </div>
@@ -349,7 +353,7 @@ export default function ActivityPage() {
                                                                 className="w-full max-w-md h-48 rounded-xl object-cover shadow-md border border-slate-200 dark:border-slate-600"
                                                                 fallback={
                                                                     <div className="w-full max-w-md h-48 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500">
-                                                                        Image unavailable
+                                                                        {t("common.error")}
                                                                     </div>
                                                                 }
                                                             />

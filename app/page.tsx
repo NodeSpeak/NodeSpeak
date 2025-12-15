@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Github, X, Mail, Users, MessageSquare, Shield, Lock, Globe, Database, Sparkles } from "lucide-react";
+import { Github, X, Heart, Users, MessageSquare, Shield, Lock, Globe, Database, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { WalletConnect } from "@/components/WalletConnect";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -239,13 +240,13 @@ function Landing() {
                             <X className="w-4 h-4 mr-2" />
                             @NodeSpeak
                         </a>
-                        <a
-                            href="mailto:support@nodespeak.xyz"
-                            className="inline-flex items-center rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-5 py-2.5 text-sm font-medium border border-slate-200 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 hover:-translate-y-0.5 transition-all duration-300"
+                        <Link
+                            href="/donate"
+                            className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white px-5 py-2.5 text-sm font-medium shadow-lg shadow-rose-200 dark:shadow-rose-900/50 hover:from-rose-600 hover:to-pink-700 hover:-translate-y-0.5 transition-all duration-300"
                         >
-                            <Mail className="w-4 h-4 mr-2" />
-                            Support
-                        </a>
+                            <Heart className="w-4 h-4 mr-2" />
+                            Collaborate
+                        </Link>
                     </div>
                   </div>
                 </footer>

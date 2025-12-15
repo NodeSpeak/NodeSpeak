@@ -4,11 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { useProfileService } from "@/lib/profileService";
 import { Button } from "@/components/ui/button";
 import { User, ArrowLeft, Edit3, MessageSquare, Heart, UserPlus, UserCheck, Shield, EyeOff, ChevronDown, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { AddressDisplay } from "@/components/AddressDisplay";
 import { formatAddress } from "@/lib/addressUtils";
@@ -43,6 +45,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { address: currentUserAddress, ensName, isConnected } = useWalletContext();
+  const { t } = useLanguage();
   const { isAdmin, hideUser, isUserHidden } = useAdminContext();
   const profileService = useProfileService();
   

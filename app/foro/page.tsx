@@ -1,11 +1,13 @@
 "use client";
 import { WalletConnect } from '@/components/WalletConnect';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Loading } from '@/components/Loading';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
 import { Users } from 'lucide-react';
@@ -32,6 +34,7 @@ const IntegratedView = dynamic(
 
 export default function Home() {
     const { isConnected, provider } = useWalletContext();
+    const { t } = useLanguage();
     const { setCommunityType } = useCommunitySettings();
     const searchParams = useSearchParams();
     const queryClient = useQueryClient();
@@ -117,10 +120,10 @@ export default function Home() {
                 }
             }
 
-            toast.success(`Community created successfully! ${isClosed ? '(Closed community)' : '(Open community)'}`);
+            toast.success(t("common.success"));
         } catch (error: any) {
             console.error("Error creating community:", error);
-            toast.error(`Error creating community: ${error.message || 'Unknown error'}`);
+            toast.error(t("error.generic"));
         }
     };
 
@@ -134,9 +137,9 @@ export default function Home() {
         } catch (error: any) {
             console.error("Error joining community:", error);
             if (error.message?.includes("Already a member")) {
-                toast.info("You are already a member of this community.");
+                toast.info(t("common.success"));
             } else {
-                toast.error("Error joining community. Check console.");
+                toast.error(t("error.generic"));
             }
         }
     };
@@ -144,7 +147,7 @@ export default function Home() {
     const handleLeaveCommunity = async (communityId: string) => {
         const community = communities.find(c => c.id === communityId);
         if (community?.isCreator) {
-            toast.warning("As the creator of this community, you cannot leave it.");
+            toast.warning(t("error.unauthorized"));
             return;
         }
 
@@ -152,7 +155,7 @@ export default function Home() {
             await leaveCommunityMutation.mutateAsync(communityId);
         } catch (error) {
             console.error("Error leaving community:", error);
-            toast.error("Error leaving community. Check console.");
+            toast.error(t("error.generic"));
         }
     };
 
@@ -175,9 +178,10 @@ export default function Home() {
                 <header className="mb-10">
                     <div className="flex justify-between items-center">
                         <a href="/" className="block">
-                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Node Speak v3.3</h1>
+                            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Node Speak</h1>
                         </a>
                         <div className="flex items-center gap-3">
+                            <LanguageSwitcher />
                             <ThemeToggle />
                             <WalletConnect />
                         </div>
@@ -189,7 +193,7 @@ export default function Home() {
                                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                             >
                                 <Users className="w-4 h-4" />
-                                Communities
+                                {t("forum.communities")}
                             </button>
                         </div>
                     )}
@@ -199,7 +203,7 @@ export default function Home() {
                     {!isConnected && (
                         <div className="p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300">
                             <p className="text-sm">
-                                You can explore public communities without connecting your wallet. Connect when you want to create, join or interact.
+                                {t("wallet.tipSubtitle")}
                             </p>
                         </div>
                     )}

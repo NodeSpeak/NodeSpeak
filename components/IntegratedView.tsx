@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdminContext } from "@/contexts/AdminContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { ImagePlus, Send, Trash2, MoreVertical, Lock, Unlock, UserPlus, Users, ChevronDown, X, User } from "lucide-react";
@@ -220,6 +221,7 @@ export const IntegratedView = ({
     setShowCommunityList: externalSetShowCommunityList
 }: IntegratedViewProps) => {
     const { isConnected, provider: walletProvider, address: currentUserAddress } = useWalletContext();
+    const { t } = useLanguage();
     const { isUserHidden, isCommunityHidden, isAdmin, hideCommunity } = useAdminContext();
     const { isCommunityOpen, canViewContent, requestMembership, hasPendingRequest, getPendingRequests } = useCommunitySettings();
     const profileService = useProfileService();
