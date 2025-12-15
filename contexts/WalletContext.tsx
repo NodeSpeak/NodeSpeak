@@ -21,24 +21,33 @@ const ARBITRUM_NETWORK = {
 // Storage key for wallet persistence
 const WALLET_STORAGE_KEY = "nodespeak_wallet_connected";
 
+// Connection result types
+export type ConnectionResult = 
+    | { success: true; address: string }
+    | { success: false; reason: 'no_wallet' | 'user_rejected' | 'chain_rejected' | 'error'; message?: string };
+
 interface WalletContextProps {
     isConnected: boolean;
     address: string | null;
     ensName: string | null;
-    connect: () => Promise<void>;
+    connect: () => Promise<ConnectionResult>;
     disconnect: () => void;
     provider: BrowserProvider | null;
     isReconnecting: boolean;
+    hasWallet: boolean;
+    checkWalletAvailability: () => boolean;
 }
 
 const WalletContext = createContext<WalletContextProps>({
     isConnected: false,
     address: null,
     ensName: null,
-    connect: async () => {},
+    connect: async () => ({ success: false, reason: 'no_wallet' }),
     disconnect: () => {},
     provider: null,
     isReconnecting: false,
+    hasWallet: false,
+    checkWalletAvailability: () => false,
 });
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,7 +55,31 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [ensName, setEnsName] = useState<string | null>(null);
     const [provider, setProvider] = useState<BrowserProvider | null>(null);
     const [isReconnecting, setIsReconnecting] = useState(false);
+    const [hasWallet, setHasWallet] = useState(false);
     const reconnectAttempted = useRef(false);
+
+    // Check wallet availability (simple and robust detection)
+    const checkWalletAvailability = useCallback((): boolean => {
+        if (typeof window === "undefined") return false;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return !!(window.ethereum || (window as any).web3);
+    }, []);
+
+    // Update hasWallet state on mount and window focus
+    useEffect(() => {
+        const updateWalletStatus = () => {
+            setHasWallet(checkWalletAvailability());
+        };
+        
+        updateWalletStatus();
+        
+        // Re-check when window gains focus (user might have installed wallet)
+        window.addEventListener('focus', updateWalletStatus);
+        
+        return () => {
+            window.removeEventListener('focus', updateWalletStatus);
+        };
+    }, [checkWalletAvailability]);
 
     // Función para resolver ENS usando mainnet (ENS vive en Ethereum mainnet)
     const resolveEns = async (addr: string) => {
@@ -131,12 +164,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
     }, [getEthereumProvider]);
 
-    const connect = async () => {
+    const connect = async (): Promise<ConnectionResult> => {
+        // Re-check wallet availability before connecting
+        const walletAvailable = checkWalletAvailability();
+        setHasWallet(walletAvailable);
+
+        if (!walletAvailable) {
+            return { success: false, reason: 'no_wallet' };
+        }
+
         const selectedProvider = getEthereumProvider();
 
         if (!selectedProvider) {
-            toast.error("Please install MetaMask, Trust or use other Web3 wallet");
-            return;
+            return { success: false, reason: 'no_wallet' };
         }
 
         try {
@@ -148,13 +188,26 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     method: "wallet_switchEthereumChain",
                     params: [{ chainId: ARBITRUM_CHAIN_ID }],
                 });
-            } catch (switchError: any) {
+            } catch (switchError: unknown) {
+                const error = switchError as { code?: number };
+                // User rejected the chain switch
+                if (error.code === 4001) {
+                    return { success: false, reason: 'chain_rejected' };
+                }
                 // If the chain is not added, add it
-                if (switchError.code === 4902) {
-                    await selectedProvider.request({
-                        method: "wallet_addEthereumChain",
-                        params: [ARBITRUM_NETWORK],
-                    });
+                if (error.code === 4902) {
+                    try {
+                        await selectedProvider.request({
+                            method: "wallet_addEthereumChain",
+                            params: [ARBITRUM_NETWORK],
+                        });
+                    } catch (addError: unknown) {
+                        const addErr = addError as { code?: number };
+                        if (addErr.code === 4001) {
+                            return { success: false, reason: 'chain_rejected' };
+                        }
+                        throw addError;
+                    }
                 } else {
                     throw switchError;
                 }
@@ -170,8 +223,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // Resolver ENS después de conectar
             await resolveEns(accounts[0]);
-        } catch (error) {
+
+            return { success: true, address: accounts[0] };
+        } catch (error: unknown) {
+            const err = error as { code?: number; message?: string };
             console.error("Error al conectar la wallet:", error);
+            
+            // User rejected the connection request
+            if (err.code === 4001) {
+                return { success: false, reason: 'user_rejected' };
+            }
+            
+            return { 
+                success: false, 
+                reason: 'error', 
+                message: err.message || 'Error desconocido' 
+            };
         }
     };
 
@@ -227,6 +294,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 disconnect,
                 provider,
                 isReconnecting,
+                hasWallet,
+                checkWalletAvailability,
             }}
         >
             {children}

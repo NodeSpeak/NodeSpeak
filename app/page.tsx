@@ -3,8 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { Github, X, Mail, Users, MessageSquare, Shield, Lock, Globe, Database, Sparkles } from "lucide-react";
 import { WalletConnect } from "@/components/WalletConnect";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CommunityPreview } from "@/components/CommunityPreview";
 import { useWalletContext } from "@/contexts/WalletContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from 'next/navigation';
 import siteConfig from "@/config";
 
@@ -59,9 +61,10 @@ function TypingEffect({ text }: { text: string }) {
 
 function Landing() {
     const { isConnected, connect } = useWalletContext();
+    const { t } = useLanguage();
     const router = useRouter();
 
-    // Handler para el botón "Explore the forum" - navega directamente sin login
+    // Handler for "Explore the forum" button - navigates directly without login
     const handleExplore = () => {
         router.push('/activity');
     };
@@ -83,6 +86,7 @@ function Landing() {
                         <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">Node Speak v3.3</h1>
                     </div>
                     <div className="flex items-center gap-3">
+                        <LanguageSwitcher />
                         <ThemeToggle />
                         <WalletConnect />
                     </div>
@@ -98,10 +102,10 @@ function Landing() {
                             
                             <div className="relative z-10 flex flex-col h-full">
                                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 mb-3 leading-[1.15]">
-                                    The Decentralized and Immutable Forum
+                                    {t("landing.heroTitle")}
                                 </h2>
                                 <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 mb-5 leading-relaxed">
-                                    Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.
+                                    {t("landing.heroSubtitle")}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-4 mb-5">
                                     <button 
@@ -109,7 +113,7 @@ function Landing() {
                                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-medium text-sm shadow-lg shadow-sky-200 dark:shadow-sky-900/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
                                     >
                                         <Users className="w-4 h-4" />
-                                        <span>Explore Forum</span>
+                                        <span>{t("landing.exploreForum")}</span>
                                     </button>
                                 </div>
 
@@ -119,27 +123,27 @@ function Landing() {
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-100 to-sky-50 dark:from-sky-900/50 dark:to-sky-800/50 flex items-center justify-center mb-2 group-hover/card:from-sky-200 group-hover/card:to-sky-100 dark:group-hover/card:from-sky-800/50 dark:group-hover/card:to-sky-700/50 transition-colors">
                                             <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                                         </div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">Communities</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">{t("landing.communities")}</p>
                                         <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
-                                            Create and manage discussion topics. Follow profiles of interest.
+                                            {t("landing.communitiesDesc")}
                                         </p>
                                     </div>
                                     <div className="group/card relative rounded-2xl border border-slate-100 dark:border-slate-700 bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-800 dark:to-slate-900/80 p-4 transition-all duration-300 hover:border-violet-200 dark:hover:border-violet-700 hover:shadow-lg hover:shadow-violet-100/50 dark:hover:shadow-violet-900/30 hover:-translate-y-1">
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/50 dark:to-violet-800/50 flex items-center justify-center mb-2 group-hover/card:from-violet-200 group-hover/card:to-violet-100 dark:group-hover/card:from-violet-800/50 dark:group-hover/card:to-violet-700/50 transition-colors">
                                             <MessageSquare className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                                         </div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">Posts & Threads</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">{t("landing.postsThreads")}</p>
                                         <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
-                                            Post messages and reply to other participants.
+                                            {t("landing.postsThreadsDesc")}
                                         </p>
                                     </div>
                                     <div className="group/card relative rounded-2xl border border-slate-100 dark:border-slate-700 bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-800 dark:to-slate-900/80 p-4 transition-all duration-300 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-lg hover:shadow-emerald-100/50 dark:hover:shadow-emerald-900/30 hover:-translate-y-1">
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/50 dark:to-emerald-800/50 flex items-center justify-center mb-2 group-hover/card:from-emerald-200 group-hover/card:to-emerald-100 dark:group-hover/card:from-emerald-800/50 dark:group-hover/card:to-emerald-700/50 transition-colors">
                                             <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                         </div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">Admin Mode</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm mb-0.5">{t("landing.adminMode")}</p>
                                         <p className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">
-                                            Moderate, curate, and protect spaces in one interface.
+                                            {t("landing.adminModeDesc")}
                                         </p>
                                     </div>
                                 </div>
@@ -158,7 +162,7 @@ function Landing() {
                                     <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                                 </div>
                                 <p className="text-xs font-bold tracking-wide text-slate-800 dark:text-slate-200 uppercase">
-                                    Key Features
+                                    {t("landing.keyFeatures")}
                                 </p>
                             </div>
 
@@ -168,8 +172,8 @@ function Landing() {
                                         <Lock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">Blockchain Security</p>
-                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">All messages backed by blockchain.</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{t("landing.blockchainSecurity")}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">{t("landing.blockchainSecurityDesc")}</p>
                                     </div>
                                 </div>
 
@@ -178,8 +182,8 @@ function Landing() {
                                         <Database className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">Permanent Storage</p>
-                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">IPFS decentralized, immutable data.</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{t("landing.permanentStorage")}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">{t("landing.permanentStorageDesc")}</p>
                                     </div>
                                 </div>
 
@@ -188,8 +192,8 @@ function Landing() {
                                         <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">No Censorship</p>
-                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">Community-moderated content.</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{t("landing.noCensorship")}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">{t("landing.noCensorshipDesc")}</p>
                                     </div>
                                 </div>
 
@@ -198,8 +202,8 @@ function Landing() {
                                         <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">Secure Content</p>
-                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">Protected against manipulations.</p>
+                                        <p className="font-semibold text-slate-900 dark:text-slate-100 text-xs">{t("landing.secureContent")}</p>
+                                        <p className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed">{t("landing.secureContentDesc")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -214,7 +218,7 @@ function Landing() {
                 <footer className="mt-10 md:mt-14 border-t border-slate-200/60 dark:border-slate-700/60 pt-6 pb-4">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        &copy; {new Date().getFullYear()} NodeSpeak. Built for decentralized communities.
+                        &copy; {new Date().getFullYear()} NodeSpeak. {t("landing.footer")}
                     </p>
                     <div className="flex flex-wrap gap-3">
                         <a

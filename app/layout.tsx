@@ -6,6 +6,7 @@ import { WalletProvider } from '@/contexts/WalletContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { CommunitySettingsProvider } from '@/contexts/CommunitySettingsContext';
 import { QueryClientProvider } from '@/lib/queryClient';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 export const metadata: Metadata = {
     title: 'Node Speak',
@@ -37,16 +38,18 @@ export default function RootLayout({
             </head>
             <body>
                 <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="nodespeak-theme">
-                    <QueryClientProvider>
-                        <WalletProvider>
-                            <AdminProvider>
-                                <CommunitySettingsProvider>
-                                    {children}
-                                    <Toaster />
-                                </CommunitySettingsProvider>
-                            </AdminProvider>
-                        </WalletProvider>
-                    </QueryClientProvider>
+                    <LanguageProvider>
+                        <QueryClientProvider>
+                            <WalletProvider>
+                                <AdminProvider>
+                                    <CommunitySettingsProvider>
+                                        {children}
+                                        <Toaster />
+                                    </CommunitySettingsProvider>
+                                </AdminProvider>
+                            </WalletProvider>
+                        </QueryClientProvider>
+                    </LanguageProvider>
                 </ThemeProvider>
             </body>
         </html>
