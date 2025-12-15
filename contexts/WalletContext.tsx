@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { BrowserProvider, JsonRpcProvider } from "ethers";
+import { toast } from 'sonner';
 
 // Arbitrum One network configuration
 const ARBITRUM_CHAIN_ID = "0xa4b1"; // 42161 in hex
@@ -134,7 +135,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const selectedProvider = getEthereumProvider();
 
         if (!selectedProvider) {
-            alert("Please install MetaMask, Trust or use other Web3 wallet");
+            toast.error("Please install MetaMask, Trust or use other Web3 wallet");
             return;
         }
 

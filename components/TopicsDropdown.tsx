@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Plus } from "lucide-react";
+import { toast } from 'sonner';
 
 interface Topic {
     id: number;
@@ -36,7 +37,7 @@ export function TopicsDropdown({ onTopicSelect, topics, setTopics, disableAdding
         // Verificar si ya existe un tópico con este nombre
         const exists = topics.some(t => t.name.toLowerCase() === newTopic.trim().toLowerCase());
         if (exists) {
-            alert("Este tópico ya existe");
+            toast.warning("Este tópico ya existe");
             return;
         }
 

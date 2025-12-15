@@ -29,7 +29,6 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
                 <link rel="icon" href="/favicon.ico" sizes="any" />
                 <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16" />
                 <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />

@@ -11,6 +11,7 @@ import { BrowserProvider, Contract } from 'ethers';
 import { forumAddress, forumABI } from '@/contracts/DecentralizedForum_V3.3';
 import { ImageWithFallback } from '@/components/ImageWithFallback';
 import { AddressText } from '@/components/AddressDisplay';
+import { toast } from 'sonner';
 
 interface UserAvatarProps {
   address: string;
@@ -90,7 +91,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     
     // Check if target user has a profile (required by contract)
     if (!profile?.exists) {
-      alert('This user has not created a profile yet. You can only follow users with an active profile.');
+      toast.warning('This user has not created a profile yet. You can only follow users with an active profile.');
       setShowMenu(false);
       return;
     }
@@ -99,7 +100,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     try {
       const ethereum = (window as any).ethereum;
       if (!ethereum) {
-        alert('Please connect your wallet');
+        toast.error('Please connect your wallet');
         return;
       }
       
@@ -122,11 +123,11 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
       console.error('Error following/unfollowing user:', error);
       // Show user-friendly error
       if (error.reason) {
-        alert(`Transaction failed: ${error.reason}`);
+        toast.error(`Transaction failed: ${error.reason}`);
       } else if (error.message?.includes('user rejected')) {
         // User cancelled, no alert needed
       } else {
-        alert('Transaction failed. Please try again.');
+        toast.error('Transaction failed. Please try again.');
       }
     } finally {
       setFollowLoading(false);

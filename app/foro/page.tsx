@@ -4,11 +4,14 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Loading } from '@/components/Loading';
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useWalletContext } from "@/contexts/WalletContext";
 import { useCommunitySettings } from "@/contexts/CommunitySettingsContext";
 import { forumAddress, forumABI } from "@/contracts/DecentralizedForum_V3.3";
-import { IntegratedView } from '@/components/IntegratedView';
 import { Users } from 'lucide-react';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { prefetchFeedImages } from '@/lib/ipfsPrefetch';
 import {
     useCommunities,
     useCommunityPosts,
@@ -18,10 +21,20 @@ import {
 } from '@/hooks/queries';
 import type { Community, Post } from '@/types/forum';
 
+// Dynamic import for IntegratedView to reduce initial bundle size (~131KB)
+const IntegratedView = dynamic(
+    () => import('@/components/IntegratedView').then(mod => mod.IntegratedView),
+    {
+        loading: () => <Loading type="forum-posts" count={5} />,
+        ssr: false
+    }
+);
+
 export default function Home() {
     const { isConnected, provider } = useWalletContext();
     const { setCommunityType } = useCommunitySettings();
     const searchParams = useSearchParams();
+    const queryClient = useQueryClient();
 
     // UI State
     const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
@@ -65,6 +78,16 @@ export default function Home() {
         }
     }, [communities, selectedCommunityId, searchParams]);
 
+    // Prefetch images when communities or posts are loaded
+    useEffect(() => {
+        if (communities.length > 0 || posts.length > 0) {
+            prefetchFeedImages(queryClient, {
+                posts: posts.map(p => ({ imageCID: (p as any).imageCID || (p as any).imageUrl })),
+                communities: communities.map(c => ({ image: c.photo, cover: c.coverImage }))
+            });
+        }
+    }, [communities, posts, queryClient]);
+
     // Handlers
     const handleCreateCommunity = async (
         name: string,
@@ -94,10 +117,10 @@ export default function Home() {
                 }
             }
 
-            alert(`Community created successfully! ${isClosed ? '(Closed community)' : '(Open community)'}`);
+            toast.success(`Community created successfully! ${isClosed ? '(Closed community)' : '(Open community)'}`);
         } catch (error: any) {
             console.error("Error creating community:", error);
-            alert(`Error creating community: ${error.message || 'Unknown error'}`);
+            toast.error(`Error creating community: ${error.message || 'Unknown error'}`);
         }
     };
 
@@ -111,9 +134,9 @@ export default function Home() {
         } catch (error: any) {
             console.error("Error joining community:", error);
             if (error.message?.includes("Already a member")) {
-                alert("You are already a member of this community.");
+                toast.info("You are already a member of this community.");
             } else {
-                alert("Error joining community. Check console.");
+                toast.error("Error joining community. Check console.");
             }
         }
     };
@@ -121,7 +144,7 @@ export default function Home() {
     const handleLeaveCommunity = async (communityId: string) => {
         const community = communities.find(c => c.id === communityId);
         if (community?.isCreator) {
-            alert("As the creator of this community, you cannot leave it.");
+            toast.warning("As the creator of this community, you cannot leave it.");
             return;
         }
 
@@ -129,7 +152,7 @@ export default function Home() {
             await leaveCommunityMutation.mutateAsync(communityId);
         } catch (error) {
             console.error("Error leaving community:", error);
-            alert("Error leaving community. Check console.");
+            toast.error("Error leaving community. Check console.");
         }
     };
 
