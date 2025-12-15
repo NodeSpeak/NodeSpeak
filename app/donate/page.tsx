@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Heart, Copy, Check, ArrowLeft, Sparkles, Shield, Globe, Users } from "lucide-react";
+import { Copy, Check, ArrowLeft, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WalletConnect } from "@/components/WalletConnect";
+import { HeartOutline } from "@/components/ui/HeartOutline";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { toast } from "sonner";
 
@@ -59,10 +60,10 @@ export default function DonatePage() {
                 <header className="mb-12">
                     <div className="flex justify-between items-center">
                         <Link href="/" className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-200 dark:shadow-sky-900/50">
+                            <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-700 flex items-center justify-center shadow">
                                 <Sparkles className="w-5 h-5 text-white" />
                             </div>
-                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-slate-100">
                                 Node Speak
                             </h1>
                         </Link>
@@ -87,14 +88,11 @@ export default function DonatePage() {
 
                 {/* Hero Section */}
                 <div className="text-center mb-16">
-                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 shadow-xl shadow-rose-200 dark:shadow-rose-900/50 mb-6">
-                        <Heart className="w-10 h-10 text-white" />
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                    <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 dark:text-slate-100 mb-3">
                         Support NodeSpeak
                     </h1>
-                    <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                        Help us build the future of decentralized communities
+                    <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+                        Help advance an open, community‑governed platform for decentralized communities.
                     </p>
                 </div>
 
@@ -111,52 +109,21 @@ export default function DonatePage() {
                             External support ensures that the project remains open, transparent, and aligned with its founding values.
                         </p>
                     </div>
-
-                    {/* Values Icons */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 pt-8 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
-                                <Shield className="w-6 h-6 text-sky-600 dark:text-sky-400" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Security Audits</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Smart contract reviews</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                                <Globe className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Infrastructure</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Servers & hosting</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
-                                <Users className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Development</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">New features & fixes</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Cryptocurrency Section */}
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/60 dark:border-slate-700 p-8 md:p-10">
-                    <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 md:p-10">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                            <svg className="w-5 h-5 text-slate-700 dark:text-slate-200" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                                 <path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z" />
                             </svg>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                            <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
                                 Cryptocurrency Contributions
                             </h2>
-                            <p className="text-slate-500 dark:text-slate-400">Ethereum / EVM Compatible</p>
+                            <p className="text-slate-500 dark:text-slate-400">Ethereum / EVM compatible</p>
                         </div>
                     </div>
 
@@ -180,9 +147,9 @@ export default function DonatePage() {
                         ))}
                     </div>
 
-                    <div className="mt-8 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                            <strong>Note:</strong> These are ENS names that resolve to Ethereum addresses. You can send ETH, USDC, DAI, or any ERC-20 token on Ethereum mainnet or compatible L2 networks like Arbitrum, Optimism, or Base.
+                    <div className="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                            <strong>Note:</strong> These are ENS names that resolve to Ethereum addresses. You may send ETH, USDC, DAI, or other ERC‑20 tokens on Ethereum mainnet or compatible L2 networks (e.g., Arbitrum, Optimism, Base).
                         </p>
                     </div>
                 </div>
@@ -190,17 +157,17 @@ export default function DonatePage() {
                 {/* Thank You Section */}
                 <div className="text-center mt-12 mb-8">
                     <p className="text-slate-600 dark:text-slate-400">
-                        Thank you for supporting open-source development and decentralized communities.
+                        Thank you for supporting open‑source development and decentralized communities.
                     </p>
                     <p className="text-slate-500 dark:text-slate-500 text-sm mt-2">
-                        Every contribution makes a difference. 💜
+                        Every contribution helps sustain the project.
                     </p>
                 </div>
 
                 {/* Footer */}
                 <footer className="text-center py-8 border-t border-slate-200 dark:border-slate-700">
                     <p className="text-slate-500 dark:text-slate-400 text-sm">
-                        NodeSpeak © {new Date().getFullYear()} · Built with ❤️ by the community
+                        NodeSpeak © {new Date().getFullYear()} · Built with <HeartOutline size={12} className="mx-1 align-[-1px]" /> by the community
                     </p>
                 </footer>
             </div>

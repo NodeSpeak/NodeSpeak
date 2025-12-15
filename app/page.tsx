@@ -235,14 +235,14 @@ function Landing() {
                             href="https://twitter.com/NodeSpeak"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-5 py-2.5 text-sm font-medium border border-slate-200 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-500 hover:-translate-y-0.5 transition-all duration-300"
+                            className="inline-flex items-center rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-5 py-2.5 text-sm font-medium shadow-lg shadow-slate-300/50 dark:shadow-slate-900/50 hover:bg-slate-800 dark:hover:bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <X className="w-4 h-4 mr-2" />
                             @NodeSpeak
                         </a>
                         <Link
                             href="/donate"
-                            className="inline-flex items-center rounded-full bg-gradient-to-r from-rose-500 to-pink-600 text-white px-5 py-2.5 text-sm font-medium shadow-lg shadow-rose-200 dark:shadow-rose-900/50 hover:from-rose-600 hover:to-pink-700 hover:-translate-y-0.5 transition-all duration-300"
+                            className="inline-flex items-center rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-5 py-2.5 text-sm font-medium shadow-lg shadow-slate-300/50 dark:shadow-slate-900/50 hover:bg-slate-800 dark:hover:bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
                         >
                             <Heart className="w-4 h-4 mr-2" />
                             Collaborate
