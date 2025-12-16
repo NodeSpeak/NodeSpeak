@@ -53,7 +53,7 @@ export const translations = {
     "wallet.connectionError": "Connection error. Please try again.",
     
     // Landing Page
-    "landing.title": "Node Speak v3.3",
+    "landing.title": "Node Speak",
     "landing.heroTitle": "The Decentralized and Immutable Forum",
     "landing.heroSubtitle": "Node Speak is a platform that redefines online forums by using blockchain technology and decentralized storage. Designed to ensure permanence, transparency and resistance to censorship.",
     "landing.exploreForum": "Explore Forum",
@@ -236,7 +236,7 @@ export const translations = {
     "wallet.connectionError": "Error de conexión. Por favor intentá de nuevo.",
     
     // Landing Page
-    "landing.title": "Node Speak v3.3",
+    "landing.title": "Node Speak",
     "landing.heroTitle": "El Foro Descentralizado e Inmutable",
     "landing.heroSubtitle": "Node Speak es una plataforma que redefine los foros online usando tecnología blockchain y almacenamiento descentralizado. Diseñado para garantizar permanencia, transparencia y resistencia a la censura.",
     "landing.exploreForum": "Explorar Foro",
