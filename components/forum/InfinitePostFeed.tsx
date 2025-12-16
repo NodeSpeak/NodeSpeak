@@ -294,7 +294,7 @@ const PostItem: React.FC<PostItemProps> = ({
 
                 {/* Post Content */}
                 <div
-                    className="mt-3 text-sm text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none"
+                    className="mt-3 text-sm text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none break-anywhere"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
                 />
             </div>
@@ -378,7 +378,7 @@ const PostItem: React.FC<PostItemProps> = ({
                                                 <AddressText value={comment.author} className="text-sm font-medium" />
                                                 <span className="text-xs text-slate-400">{formatTimestamp(comment.timestamp)}</span>
                                             </div>
-                                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">{comment.content}</p>
+                                            <p className="text-sm text-slate-700 dark:text-slate-300 mt-1 break-anywhere">{comment.content}</p>
                                         </div>
                                     </div>
                                 </div>

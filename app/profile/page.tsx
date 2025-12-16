@@ -725,9 +725,9 @@ export default function ProfilePage() {
               <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Nickname</span>
               <span className="text-slate-900 dark:text-slate-100 font-medium">{displayName}</span>
             </div>
-            <div className="flex">
-              <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Address</span>
-              <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">{fullAddress}</span>
+            <div className="flex items-start">
+              <span className="text-slate-500 dark:text-slate-400 w-32 flex-shrink-0 text-sm">Address</span>
+              <AddressDisplay value={fullAddress} showCopy={true} showTooltip={true} />
             </div>
             <div className="flex">
               <span className="text-slate-500 dark:text-slate-400 w-32 text-sm">Status</span>
@@ -743,7 +743,7 @@ export default function ProfilePage() {
             </div>
             <div className="mt-2 border-t border-slate-200 dark:border-slate-700 pt-3">
               <span className="text-slate-500 dark:text-slate-400 text-sm">Bio</span>
-              <p className="text-slate-700 dark:text-slate-300 mt-1">{profileData.bio}</p>
+              <p className="text-slate-700 dark:text-slate-300 mt-1 break-anywhere">{profileData.bio}</p>
             </div>
           </div>
         </div>
@@ -997,7 +997,7 @@ export default function ProfilePage() {
                             </>
                           )}
                         </div>
-                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1">
+                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1 break-anywhere">
                           {activity.content}
                         </p>
                         <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">

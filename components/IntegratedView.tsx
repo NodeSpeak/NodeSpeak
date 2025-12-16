@@ -2388,7 +2388,7 @@ export const IntegratedView = ({
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1">{comment.content}</p>
+                                                        <p className="text-slate-700 dark:text-slate-300 text-sm mt-1 break-anywhere">{comment.content}</p>
                                                     </div>
                                                 </div>
                                             </div>

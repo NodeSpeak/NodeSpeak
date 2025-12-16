@@ -237,6 +237,10 @@ html.dark body {
   color: var(--foreground);
   font-family: 'Inter', sans-serif;
   line-height: 1.7;
+  /* Handle long strings like Ethereum addresses on mobile */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .post-content a {
@@ -447,4 +451,60 @@ html.dark body {
 
 .stagger-item-5 {
   animation: slideInUp 0.5s ease-out 0.25s both;
+}
+
+/* ===== RESPONSIVE TEXT HANDLING ===== */
+/* Handle long strings (addresses, hashes, URLs) on mobile */
+.break-anywhere {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Utility class for truncating long text with ellipsis */
+.truncate-address {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Comment content - ensure text wraps properly */
+.comment-content {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Card containers - prevent overflow */
+.card, .post-container, .terminal-window {
+  overflow: hidden;
+  max-width: 100%;
+}
+
+/* Prose content (used by TipTap/markdown) - handle long strings */
+.prose {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Code blocks - allow horizontal scroll on mobile instead of breaking */
+.post-content code,
+.prose code {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  /* Ensure all text containers handle overflow */
+  .post-content,
+  .comment-content,
+  .prose,
+  [class*="text-"] {
+    max-width: 100%;
+  }
+  
+  /* Force break on very long unbroken strings */
+  p, span, div {
+    word-break: break-word;
+  }
 }
