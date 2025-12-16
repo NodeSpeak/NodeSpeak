@@ -1482,7 +1482,7 @@ export const IntegratedView = ({
     // Render Create Community Form
     const renderCreateCommunityForm = () => (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 p-4 shadow-sm">
-            <h2 className="text-base font-semibold mb-3 text-slate-900 dark:text-slate-100">New Community</h2>
+            <h2 className="text-base font-semibold mb-3 text-slate-900 dark:text-slate-100">{t("forum.newCommunity")}</h2>
             <form className="space-y-3">
                 {/* Name and Topics in a row on larger screens */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1657,8 +1657,11 @@ export const IntegratedView = ({
                 </div>
 
                 <Button
-                    type="button"
-                    onClick={() => {
+                    type="submit"
+                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg py-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50 transition-all mt-1"
+                    disabled={creatingCommunity}
+                    onClick={(e) => {
+                        e.preventDefault();
                         const nameElement = document.getElementById('community-name') as HTMLInputElement;
                         const descriptionElement = document.getElementById('community-description') as HTMLTextAreaElement;
                         const topicsElement = document.getElementById('community-topics') as HTMLInputElement;
@@ -1679,15 +1682,15 @@ export const IntegratedView = ({
                             setCommunityLogoFile(null);
                             setCommunityLogoPreview("");
                         } else {
-                            toast.warning("Please fill in all fields");
+                            toast.warning(t("createCommunity.fillRequired") || "Please fill in all fields");
                         }
                     }}
-                    className="w-full bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg py-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-indigo-900/50 transition-all mt-1"
-                    disabled={creatingCommunity}
                 >
                     {creatingCommunity ? (
-                        <span className="animate-pulse">Creating...</span>
-                    ) : "Create Community"}
+                        <span className="animate-pulse">{t("createCommunity.creating")}</span>
+                    ) : (
+                        <span>{t("createCommunity.submit")}</span>
+                    )}
                 </Button>
             </form>
         </div>
@@ -1698,8 +1701,8 @@ export const IntegratedView = ({
         <div className="space-y-6">
             {localCommunities.length === 0 ? (
                 <div className="text-center py-16 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                    <p className="text-slate-500 dark:text-slate-400 font-medium">No communities yet</p>
-                    <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Create the first one!</p>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">{t("forum.noCommunities")}</p>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">{t("forum.createFirst")}</p>
                 </div>
             ) : (
                 [...localCommunities]
@@ -2402,29 +2405,20 @@ export const IntegratedView = ({
         </div>
     );
 
-    // Check if user has any communities they're a member of or creator of
-    const hasAccessibleCommunities = useMemo(() => {
-        return localCommunities.some(community => community.isMember || community.isCreator);
-    }, [localCommunities]);
-
     return (
-        <div className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-100 shadow-xl">
-            {/* Header section with title and actions */}
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-xl transition-all duration-300">
+            {/* Header Content */}
             <div className="flex items-center justify-between mb-8">
-                {/* Title */}
                 <div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                         {isCreatingCommunity
-                            ? "Create Community"
+                            ? t("createCommunity.title")
                             : isCreatingPost
-                                ? "Create Post"
+                                ? t("createPost.title")
                                 : showCommunityList
-                                    ? "Communities"
-                                    : "Posts"}
+                                    ? t("forum.communities")
+                                    : t("forum.posts")}
                     </h1>
-                    {!showCommunityList && selectedTopic && (
-                        <p className="text-slate-500 text-sm mt-1">Filtered by: {selectedTopic}</p>
-                    )}
                 </div>
 
                 {/* Action buttons */}
@@ -2433,15 +2427,15 @@ export const IntegratedView = ({
                     {showCommunityList && (
                         <Button
                             onClick={() => setIsCreatingCommunity(!isCreatingCommunity)}
-                            className={`rounded-full px-6 font-medium ${isCreatingCommunity
-                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
-                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200"}`}
+                            className={`rounded-full px-6 font-medium transition-all ${isCreatingCommunity
+                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 dark:border-slate-600"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-indigo-900/30"}`}
                         >
-                            {isCreatingCommunity ? "Cancel" : "Create Community"}
+                            {isCreatingCommunity ? t("post.cancel") : t("createCommunity.title")}
                         </Button>
                     )}
 
-                    {/* Create Post - primary action */}
+                    {/* Create Post - secondary action */}
                     {!showCommunityList && !isCreatingCommunity && (
                         <Button
                             onClick={() => {
@@ -2452,10 +2446,10 @@ export const IntegratedView = ({
                                 setIsCreatingPost(!isCreatingPost);
                             }}
                             className={`rounded-full px-6 font-medium ${isCreatingPost
-                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200"
-                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200"}`}
+                                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 dark:border-slate-600"
+                                : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 dark:shadow-indigo-900/30"}`}
                         >
-                            {isCreatingPost ? "Cancel" : "Create Post"}
+                            {isCreatingPost ? t("post.cancel") : t("createPost.title")}
                         </Button>
                     )}
                 </div>

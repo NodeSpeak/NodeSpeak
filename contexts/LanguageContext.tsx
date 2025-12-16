@@ -83,6 +83,8 @@ export const translations = {
     "forum.newCommunity": "New Community",
     "forum.search": "Search...",
     "forum.noResults": "No results found",
+    "forum.noCommunities": "No communities yet",
+    "forum.createFirst": "Create the first one!",
     "forum.loading": "Loading...",
     "forum.error": "Error loading content",
     "forum.retry": "Retry",
@@ -129,6 +131,7 @@ export const translations = {
     "createCommunity.submit": "Create",
     "createCommunity.creating": "Creating...",
     "createCommunity.connectRequired": "Connect your wallet to create a community",
+    "createCommunity.fillRequired": "Please fill in all required fields",
     
     // Profile
     "profile.title": "Profile",
@@ -266,6 +269,8 @@ export const translations = {
     "forum.newCommunity": "Nueva Comunidad",
     "forum.search": "Buscar...",
     "forum.noResults": "No se encontraron resultados",
+    "forum.noCommunities": "Aún no hay comunidades",
+    "forum.createFirst": "¡Creá la primera!",
     "forum.loading": "Cargando...",
     "forum.error": "Error al cargar contenido",
     "forum.retry": "Reintentar",
@@ -312,6 +317,7 @@ export const translations = {
     "createCommunity.submit": "Crear",
     "createCommunity.creating": "Creando...",
     "createCommunity.connectRequired": "Conectá tu wallet para crear una comunidad",
+    "createCommunity.fillRequired": "Por favor completá todos los campos requeridos",
     
     // Profile
     "profile.title": "Perfil",

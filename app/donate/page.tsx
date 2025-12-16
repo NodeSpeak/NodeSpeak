@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Copy, Check, ArrowLeft, Sparkles } from "lucide-react";
+import { Copy, Check, ArrowLeft, Sparkles, ExternalLink } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WalletConnect } from "@/components/WalletConnect";
@@ -13,12 +13,16 @@ import { toast } from "sonner";
 interface WalletAddress {
     name: string;
     address: string;
+    link?: string;
 }
 
 const cryptoAddresses: WalletAddress[] = [
     { name: "nodespeak.eth", address: "nodespeak.eth" },
-    { name: "cristino.eth", address: "cristino.eth" },
-    { name: "berty.eth", address: "berty.eth" },
+    { 
+        name: "Multisig (ETH/Arbitrum)", 
+        address: "0x75f11B893C82eC50e91770C1158c0377Be2c42f6",
+        link: "https://arbiscan.io/address/0x75f11B893C82eC50e91770C1158c0377Be2c42f6"
+    },
 ];
 
 function CopyButton({ text }: { text: string }) {
@@ -138,8 +142,21 @@ export default function DonatePage() {
                                         {wallet.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-slate-900 dark:text-slate-100">{wallet.name}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 font-mono">{wallet.address}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-semibold text-slate-900 dark:text-slate-100">{wallet.name}</p>
+                                            {wallet.link && (
+                                                <a 
+                                                    href={wallet.link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                                    title="View on Explorer"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 font-mono break-all">{wallet.address}</p>
                                     </div>
                                 </div>
                                 <CopyButton text={wallet.address} />
@@ -149,7 +166,7 @@ export default function DonatePage() {
 
                     <div className="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                         <p className="text-sm text-slate-700 dark:text-slate-300">
-                            <strong>Note:</strong> These are ENS names that resolve to Ethereum addresses. You may send ETH, USDC, DAI, or other ERC‑20 tokens on Ethereum mainnet or compatible L2 networks (e.g., Arbitrum, Optimism, Base).
+                            <strong>Note:</strong> You may send ETH, USDC, DAI, or other ERC‑20 tokens on Ethereum mainnet or compatible L2 networks (e.g., Arbitrum, Optimism, Base).
                         </p>
                     </div>
                 </div>

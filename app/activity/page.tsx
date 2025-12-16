@@ -1,6 +1,7 @@
 "use client";
 
 import { WalletConnect } from '@/components/WalletConnect';
+import { WalletOnboardingModal } from '@/components/WalletOnboardingModal';
 import { UserAvatar } from '@/components/UserAvatar';
 import { ImageWithFallback } from '@/components/ImageWithFallback';
 import { ActivityLoadingSkeleton } from '@/components/skeletons/PostSkeleton';
@@ -21,7 +22,7 @@ import { prefetchFeedImages } from '@/lib/ipfsPrefetch';
 import { useActivityFeed, useUpdateCommunityMembership } from '@/hooks/queries';
 
 export default function ActivityPage() {
-    const { isConnected, provider, address, connect } = useWalletContext();
+    const { isConnected, provider, address, connect, hasWallet } = useWalletContext();
     const { t } = useLanguage();
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -33,6 +34,7 @@ export default function ActivityPage() {
     const [joiningCommunityId, setJoiningCommunityId] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [pendingJoinCommunityId, setPendingJoinCommunityId] = useState<string | null>(null);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     // Format timestamp to relative time
     const formatRelativeTime = (timestamp: number) => {
@@ -77,12 +79,22 @@ export default function ActivityPage() {
 
     // Handle wallet connection
     const handleConnect = async (communityIdToJoin?: string) => {
+        // If no wallet detected, show onboarding modal
+        if (!hasWallet) {
+            setShowOnboarding(true);
+            return;
+        }
+        
         if (communityIdToJoin) {
             setPendingJoinCommunityId(communityIdToJoin);
         }
         setIsConnecting(true);
         try {
-            await connect();
+            const result = await connect();
+            if (!result.success && result.reason === 'no_wallet') {
+                setShowOnboarding(true);
+                setPendingJoinCommunityId(null);
+            }
         } catch (error) {
             console.error("Error connecting:", error);
             setPendingJoinCommunityId(null);
@@ -94,9 +106,20 @@ export default function ActivityPage() {
     // Handle navigation to forum
     const handleGoToForo = async () => {
         if (!isConnected) {
+            // If no wallet detected, show onboarding modal
+            if (!hasWallet) {
+                setShowOnboarding(true);
+                return;
+            }
+            
             setIsConnecting(true);
             try {
-                await connect();
+                const result = await connect();
+                if (!result.success && result.reason === 'no_wallet') {
+                    setShowOnboarding(true);
+                    setIsConnecting(false);
+                    return;
+                }
             } catch (error) {
                 console.error("Error connecting before navigating to foro:", error);
                 setIsConnecting(false);
@@ -168,17 +191,7 @@ export default function ActivityPage() {
                         <div className="flex items-center gap-4">
                             <LanguageSwitcher />
                             <ThemeToggle />
-                            {isConnected ? (
-                                <WalletConnect />
-                            ) : (
-                                <button
-                                    onClick={() => handleConnect()}
-                                    disabled={isConnecting}
-                                    className="inline-flex items-center justify-center rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-200 dark:hover:bg-sky-800/50 transition-colors text-xs font-medium px-5 py-2 h-auto shadow-sm disabled:opacity-70"
-                                >
-                                    {isConnecting ? t("nav.connecting") : t("nav.connect")}
-                                </button>
-                            )}
+                            <WalletConnect />
                         </div>
                     </div>
                 </header>
@@ -380,6 +393,12 @@ export default function ActivityPage() {
                     </div>
                 )}
             </div>
+            
+            {/* Onboarding Modal for users without wallet */}
+            <WalletOnboardingModal 
+                open={showOnboarding} 
+                onOpenChange={setShowOnboarding} 
+            />
         </div>
     );
 }
