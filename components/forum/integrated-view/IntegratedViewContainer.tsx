@@ -119,16 +119,23 @@ export const IntegratedViewContainer: React.FC<IntegratedViewProps> = ({
     try {
       actions.setLoadingComments(postId, true);
       const contract = new Contract(forumAddress, forumABI, provider);
-      const count = await contract.getCommentCount(postId);
-      const result: Comment[] = [];
-      for (let i = 0; i < Number(count); i++) {
-        try {
-          const c = await contract.getComment(postId, i);
-          if (c.isActive) result.push({ id: `${postId}-${i}`, index: i + 1, postId, author: c.author, content: c.content, timestamp: Number(c.timestamp), isActive: c.isActive });
-        } catch {}
-      }
+      const commentsData = await contract.getComments(postId);
+      const result: Comment[] = commentsData
+        .map((c: any, i: number) => ({
+          id: `${postId}-${i}`,
+          index: i + 1,
+          postId,
+          author: c.author,
+          content: c.content,
+          timestamp: Number(c.timestamp),
+          isActive: c.isActive,
+        }))
+        .filter((c: Comment) => c.isActive);
       actions.setComments(postId, result);
       return result;
+    } catch (error) {
+      console.error(`Error fetching comments for post ${postId}:`, error);
+      return [];
     } finally { actions.setLoadingComments(postId, false); }
   }, [provider, forumAddress, forumABI, actions]);
 
