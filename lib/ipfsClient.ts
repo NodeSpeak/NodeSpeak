@@ -15,10 +15,9 @@ import { getCachedFile, setCachedFile, isIndexedDBAvailable } from './ipfsCache'
 // CONFIGURATION
 // =============================================================================
 
-// Pinata API credentials for uploads
-const PINATA_API_KEY = "f8f064ba07b90906907d";
-const PINATA_SECRET_API_KEY = "4cf373c7ce0a77b1e7c26bcbc0ba2996cde5f3b508522459e7ff46afa507be08";
-const PINATA_UPLOAD_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
+// API Routes for IPFS uploads (credentials stored server-side only)
+const IPFS_UPLOAD_ENDPOINT = '/api/ipfs/upload';
+const IPFS_UPLOAD_JSON_ENDPOINT = '/api/ipfs/upload-json';
 
 // Gateway functions ordered by reliability/speed
 // Each function takes a CID and returns the full URL
@@ -187,12 +186,12 @@ export function getCacheStats(): { size: number; keys: string[] } {
 }
 
 // =============================================================================
-// UPLOAD FUNCTIONS
+// UPLOAD FUNCTIONS (Via API Proxy - credentials stored server-side)
 // =============================================================================
 
 /**
- * Upload a file (Blob or File) to IPFS via Pinata
- * 
+ * Upload a file (Blob or File) to IPFS via API proxy
+ *
  * @param file - The file or blob to upload
  * @param filename - Optional filename for the upload
  * @returns The CID (Content Identifier) of the uploaded file
@@ -204,32 +203,24 @@ export async function uploadFile(
 ): Promise<string> {
   try {
     const formData = new FormData();
-    
+
     // Determine filename
     const name = filename || (file instanceof File ? file.name : 'file');
     formData.append('file', file, name);
 
-    // Add Pinata metadata
-    const pinataMetadata = JSON.stringify({
-      name: name,
-    });
-    formData.append('pinataMetadata', pinataMetadata);
-
-    // Upload to Pinata
-    const response = await axios.post(PINATA_UPLOAD_URL, formData, {
-      maxBodyLength: Infinity,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'pinata_api_key': PINATA_API_KEY,
-        'pinata_secret_api_key': PINATA_SECRET_API_KEY,
-      },
+    // Upload via API proxy
+    const response = await fetch(IPFS_UPLOAD_ENDPOINT, {
+      method: 'POST',
+      body: formData,
     });
 
-    if (response.status !== 200) {
-      throw new Error(`Pinata upload failed with status: ${response.status}`);
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || `Upload failed with status: ${response.status}`);
     }
 
-    return response.data.IpfsHash;
+    return result.cid;
   } catch (error) {
     console.error('[ipfsClient] Error uploading file:', error);
     throw error;
@@ -237,8 +228,8 @@ export async function uploadFile(
 }
 
 /**
- * Upload JSON data to IPFS via Pinata
- * 
+ * Upload JSON data to IPFS via API proxy
+ *
  * @param data - Any JSON-serializable data
  * @param filename - Optional filename (defaults to 'data.json')
  * @returns The CID of the uploaded JSON
@@ -248,14 +239,31 @@ export async function uploadJSON(
   data: any,
   filename: string = 'data.json'
 ): Promise<string> {
-  const jsonString = JSON.stringify(data);
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  return uploadFile(blob, filename);
+  try {
+    const response = await fetch(IPFS_UPLOAD_JSON_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data, filename }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || `Upload failed with status: ${response.status}`);
+    }
+
+    return result.cid;
+  } catch (error) {
+    console.error('[ipfsClient] Error uploading JSON:', error);
+    throw error;
+  }
 }
 
 /**
- * Upload text content to IPFS via Pinata
- * 
+ * Upload text content to IPFS via API proxy
+ *
  * @param text - The text content to upload
  * @param filename - Optional filename (defaults to 'content.txt')
  * @returns The CID of the uploaded text
