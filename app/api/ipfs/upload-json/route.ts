@@ -26,7 +26,8 @@ import type {
 
 const PINATA_API_KEY = process.env.PINATA_API_KEY;
 const PINATA_SECRET_API_KEY = process.env.PINATA_SECRET_API_KEY;
-const PINATA_JSON_URL = 'https://api.pinata.cloud/pinning/pinJSONToIPFS';
+// Use pinFileToIPFS instead of pinJSONToIPFS for broader API key compatibility
+const PINATA_UPLOAD_URL = 'https://api.pinata.cloud/pinning/pinFileToIPFS';
 
 /**
  * JSON upload configuration
@@ -151,29 +152,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<IPFSUploa
     });
 
     // -------------------------------------------------------------------------
-    // 4. Send to Pinata
+    // 4. Send to Pinata (as file for broader API key compatibility)
     // -------------------------------------------------------------------------
-    const pinataResponse = await fetch(PINATA_JSON_URL, {
+    // Convert JSON to Blob and upload as file
+    const jsonString = JSON.stringify(data, null, 2);
+    const jsonBlob = new Blob([jsonString], { type: 'application/json' });
+
+    const pinataFormData = new FormData();
+    pinataFormData.append('file', jsonBlob, filename);
+
+    // Add metadata
+    const metadata = JSON.stringify({
+      name: filename,
+      keyvalues: {
+        uploadedAt: new Date().toISOString(),
+        type: 'json',
+        source: 'nodespeak',
+      },
+    });
+    pinataFormData.append('pinataMetadata', metadata);
+
+    // Use CIDv1 for better compatibility
+    const pinataOptions = JSON.stringify({
+      cidVersion: 1,
+    });
+    pinataFormData.append('pinataOptions', pinataOptions);
+
+    const pinataResponse = await fetch(PINATA_UPLOAD_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         pinata_api_key: PINATA_API_KEY,
         pinata_secret_api_key: PINATA_SECRET_API_KEY,
       },
-      body: JSON.stringify({
-        pinataContent: data,
-        pinataMetadata: {
-          name: filename,
-          keyvalues: {
-            uploadedAt: new Date().toISOString(),
-            type: 'json',
-            source: 'nodespeak',
-          },
-        },
-        pinataOptions: {
-          cidVersion: 1,
-        },
-      }),
+      body: pinataFormData,
     });
 
     // -------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useCallback, useState } from "react";
 import { Contract } from "ethers";
 import { Button } from "@/components/ui/button";
 import DOMPurify from "dompurify";
@@ -28,6 +28,7 @@ import { CommunityBanner } from "./CommunityBanner";
 import { CommunityHeader } from "./CommunityHeader";
 import { ClosedCommunityNotice } from "./ClosedCommunityNotice";
 import { PostFeed } from "./PostFeed";
+import { CreateCommunityForm } from "@/components/forum/CreateCommunityForm";
 import { useIntegratedViewState } from "./hooks/useIntegratedViewState";
 import type { Community, Post, Comment, IntegratedViewProps } from "./types";
 
@@ -64,6 +65,16 @@ export const IntegratedViewContainer: React.FC<IntegratedViewProps> = ({
   const { isCommunityOpen, requestMembership, hasPendingRequest } = useCommunitySettings();
   const profileService = useProfileService();
   const { state, actions } = useIntegratedViewState(communities);
+
+  // Create Community Form State
+  const [communityLogoFile, setCommunityLogoFile] = useState<File | null>(null);
+  const [communityLogoPreview, setCommunityLogoPreview] = useState("");
+  const [communityCoverFile, setCommunityCoverFile] = useState<File | null>(null);
+  const [communityCoverPreview, setCommunityCoverPreview] = useState("");
+  const [showCommunityLogoEditor, setShowCommunityLogoEditor] = useState(false);
+  const [showCommunityCoverEditor, setShowCommunityCoverEditor] = useState(false);
+  const [tempCommunityLogoImage, setTempCommunityLogoImage] = useState("");
+  const [tempCommunityCoverImage, setTempCommunityCoverImage] = useState("");
 
   // React Query Mutations
   const likePostMutation = useLikePost();
@@ -283,7 +294,36 @@ export const IntegratedViewContainer: React.FC<IntegratedViewProps> = ({
       </div>
 
       {/* Content */}
-      {isCreatingPost ? (
+      {isCreatingCommunity ? (
+        <CreateCommunityForm
+          onCreateCommunity={async (name, description, topics, photo, cover, isClosed) => {
+            await handleCreateCommunity(name, description, topics, photo, cover, isClosed);
+            setIsCreatingCommunity(false);
+            // Reset form state
+            setCommunityLogoFile(null);
+            setCommunityLogoPreview("");
+            setCommunityCoverFile(null);
+            setCommunityCoverPreview("");
+          }}
+          creatingCommunity={creatingCommunity}
+          communityLogoFile={communityLogoFile}
+          setCommunityLogoFile={setCommunityLogoFile}
+          communityLogoPreview={communityLogoPreview}
+          setCommunityLogoPreview={setCommunityLogoPreview}
+          communityCoverFile={communityCoverFile}
+          setCommunityCoverFile={setCommunityCoverFile}
+          communityCoverPreview={communityCoverPreview}
+          setCommunityCoverPreview={setCommunityCoverPreview}
+          showCommunityLogoEditor={showCommunityLogoEditor}
+          setShowCommunityLogoEditor={setShowCommunityLogoEditor}
+          showCommunityCoverEditor={showCommunityCoverEditor}
+          setShowCommunityCoverEditor={setShowCommunityCoverEditor}
+          tempCommunityLogoImage={tempCommunityLogoImage}
+          setTempCommunityLogoImage={setTempCommunityLogoImage}
+          tempCommunityCoverImage={tempCommunityCoverImage}
+          setTempCommunityCoverImage={setTempCommunityCoverImage}
+        />
+      ) : isCreatingPost ? (
         <CreatePostPanel communities={state.localCommunities} selectedCommunityId={selectedCommunityId} communityTopics={state.communityTopics} postSelectedTopic={state.postSelectedTopic} newPost={state.newPost} selectedImage={state.selectedImage} loading={state.loading} canCurrentUserAddTopics={canCurrentUserAddTopics} onCommunityChange={(e) => { setSelectedCommunityId(e.target.value); actions.setPostSelectedTopic(""); }} onTopicChange={actions.setPostSelectedTopic} onContentChange={actions.setNewPost} onImageSelect={(e) => { const f = e.target.files?.[0]; if (f) actions.setSelectedImage(f); }} onSubmit={handleSubmitPost} onCancel={() => setIsCreatingPost(false)} onTopicsUpdate={actions.setCommunityTopics} />
       ) : showCommunityList ? (
         <CommunityExplorerPanel communities={state.localCommunities} selectedCommunityId={selectedCommunityId} joiningCommunityId={joiningCommunityId} leavingCommunityId={leavingCommunityId} currentUserAddress={currentUserAddress} isCommunityOpen={isCommunityOpen} hasPendingRequest={hasPendingRequest} onCommunityClick={handleCommunityClick} onJoinCommunity={handleJoinCommunity} onLeaveCommunity={handleLeaveCommunity} onRequestAccess={handleRequestAccess} onDeactivateCommunity={handleDeactivateCommunity} onTopicClick={handleTopicClick} />
